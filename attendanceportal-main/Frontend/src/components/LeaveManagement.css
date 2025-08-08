@@ -1,0 +1,125 @@
+.leave-management {
+  padding: 20px;
+}
+
+.controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  gap: 20px;
+}
+
+.search-filters {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+}
+
+.search-box input {
+  padding: 12px 15px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+  width: 300px;
+}
+
+.status-filter {
+  padding: 12px 15px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+  background: white;
+}
+
+.leave-type-badge {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.leave-type-badge.success {
+  background: #e8f5e8;
+  color: #2e7d32;
+}
+
+.leave-type-badge.danger {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.leave-type-badge.warning {
+  background: #fff3e0;
+  color: #f57c00;
+}
+
+.leave-type-badge.info {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.leave-duration {
+  text-align: center;
+  font-size: 12px;
+}
+
+.leave-duration div {
+  margin: 2px 0;
+}
+
+.days-count {
+  font-weight: 600;
+  color: #666;
+  margin-top: 5px !important;
+}
+
+.leave-reason {
+  max-width: 200px;
+  font-size: 12px;
+  color: #666;
+  line-height: 1.4;
+}
+
+.employee-id {
+  font-size: 11px;
+  color: #999;
+  margin-top: 2px;
+}
+
+@media (max-width: 768px) {
+  .leave-management {
+    padding: 15px;
+  }
+  
+  .controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .search-filters {
+    flex-direction: column;
+  }
+  
+  .search-box input {
+    width: 100%;
+  }
+  
+  .table {
+    font-size: 12px;
+  }
+  
+  .table th,
+  .table td {
+    padding: 8px 4px;
+  }
+  
+  .leave-duration {
+    font-size: 10px;
+  }
+  
+  .leave-reason {
+    max-width: 150px;
+    font-size: 10px;
+  }
+} 
