@@ -112,6 +112,11 @@
   border-left: 4px solid #17a2b8;
 }
 
+.stat-card.holiday {
+  background: linear-gradient(135deg, #ff8c42 0%, #ff6b35 100%);
+  color: white;
+}
+
 .stat-number {
   font-size: 32px;
   font-weight: bold;
@@ -234,6 +239,72 @@
   background: #e3f2fd;
 }
 
+.calendar-day.holiday {
+  background: linear-gradient(135deg, #ff8c42 0%, #ff6b35 100%);
+  color: white;
+  position: relative;
+}
+
+.calendar-day.holiday .day-number {
+  color: white;
+  font-weight: 600;
+}
+
+.holiday-indicator {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 5px;
+}
+
+.holiday-text {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.holiday-tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #333;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+  z-index: 1000;
+  margin-bottom: 5px;
+}
+
+.holiday-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: #333;
+}
+
+.holiday-indicator:hover .holiday-tooltip {
+  opacity: 1;
+  visibility: visible;
+}
+
 .day-number {
   font-size: 14px;
   font-weight: 500;
@@ -271,6 +342,40 @@
 
 .status-indicator.secondary {
   background: #6c757d;
+}
+
+.status-badge {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.status-badge.success {
+  background: #d4edda;
+  color: #155724;
+}
+
+.status-badge.warning {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.status-badge.danger {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.status-badge.info {
+  background: #d1ecf1;
+  color: #0c5460;
+}
+
+.status-badge.holiday {
+  background: linear-gradient(135deg, #ff8c42 0%, #ff6b35 100%);
+  color: white;
+  font-weight: 600;
 }
 
 .attendance-details {
@@ -319,32 +424,8 @@
   background: #e3f2fd !important;
 }
 
-.status-badge {
-  padding: 4px 8px;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: 500;
-  text-transform: uppercase;
-}
-
-.status-badge.success {
-  background: #d4edda;
-  color: #155724;
-}
-
-.status-badge.warning {
-  background: #fff3cd;
-  color: #856404;
-}
-
-.status-badge.danger {
-  background: #f8d7da;
-  color: #721c24;
-}
-
-.status-badge.info {
-  background: #d1ecf1;
-  color: #0c5460;
+.calendar-day.holiday .status-indicator {
+  display: none;
 }
 
 .loading-container,

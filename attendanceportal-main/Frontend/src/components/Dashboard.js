@@ -16,43 +16,24 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const [recentActivities] = useState([
-    {
-      id: 1,
-      type: 'check-in',
-      employee: 'Sarah Johnson',
-      time: '09:15 AM',
-      status: 'On Time'
-    },
-    {
-      id: 2,
-      type: 'check-out',
-      employee: 'Mike Chen',
-      time: '05:30 PM',
-      status: 'Regular'
-    },
-    {
-      id: 3,
-      type: 'leave',
-      employee: 'Emily Davis',
-      time: '10:00 AM',
-      status: 'Sick Leave'
-    },
-    {
-      id: 4,
-      type: 'check-in',
-      employee: 'David Wilson',
-      time: '09:45 AM',
-      status: 'Late'
-    },
-    {
-      id: 5,
-      type: 'check-in',
-      employee: 'Lisa Brown',
-      time: '08:55 AM',
-      status: 'On Time'
+  const [recentActivities, setRecentActivities] = useState([]);
+
+  // Fetch recent activities from backend
+  const fetchRecentActivities = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/employee/admin/recent-activities?limit=5');
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch recent activities');
+      }
+      
+      const data = await response.json();
+      setRecentActivities(data.recentActivities);
+    } catch (err) {
+      console.error('Error fetching recent activities:', err);
+      // Keep existing activities if fetch fails
     }
-  ]);
+  };
 
   // Fetch attendance data from backend
   useEffect(() => {
@@ -77,9 +58,13 @@ const Dashboard = () => {
     };
 
     fetchAttendanceData();
+    fetchRecentActivities(); // Fetch recent activities
     
     // Refresh data every 30 seconds
-    const interval = setInterval(fetchAttendanceData, 30000);
+    const interval = setInterval(() => {
+      fetchAttendanceData();
+      fetchRecentActivities(); // Refresh recent activities too
+    }, 30000);
     
     return () => clearInterval(interval);
   }, []);
@@ -223,14 +208,14 @@ const Dashboard = () => {
         <div className="recent-activity">
           <h3>Recent Activities</h3>
           <div className="activity-list">
-            {recentActivities.map((activity) => (
-              <div key={activity.id} className="activity-item">
+            {recentActivities.map((activity, index) => (
+              <div key={index} className="activity-item">
                 <div className={`activity-icon ${activity.type}`}>
                   {activity.type === 'check-in' ? '✅' : activity.type === 'check-out' ? '🚪' : '📅'}
                 </div>
                 <div className="activity-details">
-                  <h4>{activity.employee}</h4>
-                  <p>{activity.time} - {activity.status}</p>
+                  <h4>{activity.employeeName}</h4>
+                  <p>{activity.timestamp} - {activity.description}</p>
                 </div>
               </div>
             ))}

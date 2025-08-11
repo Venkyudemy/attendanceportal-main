@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Test</title>
+</head>
+<body>
+    <h1>API Test</h1>
+    <button onclick="testAddEmployee()">Test Add Employee</button>
+    <div id="result"></div>
+
+    <script>
+        async function testAddEmployee() {
+            try {
+                const response = await fetch('http://localhost:5000/api/employee', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        name: 'Test Employee',
+                        email: 'test@company.com',
+                        department: 'Engineering',
+                        position: 'Developer',
+                        phone: '1234567890',
+                        joinDate: '2025-08-08',
+                        password: 'testpass123'
+                    })
+                });
+
+                const data = await response.json();
+                document.getElementById('result').innerHTML = `
+                    <h3>Response:</h3>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                    <p>Status: ${response.status}</p>
+                `;
+            } catch (error) {
+                document.getElementById('result').innerHTML = `
+                    <h3>Error:</h3>
+                    <pre>${error.message}</pre>
+                `;
+            }
+        }
+    </script>
+</body>
+</html> 

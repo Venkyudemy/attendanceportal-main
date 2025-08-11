@@ -356,6 +356,273 @@
   font-weight: 500;
 }
 
+/* Payroll Module Styles */
+.payroll-controls {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
+}
+
+.date-filters {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.date-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.date-input-group label {
+  font-weight: 500;
+  color: #374151;
+  font-size: 0.875rem;
+}
+
+.date-input {
+  padding: 0.75rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  background: white;
+  transition: border-color 0.2s;
+}
+
+.date-input:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.export-controls {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+}
+
+.payroll-summary {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
+}
+
+.summary-info h3 {
+  margin: 0 0 1rem 0;
+  color: #374151;
+  font-size: 1.25rem;
+}
+
+.summary-details {
+  display: flex;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.summary-details span {
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+.payroll-table-container {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.payroll-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.payroll-table th {
+  background: #f8fafc;
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  color: #374151;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.payroll-table td {
+  padding: 1rem;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: top;
+}
+
+.payroll-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.employee-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.employee-avatar-small {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.employee-name {
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.25rem;
+}
+
+.employee-email {
+  color: #6b7280;
+  font-size: 0.75rem;
+}
+
+.full-days {
+  color: #10b981;
+  font-weight: 600;
+}
+
+.late-days {
+  color: #f59e0b;
+  font-weight: 600;
+}
+
+.absent-days {
+  color: #ef4444;
+  font-weight: 600;
+}
+
+.leave-days {
+  color: #8b5cf6;
+  font-weight: 600;
+}
+
+.lop-amount {
+  color: #ef4444;
+  font-weight: 600;
+}
+
+.final-pay {
+  color: #10b981;
+  font-weight: 600;
+}
+
+.no-data {
+  text-align: center;
+  color: #6b7280;
+  padding: 2rem;
+}
+
+.payroll-placeholder {
+  text-align: center;
+  padding: 4rem 2rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.placeholder-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+}
+
+.payroll-placeholder h3 {
+  color: #374151;
+  margin: 0 0 1rem 0;
+  font-size: 1.5rem;
+}
+
+.payroll-placeholder p {
+  color: #6b7280;
+  margin: 0 0 0.5rem 0;
+  font-size: 1rem;
+}
+
+.payroll-placeholder .note {
+  font-size: 0.875rem;
+  color: #9ca3af;
+  font-style: italic;
+}
+
+/* Responsive adjustments for payroll table */
+@media (max-width: 1024px) {
+  .payroll-table {
+    font-size: 0.75rem;
+  }
+  
+  .payroll-table th,
+  .payroll-table td {
+    padding: 0.75rem 0.5rem;
+  }
+  
+  .summary-details {
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .date-filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .date-input-group {
+    width: 100%;
+  }
+  
+  .export-controls {
+    justify-content: center;
+  }
+  
+  .payroll-table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  
+  .summary-details {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .payroll-controls {
+    padding: 1rem;
+  }
+  
+  .payroll-summary {
+    padding: 1rem;
+  }
+  
+  .payroll-table th,
+  .payroll-table td {
+    padding: 0.5rem 0.25rem;
+  }
+  
+  .employee-avatar-small {
+    width: 2rem;
+    height: 2rem;
+    font-size: 0.75rem;
+  }
+}
+
 /* Responsive Design */
 @media (max-width: 350px) {
   .admin-portal {

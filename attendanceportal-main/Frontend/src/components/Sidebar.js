@@ -9,7 +9,7 @@ const Sidebar = ({ currentUser, onLogout, isAdmin }) => {
   const adminMenuItems = [
     { path: '/dashboard', label: 'Dashboard', icon: '📊' },
     { path: '/employees', label: 'Employees', icon: '👥' },
-
+    { path: '/admin/payroll', label: 'Payroll Management', icon: '💰' },
     { path: '/leave', label: 'Leave Management', icon: '📅' },
     { path: '/profile', label: 'My Profile', icon: '👤' },
     { path: '/settings', label: 'Settings', icon: '⚙️' },

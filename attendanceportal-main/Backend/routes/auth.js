@@ -54,6 +54,16 @@ router.post('/login', async (req, res) => {
       { expiresIn: '24h' }
     );
 
+    // Log successful login
+    console.log('User login successful - Data retrieved from MongoDB:', {
+      userId: user._id,
+      name: user.name,
+      email: user.email,
+      department: user.department,
+      role: role,
+      loginTime: new Date().toISOString()
+    });
+
     // Return user data (without password)
     const userData = {
       id: user._id,

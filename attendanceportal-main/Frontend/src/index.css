@@ -91,12 +91,12 @@ body {
 .table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 20px;
+  margin-top: 15px;
 }
 
 .table th,
 .table td {
-  padding: 12px;
+  padding: 10px;
   text-align: left;
   border-bottom: 1px solid #ddd;
 }
@@ -104,6 +104,7 @@ body {
 .table th {
   background-color: #f8f9fa;
   font-weight: 600;
+  font-size: 13px;
 }
 
 .table tbody tr:hover {
@@ -116,7 +117,7 @@ body {
   }
   
   .table {
-    font-size: 14px;
+    font-size: 13px;
   }
   
   .table th,

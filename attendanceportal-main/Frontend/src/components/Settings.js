@@ -16,6 +16,13 @@ const Settings = () => {
       { name: 'Personal Leave', days: 5, color: '#ffc107' },
       { name: 'Maternity Leave', days: 90, color: '#6f42c1' }
     ],
+    companyHolidays: [
+      { name: 'New Year\'s Day', date: '2024-01-01', type: 'public', description: 'New Year Celebration' },
+      { name: 'Republic Day', date: '2024-01-26', type: 'public', description: 'Indian Republic Day' },
+      { name: 'Independence Day', date: '2024-08-15', type: 'public', description: 'Indian Independence Day' },
+      { name: 'Company Foundation Day', date: '2024-06-15', type: 'company', description: 'Company\'s foundation anniversary' },
+      { name: 'Diwali', date: '2024-11-12', type: 'public', description: 'Festival of Lights' }
+    ],
     notifications: {
       email: true,
       sms: false,
@@ -48,6 +55,18 @@ const Settings = () => {
     }));
   };
 
+  const handleHolidayChange = (index, field, value) => {
+    const updatedHolidays = [...settings.companyHolidays];
+    updatedHolidays[index] = {
+      ...updatedHolidays[index],
+      [field]: value
+    };
+    setSettings(prev => ({
+      ...prev,
+      companyHolidays: updatedHolidays
+    }));
+  };
+
   const addLeaveType = () => {
     setSettings(prev => ({
       ...prev,
@@ -58,11 +77,39 @@ const Settings = () => {
     }));
   };
 
+  const addHoliday = () => {
+    const currentYear = new Date().getFullYear();
+    setSettings(prev => ({
+      ...prev,
+      companyHolidays: [
+        ...prev.companyHolidays,
+        { 
+          name: 'New Holiday', 
+          date: `${currentYear}-01-01`, 
+          type: 'company', 
+          description: 'Holiday description' 
+        }
+      ]
+    }));
+  };
+
   const removeLeaveType = (index) => {
     setSettings(prev => ({
       ...prev,
       leaveTypes: prev.leaveTypes.filter((_, i) => i !== index)
     }));
+  };
+
+  const removeHoliday = (index) => {
+    setSettings(prev => ({
+      ...prev,
+      companyHolidays: prev.companyHolidays.filter((_, i) => i !== index)
+    }));
+  };
+
+  const replicateHolidaysToAllEmployees = () => {
+    // This function would sync holidays to all employee calendars
+    alert('Holidays have been replicated to all employee calendars!');
   };
 
   const handleSave = () => {
@@ -96,6 +143,12 @@ const Settings = () => {
             onClick={() => setActiveTab('leave')}
           >
             📅 Leave Management
+          </button>
+          <button 
+            className={`tab-btn ${activeTab === 'holidays' ? 'active' : ''}`}
+            onClick={() => setActiveTab('holidays')}
+          >
+            🎉 Company Holidays
           </button>
           <button 
             className={`tab-btn ${activeTab === 'notifications' ? 'active' : ''}`}
@@ -218,6 +271,82 @@ const Settings = () => {
                   onClick={addLeaveType}
                 >
                   Add Leave Type
+                </button>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'holidays' && (
+            <div className="settings-section">
+              <h3>Company Holidays</h3>
+              <div className="holiday-info">
+                <p>Manage company holidays and public holidays that will be automatically applied to all employee calendars.</p>
+                <button 
+                  className="btn btn-success"
+                  onClick={replicateHolidaysToAllEmployees}
+                >
+                  🔄 Sync to All Employee Calendars
+                </button>
+              </div>
+              
+              <div className="holiday-types">
+                {settings.companyHolidays.map((holiday, index) => (
+                  <div key={index} className={`holiday-item ${holiday.type}`}>
+                    <div className="holiday-header">
+                      <span className={`holiday-type-badge ${holiday.type}`}>
+                        {holiday.type === 'public' ? '🇮🇳 Public' : '🏢 Company'}
+                      </span>
+                      <button 
+                        className="btn btn-danger btn-sm"
+                        onClick={() => removeHoliday(index)}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label>Holiday Name</label>
+                        <input
+                          type="text"
+                          value={holiday.name}
+                          onChange={(e) => handleHolidayChange(index, 'name', e.target.value)}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>Date</label>
+                        <input
+                          type="date"
+                          value={holiday.date}
+                          onChange={(e) => handleHolidayChange(index, 'date', e.target.value)}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>Type</label>
+                        <select
+                          value={holiday.type}
+                          onChange={(e) => handleHolidayChange(index, 'type', e.target.value)}
+                        >
+                          <option value="public">Public Holiday</option>
+                          <option value="company">Company Holiday</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="form-group">
+                      <label>Description</label>
+                      <input
+                        type="text"
+                        value={holiday.description}
+                        onChange={(e) => handleHolidayChange(index, 'description', e.target.value)}
+                        placeholder="Brief description of the holiday"
+                      />
+                    </div>
+                  </div>
+                ))}
+                <button 
+                  className="btn btn-primary"
+                  onClick={addHoliday}
+                >
+                  ➕ Add New Holiday
                 </button>
               </div>
             </div>

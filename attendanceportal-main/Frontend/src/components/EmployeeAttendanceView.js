@@ -8,14 +8,51 @@ const EmployeeAttendanceView = () => {
   const location = useLocation();
   const [employee, setEmployee] = useState(null);
   const [attendanceData, setAttendanceData] = useState([]);
+  const [companyHolidays, setCompanyHolidays] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentMonth, setCurrentMonth] = useState(new Date());
+
+  // Fetch company holidays from settings
+  const fetchCompanyHolidays = async () => {
+    try {
+      // In a real app, this would fetch from your backend API
+      // For now, we'll use the same structure as defined in Settings
+      const holidays = [
+        { name: 'New Year\'s Day', date: '2024-01-01', type: 'public', description: 'New Year Celebration' },
+        { name: 'Republic Day', date: '2024-01-26', type: 'public', description: 'Indian Republic Day' },
+        { name: 'Independence Day', date: '2024-08-15', type: 'public', description: 'Indian Independence Day' },
+        { name: 'Company Foundation Day', date: '2024-06-15', type: 'company', description: 'Company\'s foundation anniversary' },
+        { name: 'Diwali', date: '2024-11-12', type: 'public', description: 'Festival of Lights' }
+      ];
+      setCompanyHolidays(holidays);
+    } catch (err) {
+      console.error('Error fetching company holidays:', err);
+    }
+  };
+
+  // Check if a date is a company holiday
+  const isCompanyHoliday = (date) => {
+    if (!date) return false;
+    const dateString = date.toISOString().split('T')[0];
+    return companyHolidays.find(holiday => holiday.date === dateString);
+  };
+
+  // Get holiday name for a date
+  const getHolidayName = (date) => {
+    if (!date) return null;
+    const dateString = date.toISOString().split('T')[0];
+    const holiday = companyHolidays.find(holiday => holiday.date === dateString);
+    return holiday ? holiday.name : null;
+  };
 
   useEffect(() => {
     const fetchEmployeeData = async () => {
       try {
         setLoading(true);
+        
+        // Fetch company holidays first
+        await fetchCompanyHolidays();
         
         // Fetch employee details
         const employeeResponse = await fetch(`http://localhost:5000/api/employee/${employeeId}`);
@@ -44,6 +81,8 @@ const EmployeeAttendanceView = () => {
             day: null,
             isWeekend: false,
             isToday: false,
+            isHoliday: false,
+            holidayName: null,
             status: 'empty',
             checkIn: null,
             checkOut: null,
@@ -57,6 +96,8 @@ const EmployeeAttendanceView = () => {
           const date = new Date(year, month, day);
           const isWeekend = date.getDay() === 0 || date.getDay() === 6;
           const isToday = date.toDateString() === currentDate.toDateString();
+          const isHoliday = isCompanyHoliday(date);
+          const holidayName = getHolidayName(date);
           
           // Generate random attendance data for demonstration
           let status = 'Absent';
@@ -64,7 +105,8 @@ const EmployeeAttendanceView = () => {
           let checkOut = null;
           let hours = 0;
           
-          if (!isWeekend) {
+          // If it's a holiday, don't generate attendance data
+          if (!isWeekend && !isHoliday) {
             const random = Math.random();
             if (random > 0.3) {
               status = 'Present';
@@ -86,6 +128,8 @@ const EmployeeAttendanceView = () => {
             day: day,
             isWeekend,
             isToday,
+            isHoliday,
+            holidayName,
             status,
             checkIn,
             checkOut,
@@ -107,7 +151,8 @@ const EmployeeAttendanceView = () => {
     fetchEmployeeData();
   }, [employeeId]);
 
-  const getStatusColor = (status) => {
+  const getStatusColor = (status, isHoliday) => {
+    if (isHoliday) return 'holiday';
     switch (status) {
       case 'Present': return 'success';
       case 'Late': return 'warning';
@@ -125,9 +170,10 @@ const EmployeeAttendanceView = () => {
     const absentDays = attendanceData.filter(day => day.status === 'Absent').length;
     const leaveDays = attendanceData.filter(day => day.status === 'On Leave').length;
     const weekendDays = attendanceData.filter(day => day.isWeekend).length;
+    const holidayDays = attendanceData.filter(day => day.isHoliday).length;
     
     const totalHours = attendanceData.reduce((sum, day) => sum + day.hours, 0);
-    const attendanceRate = totalDays > 0 ? Math.round((presentDays / (totalDays - weekendDays)) * 100) : 0;
+    const attendanceRate = totalDays > 0 ? Math.round((presentDays / (totalDays - weekendDays - holidayDays)) * 100) : 0;
     
     return {
       totalDays,
@@ -136,6 +182,7 @@ const EmployeeAttendanceView = () => {
       absentDays,
       leaveDays,
       weekendDays,
+      holidayDays,
       totalHours,
       attendanceRate
     };
@@ -168,6 +215,8 @@ const EmployeeAttendanceView = () => {
         day: null,
         isWeekend: false,
         isToday: false,
+        isHoliday: false,
+        holidayName: null,
         status: 'empty',
         checkIn: null,
         checkOut: null,
@@ -181,6 +230,8 @@ const EmployeeAttendanceView = () => {
       const date = new Date(year, month, day);
       const isWeekend = date.getDay() === 0 || date.getDay() === 6;
       const isToday = date.toDateString() === new Date().toDateString();
+      const isHoliday = isCompanyHoliday(date);
+      const holidayName = getHolidayName(date);
       
       // Generate random attendance data for demonstration
       let status = 'Absent';
@@ -188,7 +239,8 @@ const EmployeeAttendanceView = () => {
       let checkOut = null;
       let hours = 0;
       
-      if (!isWeekend) {
+      // If it's a holiday, don't generate attendance data
+      if (!isWeekend && !isHoliday) {
         const random = Math.random();
         if (random > 0.3) {
           status = 'Present';
@@ -210,6 +262,8 @@ const EmployeeAttendanceView = () => {
         day: day,
         isWeekend,
         isToday,
+        isHoliday,
+        holidayName,
         status,
         checkIn,
         checkOut,
@@ -303,6 +357,10 @@ const EmployeeAttendanceView = () => {
             <div className="stat-number">{stats.leaveDays}</div>
             <div className="stat-label">Leave Days</div>
           </div>
+          <div className="stat-card holiday">
+            <div className="stat-number">{stats.holidayDays}</div>
+            <div className="stat-label">Holidays</div>
+          </div>
           <div className="stat-card">
             <div className="stat-number">{stats.totalHours.toFixed(1)}h</div>
             <div className="stat-label">Total Hours</div>
@@ -336,16 +394,21 @@ const EmployeeAttendanceView = () => {
           {attendanceData.map((day, index) => (
             <div 
               key={index} 
-              className={`calendar-day ${day.isWeekend ? 'weekend' : ''} ${day.isToday ? 'today' : ''} ${day.isEmpty ? 'empty' : ''}`}
+              className={`calendar-day ${day.isWeekend ? 'weekend' : ''} ${day.isToday ? 'today' : ''} ${day.isEmpty ? 'empty' : ''} ${day.isHoliday ? 'holiday' : ''}`}
             >
               {!day.isEmpty ? (
                 <>
                   <div className="day-number">{day.day}</div>
-                  {!day.isWeekend && (
-                    <div className={`status-indicator ${getStatusColor(day.status)}`}>
+                  {day.isHoliday ? (
+                    <div className="holiday-indicator">
+                      <span className="holiday-text">H</span>
+                      <div className="holiday-tooltip">{day.holidayName}</div>
+                    </div>
+                  ) : !day.isWeekend ? (
+                    <div className={`status-indicator ${getStatusColor(day.status, day.isHoliday)}`}>
                       {day.status.charAt(0)}
                     </div>
-                  )}
+                  ) : null}
                 </>
               ) : (
                 <div className="empty-day"></div>
@@ -369,21 +432,21 @@ const EmployeeAttendanceView = () => {
               </tr>
             </thead>
             <tbody>
-                             {attendanceData
-                 .filter(day => !day.isEmpty && !day.isWeekend && day.status !== 'Weekend' && day.date)
-                 .map((day, index) => (
-                   <tr key={index} className={day.isToday ? 'today-row' : ''}>
-                     <td>{day.date ? day.date.toLocaleDateString() : '-'}</td>
-                     <td>
-                       <span className={`status-badge ${getStatusColor(day.status)}`}>
-                         {day.status}
-                       </span>
-                     </td>
-                     <td>{day.checkIn || 'Not checked in'}</td>
-                     <td>{day.checkOut || 'Not checked out'}</td>
-                     <td>{day.hours > 0 ? `${day.hours}h` : '-'}</td>
-                   </tr>
-                 ))}
+              {attendanceData
+                .filter(day => !day.isEmpty && !day.isWeekend && day.status !== 'Weekend' && day.date)
+                .map((day, index) => (
+                  <tr key={index} className={day.isToday ? 'today-row' : ''}>
+                    <td>{day.date ? day.date.toLocaleDateString() : '-'}</td>
+                    <td>
+                      <span className={`status-badge ${getStatusColor(day.status, day.isHoliday)}`}>
+                        {day.isHoliday ? 'Holiday' : day.status}
+                      </span>
+                    </td>
+                    <td>{day.isHoliday ? 'Holiday' : (day.checkIn || 'Not checked in')}</td>
+                    <td>{day.isHoliday ? 'Holiday' : (day.checkOut || 'Not checked out')}</td>
+                    <td>{day.isHoliday ? 'Holiday' : (day.hours > 0 ? `${day.hours}h` : '-')}</td>
+                  </tr>
+                ))}
             </tbody>
           </table>
         </div>

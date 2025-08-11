@@ -33,6 +33,19 @@ router.post('/', async (req, res) => {
     const end = new Date(endDate);
     const days = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
 
+    // Validate leave balance before creating request
+    const employee = await Employee.findOne({ employeeId });
+    if (employee) {
+      const leaveTypeKey = leaveType.toLowerCase().replace(' ', '');
+      if (employee.leaveBalance[leaveTypeKey] && employee.leaveBalance[leaveTypeKey].remaining < days) {
+        return res.status(400).json({ 
+          message: 'Insufficient leave balance', 
+          available: employee.leaveBalance[leaveTypeKey].remaining,
+          requested: days
+        });
+      }
+    }
+
     const leaveRequest = new LeaveRequest({
       employeeId,
       employeeName,
@@ -44,8 +57,11 @@ router.post('/', async (req, res) => {
     });
 
     const savedRequest = await leaveRequest.save();
+    console.log('Leave request saved to MongoDB:', savedRequest);
+    
     res.status(201).json(savedRequest);
   } catch (error) {
+    console.error('Error creating leave request:', error);
     res.status(400).json({ message: 'Error creating leave request', error: error.message });
   }
 });
@@ -73,6 +89,7 @@ router.post('/admin/create', async (req, res) => {
     });
 
     const savedRequest = await leaveRequest.save();
+    console.log('Admin leave request saved to MongoDB:', savedRequest);
 
     // Update employee's leave balance if approved
     if (status === 'Approved') {
@@ -84,12 +101,14 @@ router.post('/admin/create', async (req, res) => {
           employee.leaveBalance[leaveTypeKey].remaining = 
             employee.leaveBalance[leaveTypeKey].total - employee.leaveBalance[leaveTypeKey].used;
           await employee.save();
+          console.log('Employee leave balance updated in MongoDB for:', employee.name);
         }
       }
     }
 
     res.status(201).json(savedRequest);
   } catch (error) {
+    console.error('Error creating admin leave request:', error);
     res.status(400).json({ message: 'Error creating leave request', error: error.message });
   }
 });
@@ -177,22 +196,58 @@ router.patch('/:id/status', async (req, res) => {
       return res.status(404).json({ message: 'Leave request not found' });
     }
 
+    console.log('Leave request status updated in MongoDB:', {
+      id: leaveRequest._id,
+      employeeId: leaveRequest.employeeId,
+      status: status,
+      previousStatus: leaveRequest.status
+    });
+
     // Update employee's leave balance if status changed to approved
     if (status === 'Approved') {
       const employee = await Employee.findOne({ employeeId: leaveRequest.employeeId });
       if (employee) {
         const leaveTypeKey = leaveRequest.leaveType.toLowerCase().replace(' ', '');
         if (employee.leaveBalance[leaveTypeKey]) {
-          employee.leaveBalance[leaveTypeKey].used += leaveRequest.days;
+          // Check if this request was previously approved to avoid double counting
+          const previousStatus = leaveRequest.status;
+          if (previousStatus !== 'Approved') {
+            employee.leaveBalance[leaveTypeKey].used += leaveRequest.days;
+            employee.leaveBalance[leaveTypeKey].remaining = 
+              employee.leaveBalance[leaveTypeKey].total - employee.leaveBalance[leaveTypeKey].used;
+            await employee.save();
+            console.log('Employee leave balance updated in MongoDB for:', employee.name, {
+              leaveType: leaveRequest.leaveType,
+              daysUsed: leaveRequest.days,
+              newBalance: employee.leaveBalance[leaveTypeKey]
+            });
+          }
+        }
+      }
+    }
+
+    // If status changed from approved to rejected/pending, restore leave balance
+    if (leaveRequest.status === 'Approved' && status !== 'Approved') {
+      const employee = await Employee.findOne({ employeeId: leaveRequest.employeeId });
+      if (employee) {
+        const leaveTypeKey = leaveRequest.leaveType.toLowerCase().replace(' ', '');
+        if (employee.leaveBalance[leaveTypeKey]) {
+          employee.leaveBalance[leaveTypeKey].used -= leaveRequest.days;
           employee.leaveBalance[leaveTypeKey].remaining = 
             employee.leaveBalance[leaveTypeKey].total - employee.leaveBalance[leaveTypeKey].used;
           await employee.save();
+          console.log('Employee leave balance restored in MongoDB for:', employee.name, {
+            leaveType: leaveRequest.leaveType,
+            daysRestored: leaveRequest.days,
+            newBalance: employee.leaveBalance[leaveTypeKey]
+          });
         }
       }
     }
     
     res.json(leaveRequest);
   } catch (error) {
+    console.error('Error updating leave request status:', error);
     res.status(400).json({ message: 'Error updating leave request', error: error.message });
   }
 });

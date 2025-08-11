@@ -63,6 +63,40 @@
   padding-bottom: 10px;
 }
 
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 500;
+  color: #333;
+}
+
+.form-group input,
+.form-group select {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 14px;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
 .leave-types {
   margin-top: 20px;
 }
@@ -77,6 +111,76 @@
 
 .leave-type-item .form-row {
   align-items: end;
+}
+
+/* Company Holidays Styles */
+.holiday-info {
+  background: #e8f5e8;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+  border: 1px solid #c3e6c3;
+}
+
+.holiday-info p {
+  margin: 0 0 15px 0;
+  color: #2d5a2d;
+  font-size: 14px;
+}
+
+.holiday-types {
+  margin-top: 20px;
+}
+
+.holiday-item {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 15px;
+  border: 1px solid #e9ecef;
+  position: relative;
+}
+
+.holiday-item.public {
+  border-left: 4px solid #28a745;
+}
+
+.holiday-item.company {
+  border-left: 4px solid #007bff;
+}
+
+.holiday-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.holiday-type-badge {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.holiday-type-badge.public {
+  background: #d4edda;
+  color: #155724;
+}
+
+.holiday-type-badge.company {
+  background: #cce7ff;
+  color: #004085;
+}
+
+.holiday-item .form-row {
+  align-items: end;
+  margin-bottom: 15px;
+}
+
+.holiday-item .form-group {
+  margin-bottom: 15px;
 }
 
 .notification-options {
@@ -150,5 +254,15 @@
   
   .leave-type-item .form-row {
     grid-template-columns: 1fr;
+  }
+  
+  .holiday-item .form-row {
+    grid-template-columns: 1fr;
+  }
+  
+  .holiday-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
   }
 } 

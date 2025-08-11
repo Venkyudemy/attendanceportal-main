@@ -1,87 +1,61 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import './AttendanceDetails.css';
 
 const AttendanceDetails = ({ currentUser }) => {
   const [attendanceData, setAttendanceData] = useState([]);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [loading, setLoading] = useState(true);
+  const [monthStats, setMonthStats] = useState({ present: 0, late: 0, absent: 0, totalHours: 0 });
+  const location = useLocation();
 
-  // Mock data for demonstration
+  // Fetch real attendance data from backend
   useEffect(() => {
-    const generateMonthlyData = () => {
-      const year = currentMonth.getFullYear();
-      const month = currentMonth.getMonth();
-      const daysInMonth = new Date(year, month + 1, 0).getDate();
-      const firstDayOfMonth = new Date(year, month, 1);
-      const startingDayOfWeek = firstDayOfMonth.getDay(); // 0 = Sunday, 1 = Monday, etc.
-      const data = [];
-
-      // Add empty cells for days before the first day of the month
-      for (let i = 0; i < startingDayOfWeek; i++) {
-        data.push({
-          date: null,
-          day: '',
-          dayName: '',
-          status: 'empty',
-          checkIn: null,
-          checkOut: null,
-          hours: 0,
-          isToday: false
-        });
-      }
-
-      // Add all days of the month
-      for (let day = 1; day <= daysInMonth; day++) {
-        const date = new Date(year, month, day);
-        const isWeekend = date.getDay() === 0 || date.getDay() === 6;
-        const isToday = date.toDateString() === new Date().toDateString();
+    const fetchAttendanceData = async () => {
+      try {
+        setLoading(true);
         
-        // Generate random attendance data
-        const random = Math.random();
-        let status, checkIn, checkOut, hours;
+        // Get employee ID from currentUser or location state
+        let employeeId = currentUser?.id;
+        if (!employeeId && currentUser?.email) {
+          // Try to find employee by email if ID doesn't work
+          const findResponse = await fetch(`http://localhost:5000/api/employee/find-by-email/${encodeURIComponent(currentUser.email)}`);
+          if (findResponse.ok) {
+            const employeeData = await findResponse.json();
+            employeeId = employeeData._id;
+          }
+        }
         
-        if (isWeekend) {
-          status = 'Weekend';
-          checkIn = null;
-          checkOut = null;
-          hours = 0;
-        } else if (random < 0.1) {
-          status = 'Absent';
-          checkIn = null;
-          checkOut = null;
-          hours = 0;
-        } else if (random < 0.2) {
-          status = 'Late';
-          checkIn = '09:45 AM';
-          checkOut = '05:30 PM';
-          hours = 7.75;
-        } else {
-          status = 'Present';
-          checkIn = '09:00 AM';
-          checkOut = '05:30 PM';
-          hours = 8.5;
+        if (!employeeId) {
+          console.error('No employee ID found');
+          setLoading(false);
+          return;
         }
 
-        data.push({
-          date: date,
-          day: day,
-          dayName: date.toLocaleDateString('en-US', { weekday: 'short' }),
-          status,
-          checkIn,
-          checkOut,
-          hours,
-          isToday
-        });
+        const month = currentMonth.getMonth() + 1;
+        const year = currentMonth.getFullYear();
+        
+        const response = await fetch(`http://localhost:5000/api/employee/${employeeId}/attendance-details?month=${month}&year=${year}`);
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch attendance data');
+        }
+        
+        const data = await response.json();
+        setAttendanceData(data.calendarData);
+        setMonthStats(data.monthStats);
+        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching attendance data:', error);
+        setLoading(false);
       }
-
-      setAttendanceData(data);
-      setLoading(false);
     };
 
-    generateMonthlyData();
-  }, [currentMonth]);
+    fetchAttendanceData();
+  }, [currentMonth, currentUser]);
 
   const getStatusColor = (status) => {
+    if (!status) return 'secondary';
     switch (status) {
       case 'Present': return 'success';
       case 'Late': return 'warning';
@@ -92,12 +66,7 @@ const AttendanceDetails = ({ currentUser }) => {
   };
 
   const getMonthStats = () => {
-    const present = attendanceData.filter(d => d.status === 'Present').length;
-    const late = attendanceData.filter(d => d.status === 'Late').length;
-    const absent = attendanceData.filter(d => d.status === 'Absent').length;
-    const totalHours = attendanceData.reduce((sum, d) => sum + d.hours, 0);
-    
-    return { present, late, absent, totalHours };
+    return monthStats;
   };
 
   const changeMonth = (direction) => {
@@ -189,10 +158,10 @@ const AttendanceDetails = ({ currentUser }) => {
            {attendanceData.map((day, index) => (
              <div 
                key={index} 
-               className={`calendar-day ${day.isToday ? 'today' : ''} ${day.status.toLowerCase()}`}
+               className={`calendar-day ${day.isToday ? 'today' : ''} ${day.status && day.status !== 'empty' ? day.status.toLowerCase() : 'empty'}`}
              >
-               <div className="day-number">{day.day}</div>
-               {day.status !== 'empty' && (
+               <div className="day-number">{day.day || ''}</div>
+               {day.status && day.status !== 'empty' && (
                  <>
                    <div className="day-status">
                      <span className={`status-badge ${getStatusColor(day.status)}`}>
@@ -232,7 +201,7 @@ const AttendanceDetails = ({ currentUser }) => {
                  .filter(day => day.status !== 'Weekend' && day.status !== 'empty' && day.date)
                  .map((day, index) => (
                  <tr key={index} className={day.isToday ? 'today-row' : ''}>
-                   <td>{day.date ? day.date.toLocaleDateString() : '-'}</td>
+                   <td>{day.date && day.date instanceof Date ? day.date.toLocaleDateString() : '-'}</td>
                    <td>{day.dayName}</td>
                    <td>
                      <span className={`status-badge ${getStatusColor(day.status)}`}>
