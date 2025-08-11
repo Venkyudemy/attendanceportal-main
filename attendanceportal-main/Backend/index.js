@@ -9,6 +9,7 @@ const PORT = process.env.PORT || 5000;
 const authRoutes = require('./routes/auth');
 const leaveRoutes = require('./routes/leave');
 const employeeRoutes = require('./routes/employee');
+const healthRoutes = require('./routes/health');
 
 // Middleware
 app.use(cors());
@@ -18,6 +19,7 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/leave', leaveRoutes);
 app.use('/api/employee', employeeRoutes);
+app.use('/api', healthRoutes);
 
 // Root route
 app.get('/', (req, res) => {

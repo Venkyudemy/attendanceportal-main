@@ -1,0 +1,602 @@
+.employee-attendance-view {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+  min-height: 100vh;
+  background: #f8f9fa;
+}
+
+.page-header {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.back-btn {
+  background: #6c757d;
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s;
+}
+
+.back-btn:hover {
+  background: #5a6268;
+}
+
+.employee-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+}
+
+.employee-avatar {
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.employee-details {
+  flex: 1;
+}
+
+.page-title {
+  margin: 0 0 4px 0;
+  font-size: 28px;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.employee-subtitle {
+  margin: 0;
+  color: #6c757d;
+  font-size: 16px;
+}
+
+.attendance-overview {
+  margin-bottom: 24px;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+}
+
+.stat-card.success {
+  border-left: 4px solid #28a745;
+}
+
+.stat-card.warning {
+  border-left: 4px solid #ffc107;
+}
+
+.stat-card.danger {
+  border-left: 4px solid #dc3545;
+}
+
+.stat-card.info {
+  border-left: 4px solid #17a2b8;
+}
+
+.stat-card.holiday {
+  background: linear-gradient(135deg, #ff8c42 0%, #ff6b35 100%);
+  color: white;
+}
+
+.stat-number {
+  font-size: 32px;
+  font-weight: bold;
+  color: #2c3e50;
+  margin-bottom: 8px;
+}
+
+.stat-label {
+  font-size: 14px;
+  color: #6c757d;
+  font-weight: 500;
+}
+
+.attendance-calendar {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.calendar-header h2 {
+  margin: 0;
+  font-size: 20px;
+  color: #2c3e50;
+}
+
+.month-navigation {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.nav-btn {
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.3s;
+}
+
+.nav-btn:hover {
+  background: #e9ecef;
+}
+
+.current-month {
+  font-weight: 600;
+  color: #2c3e50;
+  min-width: 120px;
+  text-align: center;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+  background: #f8f9fa;
+  padding: 16px;
+  border-radius: 8px;
+}
+
+.calendar-header-row {
+  display: contents;
+}
+
+.calendar-header-row > div {
+  text-align: center;
+  font-weight: 600;
+  color: #6c757d;
+  padding: 8px;
+  font-size: 14px;
+}
+
+.calendar-day {
+  aspect-ratio: 1;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  background: white;
+  transition: all 0.3s;
+  min-height: 60px;
+}
+
+.calendar-day.empty {
+  background: transparent;
+  border: none;
+}
+
+.empty-day {
+  width: 100%;
+  height: 100%;
+}
+
+.calendar-day:hover {
+  background: #f8f9fa;
+  transform: scale(1.05);
+}
+
+.calendar-day.weekend {
+  background: #f8f9fa;
+  color: #6c757d;
+}
+
+.calendar-day.today {
+  border-color: #007bff;
+  background: #e3f2fd;
+}
+
+.calendar-day.holiday {
+  background: linear-gradient(135deg, #ff8c42 0%, #ff6b35 100%);
+  color: white;
+  position: relative;
+}
+
+.calendar-day.holiday .day-number {
+  color: white;
+  font-weight: 600;
+}
+
+.holiday-indicator {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 5px;
+}
+
+.holiday-text {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.holiday-tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #333;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+  z-index: 1000;
+  margin-bottom: 5px;
+}
+
+.holiday-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: #333;
+}
+
+.holiday-indicator:hover .holiday-tooltip {
+  opacity: 1;
+  visibility: visible;
+}
+
+.day-number {
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.status-indicator {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: bold;
+  color: white;
+}
+
+.status-indicator.success {
+  background: #28a745;
+}
+
+.status-indicator.warning {
+  background: #ffc107;
+  color: #212529;
+}
+
+.status-indicator.danger {
+  background: #dc3545;
+}
+
+.status-indicator.info {
+  background: #17a2b8;
+}
+
+.status-indicator.secondary {
+  background: #6c757d;
+}
+
+.status-badge {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.status-badge.success {
+  background: #d4edda;
+  color: #155724;
+}
+
+.status-badge.warning {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.status-badge.danger {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.status-badge.info {
+  background: #d1ecf1;
+  color: #0c5460;
+}
+
+.status-badge.holiday {
+  background: linear-gradient(135deg, #ff8c42 0%, #ff6b35 100%);
+  color: white;
+  font-weight: 600;
+}
+
+.attendance-details {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.attendance-details h2 {
+  margin: 0 0 20px 0;
+  font-size: 20px;
+  color: #2c3e50;
+}
+
+.attendance-table {
+  overflow-x: auto;
+}
+
+.attendance-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.attendance-table th {
+  background: #f8f9fa;
+  padding: 12px;
+  text-align: left;
+  font-weight: 600;
+  color: #2c3e50;
+  border-bottom: 2px solid #dee2e6;
+}
+
+.attendance-table td {
+  padding: 12px;
+  border-bottom: 1px solid #e9ecef;
+  vertical-align: middle;
+}
+
+.attendance-table tr:hover {
+  background: #f8f9fa;
+}
+
+.today-row {
+  background: #e3f2fd !important;
+}
+
+.calendar-day.holiday .status-indicator {
+  display: none;
+}
+
+.loading-container,
+.error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  text-align: center;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #007bff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.error-message {
+  color: #dc3545;
+  margin-bottom: 16px;
+}
+
+.btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s;
+}
+
+.btn-primary {
+  background: #007bff;
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #0056b3;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .employee-attendance-view {
+    padding: 16px;
+  }
+
+  .page-header {
+    padding: 16px;
+  }
+
+  .header-content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .employee-info {
+    width: 100%;
+  }
+
+  .page-title {
+    font-size: 24px;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .stat-card {
+    padding: 16px;
+  }
+
+  .stat-number {
+    font-size: 24px;
+  }
+
+  .calendar-header {
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .calendar-grid {
+    gap: 2px;
+  }
+
+  .calendar-day {
+    padding: 4px;
+    min-height: 50px;
+  }
+
+  .day-number {
+    font-size: 12px;
+  }
+
+  .status-indicator {
+    width: 16px;
+    height: 16px;
+    font-size: 8px;
+  }
+
+  .attendance-table {
+    font-size: 12px;
+  }
+
+  .attendance-table th,
+  .attendance-table td {
+    padding: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .calendar-grid {
+    grid-template-columns: repeat(7, 1fr);
+    gap: 1px;
+  }
+
+  .calendar-day {
+    aspect-ratio: 1;
+    min-height: 35px;
+    padding: 2px;
+  }
+
+  .day-number {
+    font-size: 10px;
+  }
+
+  .status-indicator {
+    width: 12px;
+    height: 12px;
+    font-size: 6px;
+  }
+
+  .calendar-header-row > div {
+    font-size: 10px;
+    padding: 4px;
+  }
+}
+
+@media (max-width: 360px) {
+  .calendar-day {
+    min-height: 30px;
+  }
+
+  .day-number {
+    font-size: 8px;
+  }
+
+  .status-indicator {
+    width: 10px;
+    height: 10px;
+    font-size: 5px;
+  }
+
+  .calendar-header-row > div {
+    font-size: 8px;
+    padding: 2px;
+  }
+} 

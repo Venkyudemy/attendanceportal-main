@@ -1,19 +1,19 @@
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
-import Sidebar from './components/Sidebar';
-import Dashboard from './components/Dashboard';
-import EmployeeManagement from './components/EmployeeManagement';
-import AdminPortal from './components/AdminPortal';
-import AdminLeaveManagement from './components/AdminLeaveManagement';
-import EmployeeDetails from './components/EmployeeDetails';
-import LeaveManagement from './components/LeaveManagement';
-import Settings from './components/Settings';
-import EmployeePortal from './components/EmployeePortal';
-import AttendanceDetails from './components/AttendanceDetails';
-import Profile from './components/Profile';
-import Login from './components/Login';
-import EmployeeAttendanceView from './components/EmployeeAttendanceView';
+import Sidebar from './components/shared/Sidebar';
+import Dashboard from './components/shared/Dashboard';
+import EmployeeManagement from './components/employee/EmployeeManagement';
+import AdminPortal from './components/admin/AdminPortal';
+import AdminLeaveManagement from './components/admin/AdminLeaveManagement';
+import EmployeeDetails from './components/employee/EmployeeDetails';
+import LeaveManagement from './components/shared/LeaveManagement';
+import Settings from './components/shared/Settings';
+import EmployeePortal from './components/employee/EmployeePortal';
+import AttendanceDetails from './components/shared/AttendanceDetails';
+import Profile from './components/shared/Profile';
+import Login from './components/shared/Login';
+import EmployeeAttendanceView from './components/employee/EmployeeAttendanceView';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);

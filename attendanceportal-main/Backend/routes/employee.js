@@ -702,10 +702,10 @@ router.post('/:id/check-in', async (req, res) => {
     }
 
     // Update weekly summary counts
-    if (status === 'Present') {
-      weeklySummary.present++;
-    } else if (status === 'Late') {
-      weeklySummary.late++;
+        if (status === 'Present') {
+          weeklySummary.present++;
+        } else if (status === 'Late') {
+          weeklySummary.late++;
     }
 
     // Update monthly summary
@@ -724,10 +724,10 @@ router.post('/:id/check-in', async (req, res) => {
     }
 
     // Update monthly summary counts
-    if (status === 'Present') {
-      monthlySummary.present++;
-    } else if (status === 'Late') {
-      monthlySummary.late++;
+        if (status === 'Present') {
+          monthlySummary.present++;
+        } else if (status === 'Late') {
+          monthlySummary.late++;
     }
 
     // Save the updated employee data
