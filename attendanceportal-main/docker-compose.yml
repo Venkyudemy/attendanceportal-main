@@ -14,12 +14,6 @@ services:
       - mongodb_data:/data/db
     networks:
       - attendance-network
-    healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
 
   # Backend API Service
   backend:
@@ -39,12 +33,6 @@ services:
       - mongodb
     networks:
       - attendance-network
-    healthcheck:
-      test: ["CMD", "node", "healthcheck.js"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
 
   # Frontend Service
   frontend:
@@ -61,8 +49,6 @@ services:
       - backend
     networks:
       - attendance-network
-    environment:
-      - REACT_APP_API_URL=http://backend:5000
 
 volumes:
   mongodb_data:
