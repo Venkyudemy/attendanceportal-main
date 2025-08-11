@@ -12,9 +12,14 @@ services:
       - "27017:27017"
     volumes:
       - mongodb_data:/data/db
-      - ./Backend/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
     networks:
       - attendance-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   # Backend API Service
   backend:
@@ -31,8 +36,7 @@ services:
     ports:
       - "5000:5000"
     depends_on:
-      mongodb:
-        condition: service_healthy
+      - mongodb
     networks:
       - attendance-network
     healthcheck:
