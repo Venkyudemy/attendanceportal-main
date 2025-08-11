@@ -27,7 +27,7 @@ app.get('/', (req, res) => {
 });
 
 // MongoDB Connection
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/attendance_portal';
+const MONGO_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/attendance_portal';
 
 mongoose.connect(MONGO_URI, { 
   useNewUrlParser: true, 
