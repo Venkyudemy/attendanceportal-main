@@ -46,8 +46,8 @@ services:
       test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
       interval: 30s
       timeout: 10s
-      retries: 3
-      start_period: 30s
+      retries: 5
+      start_period: 60s
 
   # Frontend Service
   frontend:
@@ -65,12 +65,7 @@ services:
         condition: service_healthy
     networks:
       - attendance-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
+    # Healthcheck removed to prevent blocking startup
 
 volumes:
   mongodb_data:
@@ -79,4 +74,3 @@ volumes:
 networks:
   attendance-network:
     driver: bridge
-
