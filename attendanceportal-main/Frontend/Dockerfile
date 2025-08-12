@@ -24,8 +24,10 @@ RUN npm run build && npm prune --production
 # Production stage with nginx
 FROM nginx:alpine
 
-# Install curl for health checks and create non-root user
-RUN apk add --no-cache curl && \
+# Update Alpine repositories and install curl for health checks
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.edge.kernel.org/g' /etc/apk/repositories && \
+    apk update && \
+    apk add --no-cache curl && \
     addgroup -g 1001 -S nginx && \
     adduser -S -D -H -u 1001 -h /var/cache/nginx -s /sbin/nologin -G nginx -g nginx nginx
 

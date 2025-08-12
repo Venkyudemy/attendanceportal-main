@@ -53,7 +53,7 @@ services:
   frontend:
     build:
       context: ./Frontend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.simple
     container_name: attendance-frontend
     restart: unless-stopped
     environment:
