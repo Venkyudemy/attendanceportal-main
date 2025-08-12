@@ -39,10 +39,18 @@ function App() {
 
   return (
     <Router>
+      <MobileMenu currentUser={currentUser} onLogout={handleLogout} />
       <div className="app">
         <Sidebar currentUser={currentUser} onLogout={handleLogout} isAdmin={isAdmin} />
-        <MobileMenu currentUser={currentUser} onLogout={handleLogout} />
         <div className="main-content">
+          {/* Mobile Menu Toggle Button */}
+          <button 
+            className="mobile-menu-toggle" 
+            onClick={() => window.toggleMobileMenu?.()}
+            aria-label="Toggle mobile menu"
+          >
+            ☰
+          </button>
           <Routes>
             {isAdmin ? (
               // Admin routes

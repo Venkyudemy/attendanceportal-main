@@ -4,7 +4,7 @@ const Employee = require('../models/Employee');
 const bcrypt = require('bcryptjs');
 
 // MongoDB connection
-const MONGO_URI = process.env.MONGODB_URI || 'mongodb://admin:password123@localhost:27017/attendanceportal?authSource=admin';
+const MONGO_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/attendance_portal';
 
 // Helper function to get week start date
 function getWeekStart(date) {

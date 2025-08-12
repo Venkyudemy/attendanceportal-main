@@ -11,7 +11,8 @@ const getApiBaseUrl = () => {
     return '/api';
   }
   
-  // Development fallback
+  // Development fallback - always use localhost:5000 for development
+  console.log('Using development API URL: http://localhost:5000/api');
   return 'http://localhost:5000/api';
 };
 
@@ -25,6 +26,10 @@ const apiCall = async (endpoint, options = {}) => {
     `http://127.0.0.1:5000/api${endpoint}`   // Another fallback
   ];
 
+  console.log('API_BASE_URL:', API_BASE_URL);
+  console.log('Endpoint:', endpoint);
+  console.log('Full URLs to try:', urls);
+
   for (const url of urls) {
     try {
       console.log(`Trying API call to: ${url}`);
@@ -36,20 +41,28 @@ const apiCall = async (endpoint, options = {}) => {
         ...options,
       });
       
+      console.log(`Response status: ${response.status}`);
+      console.log(`Response headers:`, response.headers);
+      
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       
-      return response.json();
+      const data = await response.json();
+      console.log('API call successful:', data);
+      return data;
     } catch (error) {
       console.error(`API call failed for ${url}:`, error);
+      console.error('Error details:', error.message);
       // Continue to next URL if this one fails
       continue;
     }
   }
   
   // If all URLs fail, throw error
-  throw new Error('Failed to fetch. Please check if the backend server is running.');
+  const errorMsg = 'Failed to fetch. Please check if the backend server is running.';
+  console.error(errorMsg);
+  throw new Error(errorMsg);
 };
 
 // Auth API calls

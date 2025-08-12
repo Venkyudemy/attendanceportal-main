@@ -1,312 +1,239 @@
-# 🏢 Attendance Portal - Complete Management System
+# 🚀 Attendance Portal - Full Stack Application
 
-A modern, responsive attendance management system built with **React Frontend** and **Node.js Backend**, featuring comprehensive employee attendance tracking, leave management, and administrative features.
+A modern, responsive attendance management system built with React, Node.js, Express, and MongoDB.
 
-## 🏗️ **Project Architecture**
+## ✨ Features
 
-```
-attendanceportal-main/
-├── 🎨 Frontend/           # React Application
-│   ├── 📁 components/     # React Components
-│   ├── 📁 services/       # API Services
-│   ├── 📁 styles/         # CSS & Styling
-│   └── 📁 docker/         # Frontend Docker
-├── 🔧 Backend/            # Node.js API Server
-│   ├── 📁 models/         # Database Models
-│   ├── 📁 routes/         # API Routes
-│   ├── 📁 tests/          # Test Files
-│   ├── 📁 scripts/        # Utility Scripts
-│   └── 📁 docker/         # Backend Docker
-├── 🐳 docker-compose.yml  # Complete Stack
-├── 📚 Documentation/      # Project Docs
-└── 🚀 Deployment/         # Deployment Scripts
-```
+- **🔐 User Authentication** - Secure login with JWT tokens
+- **👥 Employee Management** - Complete employee lifecycle management
+- **📊 Attendance Tracking** - Real-time attendance monitoring
+- **📅 Leave Management** - Comprehensive leave request system
+- **📱 Responsive Design** - Works on desktop, tablet, and mobile
+- **🔒 Role-Based Access** - Admin and employee permissions
+- **📈 Analytics Dashboard** - Attendance statistics and reports
+- **⚡ Performance Optimized** - Fast loading and smooth interactions
 
-## ✨ **Key Features**
+## 🏗️ Tech Stack
 
-### 🎯 **Employee Portal**
-- ✅ Real-time check-in/check-out
-- ✅ Attendance calendar view
-- ✅ Weekly/monthly summaries
-- ✅ Leave request submission
-- ✅ Personal dashboard
+### Frontend
+- **React 18** - Modern UI framework
+- **CSS3** - Responsive design with media queries
+- **Nginx** - Production web server
 
-### 👨‍💼 **Admin Portal**
-- ✅ Employee management
-- ✅ Leave approval system
-- ✅ Attendance monitoring
-- ✅ Recent activities feed
-- ✅ Data integrity verification
+### Backend
+- **Node.js 18** - Server runtime
+- **Express.js** - Web framework
+- **MongoDB** - NoSQL database
+- **JWT** - Authentication tokens
+- **Bcrypt** - Password hashing
 
-### 📊 **Dashboard & Analytics**
-- ✅ Real-time statistics
-- ✅ Interactive charts
-- ✅ Attendance tracking
-- ✅ Performance metrics
+### DevOps
+- **Docker** - Containerization
+- **Docker Compose** - Multi-container orchestration
+- **Health Checks** - Service monitoring
+- **Production Optimizations** - Performance tuning
 
-### 🔐 **Security & Authentication**
-- ✅ JWT-based authentication
-- ✅ Role-based access control
-- ✅ Secure API endpoints
-- ✅ Input validation
+## 🚀 Quick Start
 
-## 🚀 **Quick Start**
-
-### **Prerequisites**
+### Prerequisites
 - Node.js 18+
 - MongoDB 6.0+
-- Docker (optional)
-- npm or yarn
+- Docker & Docker Compose (optional)
 
-### **1. Clone Repository**
+### Option 1: Local Development
 ```bash
-git clone <your-repo-url>
-cd attendanceportal-main
+# Clone the repository
+git clone https://github.com/yourusername/attendanceportal.git
+cd attendanceportal
+
+# Start services using batch scripts
+.\start-services.bat          # Basic startup
+.\start-production.bat        # Production mode
+.\fix-connection.bat          # Troubleshooting
 ```
 
-### **2. Backend Setup**
+### Option 2: Docker Deployment
 ```bash
-cd Backend
-npm install
-npm start
+# Build and run with Docker Compose
+docker-compose up -d --build
+
+# Access the application
+Frontend: http://localhost:80
+Backend: http://localhost:5000
+API Health: http://localhost:5000/api/health
 ```
 
-### **3. Frontend Setup**
-```bash
-cd Frontend
-npm install
-npm start
+## 📁 Project Structure
+
+```
+attendanceportal/
+├── 📁 Frontend/              # React application
+│   ├── 📁 public/            # Static assets
+│   ├── 📁 src/               # Source code
+│   └── Dockerfile            # Frontend container
+├── 📁 Backend/               # Node.js API server
+│   ├── 📁 config/            # Configuration files
+│   ├── 📁 models/            # Database models
+│   ├── 📁 routes/            # API endpoints
+│   ├── 📁 scripts/           # Database scripts
+│   └── Dockerfile            # Backend container
+├── 📁 tests/                 # Test files
+├── docker-compose.yml        # Multi-container setup
+├── .dockerignore             # Docker build exclusions
+└── 📋 Documentation          # Guides and instructions
 ```
 
-### **4. Access Application**
-- **Frontend:** http://localhost:3000
-- **Backend:** http://localhost:5000
-- **MongoDB:** localhost:27017
+## 🔐 Default Credentials
 
-## 🐳 **Docker Deployment**
+### Admin User
+- **Email**: `admin@company.com`
+- **Password**: `admin123`
 
-### **Complete Stack**
-```bash
-# Start all services
-docker-compose up -d
+### Test Employee
+- **Email**: `venkatesh111@gmail.com`
+- **Password**: `password123`
 
-# View logs
-docker-compose logs -f
+## 🌐 API Endpoints
 
-# Stop services
-docker-compose down
-```
-
-### **Individual Services**
-```bash
-# Backend only
-cd Backend
-docker build -t attendance-backend .
-docker run -p 5000:5000 attendance-backend
-
-# Frontend only
-cd Frontend
-docker build -t attendance-frontend .
-docker run -p 80:80 attendance-frontend
-```
-
-## 📱 **Responsive Design**
-
-### **Breakpoints**
-- 📱 **Mobile:** 320px - 767px
-- 📱 **Tablet:** 768px - 1023px
-- 💻 **Desktop:** 1024px - 1439px
-- 🖥️ **Large Desktop:** 1440px+
-
-### **Features**
-- ✅ Mobile-first approach
-- ✅ Touch-friendly interfaces
-- ✅ Adaptive layouts
-- ✅ Consistent spacing
-- ✅ Optimized navigation
-
-## 🔧 **Technology Stack**
-
-### **Frontend**
-- **React 18** - UI Framework
-- **React Router 6** - Navigation
-- **CSS3** - Styling & Responsiveness
-- **Axios** - HTTP Client
-
-### **Backend**
-- **Node.js** - Runtime Environment
-- **Express.js** - Web Framework
-- **MongoDB** - Database
-- **Mongoose** - ODM
-- **JWT** - Authentication
-
-### **DevOps**
-- **Docker** - Containerization
-- **Docker Compose** - Multi-service
-- **Nginx** - Web Server
-- **MongoDB** - Database
-
-## 📊 **API Endpoints**
-
-### **Authentication**
+### Authentication
 - `POST /api/auth/login` - User login
 - `POST /api/auth/register` - User registration
 
-### **Employee Management**
-- `GET /api/employee/:id/portal-data` - Dashboard data
-- `POST /api/employee/:id/check-in` - Check-in
-- `POST /api/employee/:id/check-out` - Check-out
-- `GET /api/employee/:id/attendance-details` - Calendar
+### Employee Management
+- `GET /api/employee/stats` - Employee statistics
+- `GET /api/employee/attendance` - Attendance records
+- `POST /api/employee/checkin` - Check-in
+- `POST /api/employee/checkout` - Check-out
 
-### **Admin Features**
-- `GET /api/employee/admin/recent-activities` - Recent activities
-- `GET /api/employee/admin/verify-data-integrity` - Data check
+### Leave Management
+- `GET /api/leave` - Leave requests
+- `POST /api/leave` - Create leave request
+- `PUT /api/leave/:id` - Update leave request
 
-### **Leave Management**
-- `GET /api/leave` - Get leave requests
-- `POST /api/leave` - Create request
-- `PUT /api/leave/:id` - Update request
+### Health Check
+- `GET /api/health` - Service health status
 
-## 🧪 **Testing**
+## 🐳 Docker Configuration
 
-### **Backend Tests**
+### Frontend Container
+- **Base**: Node.js 18 Alpine + Nginx
+- **Port**: 80
+- **Features**: Multi-stage build, security hardening, health checks
+
+### Backend Container
+- **Base**: Node.js 18 Alpine
+- **Port**: 5000
+- **Features**: Multi-stage build, production optimizations, memory management
+
+### MongoDB Container
+- **Base**: MongoDB 6.0
+- **Port**: 27017
+- **Features**: Persistent storage, health monitoring, initialization scripts
+
+## ⚡ Performance Features
+
+- **Gzip Compression** - Faster data transfer
+- **Database Connection Pooling** - Optimized database connections
+- **Memory Optimization** - 2GB heap for backend
+- **Rate Limiting** - 100 requests per 15 minutes per IP
+- **Caching Headers** - Browser caching optimization
+- **Code Splitting** - Lazy loading for better performance
+
+## 🔒 Security Features
+
+- **JWT Authentication** - Secure token-based auth
+- **Password Hashing** - Bcrypt with 12 rounds
+- **CORS Protection** - Configurable origin policies
+- **Rate Limiting** - DDoS protection
+- **Non-root Containers** - Security hardening
+- **Input Validation** - SQL injection prevention
+
+## 📱 Responsive Design
+
+- **Mobile First** - Optimized for mobile devices
+- **Hamburger Menu** - Touch-friendly navigation
+- **Flexible Grid** - Adapts to all screen sizes
+- **Touch Targets** - Proper button sizing for mobile
+
+## 🚨 Troubleshooting
+
+### Common Issues
+
+#### Connection Errors
 ```bash
-cd Backend
-node test-admin-api.js
-node test-employee-api.js
-node test-attendance-details.js
-node test-recent-activities.js
-node test-employee-data-storage.js
-```
-
-### **Frontend Tests**
-```bash
-cd Frontend
-npm test
-```
-
-## 📚 **Documentation**
-
-- 📖 [Backend Documentation](./Backend/README.md)
-- 🎨 [Frontend Documentation](./Frontend/README.md)
-- 🐳 [Docker Deployment](./docker-compose.yml)
-- 🔧 [API Reference](./Backend/README.md#api-endpoints)
-
-## 🌟 **Demo Credentials**
-
-### **Admin Access**
-- **Email:** admin@company.com
-- **Password:** admin123
-
-### **Employee Access**
-- **Email:** employee@company.com
-- **Password:** employee123
-
-## 🚨 **Troubleshooting**
-
-### **Common Issues**
-1. **Backend not starting** - Check MongoDB connection
-2. **Frontend build errors** - Clear node_modules and reinstall
-3. **Docker issues** - Ensure Docker is running
-4. **Port conflicts** - Check if ports 3000, 5000, 27017 are free
-
-### **Debug Commands**
-```bash
-# Check running processes
-netstat -ano | findstr :5000
-
-# Kill Node processes
+# Kill all Node processes
 taskkill /f /im node.exe
 
-# Docker logs
-docker-compose logs backend
-docker-compose logs frontend
+# Restart services
+.\fix-connection.bat
 ```
 
-## 🔄 **Development Workflow**
-
-### **1. Feature Development**
+#### Port Conflicts
 ```bash
-git checkout -b feature/new-feature
-# Make changes
-git add .
-git commit -m "Add new feature"
-git push origin feature/new-feature
+# Check port usage
+netstat -an | findstr :5000
+netstat -an | findstr :3000
+
+# Kill conflicting processes
+taskkill /f /PID <process_id>
 ```
 
-### **2. Testing**
+#### Database Issues
 ```bash
-# Backend tests
-cd Backend && npm test
+# Check MongoDB status
+curl http://localhost:5000/api/health
 
-# Frontend tests
-cd Frontend && npm test
-
-# Integration tests
-npm run test:integration
+# Run database scripts
+cd Backend/scripts
+node createAdmin.js
+node createTestUser.js
 ```
 
-### **3. Deployment**
-```bash
-# Build and deploy
-docker-compose up -d --build
+## 📊 Monitoring & Health Checks
 
-# Update environment
-docker-compose down
-docker-compose up -d
-```
+### Service Health
+- **Backend**: `http://localhost:5000/api/health`
+- **Frontend**: `http://localhost/health`
+- **MongoDB**: Container health monitoring
 
-## 📈 **Performance Optimization**
+### Performance Metrics
+- Response times
+- Memory usage
+- Database connections
+- Error rates
 
-### **Frontend**
-- Code splitting
-- Lazy loading
-- Memoization
-- Bundle optimization
+## 🚀 Deployment
 
-### **Backend**
-- Database indexing
-- Query optimization
-- Caching strategies
-- Load balancing
+### Local Network
+- **Frontend**: `http://YOUR_IP:80`
+- **Backend**: `http://YOUR_IP:5000`
 
-## 🔒 **Security Features**
+### Production
+- **Load Balancer**: Configure Nginx/Apache
+- **SSL**: Set up HTTPS certificates
+- **Domain**: Configure DNS routing
+- **Monitoring**: Set up application monitoring
 
-- JWT token authentication
-- Role-based access control
-- Input validation & sanitization
-- CORS configuration
-- Rate limiting
-- Secure headers
-
-## 🌐 **Browser Support**
-
-- ✅ Chrome (recommended)
-- ✅ Firefox
-- ✅ Safari
-- ✅ Edge
-- ✅ Mobile browsers
-
-## 🤝 **Contributing**
+## 🤝 Contributing
 
 1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-## 📄 **License**
+## 📄 License
 
-This project is open source and available under the MIT License.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 📞 Support
+
+- **Issues**: [GitHub Issues](https://github.com/yourusername/attendanceportal/issues)
+- **Documentation**: Check the `docs/` folder
+- **Email**: your-email@example.com
 
 ---
 
-## 🎯 **Next Steps**
+**🎉 Built with ❤️ for modern attendance management**
 
-1. **Set up environment variables**
-2. **Configure MongoDB connection**
-3. **Run the application**
-4. **Test all features**
-5. **Deploy to production**
-
-For detailed setup instructions, see the individual README files in each folder. 
+**⭐ Star this repository if you find it helpful!** 

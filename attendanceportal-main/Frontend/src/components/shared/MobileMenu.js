@@ -6,6 +6,14 @@ const MobileMenu = ({ currentUser, onLogout }) => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
 
+  // Expose toggle function globally for external control
+  React.useEffect(() => {
+    window.toggleMobileMenu = () => setIsOpen(!isOpen);
+    return () => {
+      delete window.toggleMobileMenu;
+    };
+  }, [isOpen]);
+
   const toggleMenu = () => {
     setIsOpen(!isOpen);
   };

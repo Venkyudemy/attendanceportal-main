@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
-const Employee = require('./models/Employee');
+const Employee = require('../models/Employee');
 
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/attendance_portal';
 
