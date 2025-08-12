@@ -11,13 +11,17 @@ const leaveRoutes = require('./routes/leave');
 const employeeRoutes = require('./routes/employee');
 const healthRoutes = require('./routes/health');
 
-// CORS configuration - Allow requests from frontend
-app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:80', 'http://localhost', 'http://127.0.0.1:3000', 'http://127.0.0.1:80', 'http://127.0.0.1'],
+// CORS configuration - More flexible for production
+const corsOptions = {
+  origin: process.env.NODE_ENV === 'production' 
+    ? true  // Allow all origins in production
+    : ['http://localhost:3000', 'http://localhost:80', 'http://localhost', 'http://127.0.0.1:3000', 'http://127.0.0.1:80', 'http://127.0.0.1'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
-}));
+};
+
+app.use(cors(corsOptions));
 
 // Middleware
 app.use(express.json());

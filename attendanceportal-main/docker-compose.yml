@@ -29,6 +29,7 @@ services:
       MONGODB_URI: mongodb://admin:password123@mongodb:27017/attendanceportal?authSource=admin
       PORT: 5000
       JWT_SECRET: your-super-secret-jwt-key-change-in-production
+    # Expose backend port for external access if needed
     ports:
       - "5000:5000"
     depends_on:
@@ -42,7 +43,7 @@ services:
       retries: 3
       start_period: 30s
 
-  # Frontend Service
+  # Frontend Service with Nginx
   frontend:
     build:
       context: ./Frontend
@@ -51,7 +52,7 @@ services:
     restart: unless-stopped
     environment:
       - NODE_ENV=production
-      - REACT_APP_API_URL=http://backend:5000/api
+      - REACT_APP_API_URL=/api
     ports:
       - "80:80"
     depends_on:

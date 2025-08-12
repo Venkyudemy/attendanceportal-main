@@ -1,9 +1,17 @@
 // Environment-aware API base URL with fallback
 const getApiBaseUrl = () => {
-  if (process.env.NODE_ENV === 'production') {
-    // Try Docker service name first, then fallback to localhost
-    return 'http://backend:5000/api';
+  // Check for REACT_APP_API_URL environment variable first
+  if (process.env.REACT_APP_API_URL) {
+    return process.env.REACT_APP_API_URL;
   }
+  
+  // Fallback based on environment
+  if (process.env.NODE_ENV === 'production') {
+    // In production, use relative path for Nginx proxy
+    return '/api';
+  }
+  
+  // Development fallback
   return 'http://localhost:5000/api';
 };
 
