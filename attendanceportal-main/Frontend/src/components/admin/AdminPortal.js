@@ -5,7 +5,7 @@ import {
   getAdminPresentEmployees, 
   getAdminLateEmployees, 
   getAdminAbsentEmployees, 
-  getAdminLeaveEmployees,
+  getAdminEmployeesOnLeave,
   calculatePayroll,
   exportPayroll
 } from '../../services/api';
@@ -88,7 +88,7 @@ const AdminPortal = () => {
             data = await getAdminAbsentEmployees();
             break;
           case 'leave':
-            data = await getAdminLeaveEmployees();
+            data = await getAdminEmployeesOnLeave();
             break;
           default:
             data = await getAdminTotalEmployees();

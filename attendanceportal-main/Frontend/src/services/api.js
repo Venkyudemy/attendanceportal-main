@@ -124,7 +124,7 @@ export const getAdminAbsentEmployees = async () => {
   return response.json();
 };
 
-export const getAdminLeaveEmployees = async () => {
+export const getAdminEmployeesOnLeave = async () => {
   const response = await fetch(`${API_BASE_URL}/employee/admin/leave`);
   return response.json();
 };
