@@ -1,5 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { 
+  getAdminTotalEmployees, 
+  getAdminPresentEmployees, 
+  getAdminLateEmployees, 
+  getAdminAbsentEmployees, 
+  getAdminLeaveEmployees,
+  calculatePayroll,
+  exportPayroll
+} from '../../services/api';
 import './AdminPortal.css';
 
 const AdminPortal = () => {
@@ -63,14 +72,29 @@ const AdminPortal = () => {
     const fetchEmployees = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`http://localhost:5000${currentFilter.endpoint}`);
+        let data;
         
-        if (!response.ok) {
-          throw new Error('Failed to fetch employees');
+        switch (filter) {
+          case 'total':
+            data = await getAdminTotalEmployees();
+            break;
+          case 'present':
+            data = await getAdminPresentEmployees();
+            break;
+          case 'late':
+            data = await getAdminLateEmployees();
+            break;
+          case 'absent':
+            data = await getAdminAbsentEmployees();
+            break;
+          case 'leave':
+            data = await getAdminLeaveEmployees();
+            break;
+          default:
+            data = await getAdminTotalEmployees();
         }
         
-        const data = await response.json();
-        setEmployees(data.employees);
+        setEmployees(data.employees || []);
         setError(null);
       } catch (err) {
         console.error('Error fetching employees:', err);
@@ -90,13 +114,7 @@ const AdminPortal = () => {
       if (payrollPeriod.startDate) queryParams.append('startDate', payrollPeriod.startDate);
       if (payrollPeriod.endDate) queryParams.append('endDate', payrollPeriod.endDate);
       
-      const response = await fetch(`http://localhost:5000/api/employee/payroll/calculate?${queryParams}`);
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch payroll data');
-      }
-      
-      const data = await response.json();
+      const data = await calculatePayroll(queryParams.toString());
       setPayrollData(data);
       setError(null);
     } catch (err) {
@@ -114,14 +132,10 @@ const AdminPortal = () => {
       if (payrollPeriod.endDate) queryParams.append('endDate', payrollPeriod.endDate);
       queryParams.append('format', format);
       
-      const response = await fetch(`http://localhost:5000/api/employee/payroll/export?${queryParams}`);
-      
-      if (!response.ok) {
-        throw new Error('Failed to export payroll data');
-      }
+      const response = await exportPayroll(queryParams.toString());
       
       if (format === 'csv') {
-        const blob = await response.blob();
+        const blob = new Blob([response], { type: 'text/csv' });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;

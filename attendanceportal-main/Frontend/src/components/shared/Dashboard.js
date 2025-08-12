@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getAdminRecentActivities, getEmployeeStats } from '../../services/api';
 import './Dashboard.css';
 
 const Dashboard = () => {
@@ -21,14 +22,8 @@ const Dashboard = () => {
   // Fetch recent activities from backend
   const fetchRecentActivities = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/employee/admin/recent-activities?limit=5');
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch recent activities');
-      }
-      
-      const data = await response.json();
-      setRecentActivities(data.recentActivities);
+      const data = await getAdminRecentActivities(5);
+      setRecentActivities(data.recentActivities || []);
     } catch (err) {
       console.error('Error fetching recent activities:', err);
       // Keep existing activities if fetch fails
@@ -40,13 +35,7 @@ const Dashboard = () => {
     const fetchAttendanceData = async () => {
       try {
         setLoading(true);
-        const response = await fetch('http://localhost:5000/api/employee/stats');
-        
-        if (!response.ok) {
-          throw new Error('Failed to fetch attendance data');
-        }
-        
-        const data = await response.json();
+        const data = await getEmployeeStats();
         setAttendanceData(data);
         setError(null);
       } catch (err) {

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { loginUser, registerUser } from '../../services/api';
 import './Login.css';
 
 const Login = ({ onLogin }) => {
@@ -40,13 +41,8 @@ const Login = ({ onLogin }) => {
       return;
     }
     try {
-      const response = await fetch('http://localhost:5000/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      });
-      const data = await response.json();
-      if (!response.ok) {
+      const data = await loginUser(formData);
+      if (data.error) {
         setError(data.message || 'Login failed');
         return;
       }
@@ -55,7 +51,7 @@ const Login = ({ onLogin }) => {
       onLogin(data.user);
     } catch (err) {
       console.error('Login error:', err);
-      setError(`Connection error: ${err.message}. Please check if the backend server is running on http://localhost:5000`);
+      setError(`Connection error: ${err.message}. Please check if the backend server is running.`);
     }
   };
 
@@ -69,13 +65,8 @@ const Login = ({ onLogin }) => {
       return;
     }
     try {
-      const response = await fetch('http://localhost:5000/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(registerData)
-      });
-      const data = await response.json();
-      if (!response.ok) {
+      const data = await registerUser(registerData);
+      if (data.error) {
         setRegisterError(data.message || 'Registration failed');
         return;
       }
