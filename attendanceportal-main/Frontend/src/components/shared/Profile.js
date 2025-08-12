@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getProfileData, updateProfileData } from '../../services/api';
+import { getProfileData, updateProfileData, findEmployeeByEmail } from '../../services/api';
 import './Profile.css';
 
 const Profile = ({ currentUser }) => {
@@ -35,8 +35,32 @@ const Profile = ({ currentUser }) => {
       try {
         setLoading(true);
         
+        // Try to find employee by email if ID doesn't work
+        let employeeId = currentUser.id;
+        if (!employeeId && currentUser.email) {
+          const employeeData = await findEmployeeByEmail(currentUser.email);
+          if (employeeData && employeeData._id) {
+            employeeId = employeeData._id;
+            console.log('Found employee by email for profile:', employeeId);
+          } else {
+            console.error('Employee not found by email:', currentUser.email);
+            setError('Employee not found. Please contact administrator.');
+            return;
+          }
+        }
+        
+        if (!employeeId) {
+          console.error('No employee ID found');
+          setError('Employee ID not found. Please contact administrator.');
+          return;
+        }
+        
         // Fetch employee details from backend
-        const employeeData = await getProfileData(currentUser.id);
+        const employeeData = await getProfileData(employeeId);
+        
+        if (!employeeData || employeeData.error) {
+          throw new Error('Failed to fetch employee data');
+        }
         
         // Map backend data to profile format
         setProfileData({
@@ -62,16 +86,19 @@ const Profile = ({ currentUser }) => {
         setError(null);
       } catch (err) {
         console.error('Error fetching employee data:', err);
-        setError('Failed to load employee data');
+        setError('Failed to load employee data. Please try again.');
       } finally {
         setLoading(false);
       }
     };
 
-    if (currentUser?.id) {
+    if (currentUser?.id || currentUser?.email) {
       fetchEmployeeData();
+    } else {
+      setError('No user information available');
+      setLoading(false);
     }
-  }, [currentUser?.id]);
+  }, [currentUser?.id, currentUser?.email]);
 
   const handleInputChange = (field, value) => {
     if (field.includes('.')) {
@@ -93,6 +120,23 @@ const Profile = ({ currentUser }) => {
 
   const handleSave = async () => {
     try {
+      // Try to find employee by email if ID doesn't work
+      let employeeId = currentUser.id;
+      if (!employeeId && currentUser.email) {
+        const employeeData = await findEmployeeByEmail(currentUser.email);
+        if (employeeData && employeeData._id) {
+          employeeId = employeeData._id;
+        } else {
+          alert('Employee not found. Please contact administrator.');
+          return;
+        }
+      }
+      
+      if (!employeeId) {
+        alert('Employee ID not found. Please contact administrator.');
+        return;
+      }
+      
       // Prepare data for backend
       const updateData = {
         name: profileData.fullName,
@@ -110,13 +154,18 @@ const Profile = ({ currentUser }) => {
       };
 
       // Update employee data in backend
-      await updateProfileData(currentUser.id, updateData);
+      const result = await updateProfileData(employeeId, updateData);
+      
+      if (result && result.error) {
+        throw new Error(result.message || 'Failed to update profile');
+      }
 
       console.log('Profile updated successfully');
-    setIsEditing(false);
+      alert('Profile updated successfully!');
+      setIsEditing(false);
     } catch (err) {
       console.error('Error updating profile:', err);
-      alert('Failed to update profile. Please try again.');
+      alert(`Failed to update profile: ${err.message}. Please try again.`);
     }
   };
 

@@ -73,8 +73,13 @@ const EmployeePortal = ({ currentUser }) => {
           let employeeId = currentUser.id;
           if (!employeeId && currentUser.email) {
             const employeeData = await findEmployeeByEmail(currentUser.email);
-            employeeId = employeeData._id;
-            console.log('Found employee by email for portal data:', employeeId);
+            if (employeeData && employeeData._id) {
+              employeeId = employeeData._id;
+              console.log('Found employee by email for portal data:', employeeId);
+            } else {
+              console.error('Employee not found by email:', currentUser.email);
+              return;
+            }
           }
           
           if (!employeeId) {
@@ -84,35 +89,70 @@ const EmployeePortal = ({ currentUser }) => {
           
           const portalData = await getEmployeePortalData(employeeId);
           
-          // Update attendance data with real database data
-          setAttendanceData({
-            today: {
-              checkIns: portalData.attendance.today.checkIn ? [portalData.attendance.today.checkIn] : [],
-              checkOuts: portalData.attendance.today.checkOut ? [portalData.attendance.today.checkOut] : [],
-              status: portalData.attendance.today.status || 'Absent',
-              totalHours: portalData.attendance.today.hours || 0
-            },
-            thisWeek: portalData.attendance.thisWeek,
-            thisMonth: portalData.attendance.thisMonth
-          });
+          if (portalData && portalData.attendance) {
+            // Update attendance data with real database data
+            setAttendanceData({
+              today: {
+                checkIns: portalData.attendance.today?.checkIn ? [portalData.attendance.today.checkIn] : [],
+                checkOuts: portalData.attendance.today?.checkOut ? [portalData.attendance.today.checkOut] : [],
+                status: portalData.attendance.today?.status || 'Absent',
+                totalHours: portalData.attendance.today?.hours || 0
+              },
+              thisWeek: portalData.attendance.thisWeek || {
+                present: 0,
+                absent: 0,
+                late: 0,
+                totalHours: 0
+              },
+              thisMonth: portalData.attendance.thisMonth || {
+                present: 0,
+                absent: 0,
+                late: 0,
+                totalHours: 0
+              }
+            });
 
-          // Update leave balance with real database data
-          if (portalData.leaveBalance) {
-            setLeaveBalance(portalData.leaveBalance);
-          }
+            // Update leave balance with real database data
+            if (portalData.leaveBalance) {
+              setLeaveBalance(portalData.leaveBalance);
+            }
 
-          // Update recent attendance with real database data
-          if (portalData.attendance.recentRecords) {
-            setRecentAttendance(portalData.attendance.recentRecords);
+            // Update recent attendance
+            if (portalData.recentAttendance) {
+              setRecentAttendance(portalData.recentAttendance);
+            }
+          } else {
+            console.log('No portal data received, using default values');
           }
         } catch (error) {
           console.error('Error loading employee portal data:', error);
+          // Set default values on error
+          setAttendanceData({
+            today: {
+              checkIns: [],
+              checkOuts: [],
+              status: 'Absent',
+              totalHours: 0
+            },
+            thisWeek: {
+              present: 0,
+              absent: 0,
+              late: 0,
+              totalHours: 0
+            },
+            thisMonth: {
+              present: 0,
+              absent: 0,
+              late: 0,
+              totalHours: 0
+            }
+          });
         }
       }
     };
 
     loadEmployeePortalData();
-  }, [currentUser?.id, currentUser?.email]);
+  }, [currentUser]);
 
   // Load employee leave requests
   useEffect(() => {
@@ -144,31 +184,46 @@ const EmployeePortal = ({ currentUser }) => {
       
       // Try to find employee by email if ID doesn't work
       let employeeId = currentUser.id;
-      if (!employeeId) {
-        // If no ID, try to find by email
+      if (!employeeId && currentUser.email) {
         const employeeData = await findEmployeeByEmail(currentUser.email);
-        employeeId = employeeData._id;
-        console.log('Found employee by email:', employeeId);
+        if (employeeData && employeeData._id) {
+          employeeId = employeeData._id;
+          console.log('Found employee by email for check-in:', employeeId);
+        } else {
+          console.error('Employee not found by email:', currentUser.email);
+          alert('Employee not found. Please contact administrator.');
+          return;
+        }
       }
       
+      if (!employeeId) {
+        console.error('No employee ID found');
+        alert('Employee ID not found. Please contact administrator.');
+        return;
+      }
+
       const result = await checkInEmployee(employeeId, {});
       
-      // Update local state with the response from backend
-      setAttendanceData(prev => ({
-        ...prev,
-        today: {
-          ...prev.today,
-          checkIns: [result.checkInTime],
-          checkOuts: [],
-          status: result.status,
-          totalHours: 0
-        }
-      }));
+      if (result && result.checkInTime) {
+        // Update local state with the response from backend
+        setAttendanceData(prev => ({
+          ...prev,
+          today: {
+            ...prev.today,
+            checkIns: [result.checkInTime],
+            checkOuts: [],
+            status: result.status || 'Present',
+            totalHours: 0
+          }
+        }));
 
-      alert(`Check-in successful at ${result.checkInTime}!`);
+        alert(`Check-in successful at ${result.checkInTime}!`);
+      } else {
+        throw new Error('Invalid response from server');
+      }
     } catch (error) {
       console.error('Error during check-in:', error);
-      alert('Failed to check in. Please try again.');
+      alert(`Failed to check in: ${error.message}. Please try again.`);
     }
   };
 
@@ -192,29 +247,44 @@ const EmployeePortal = ({ currentUser }) => {
       
       // Try to find employee by email if ID doesn't work
       let employeeId = currentUser.id;
-      if (!employeeId) {
-        // If no ID, try to find by email
+      if (!employeeId && currentUser.email) {
         const employeeData = await findEmployeeByEmail(currentUser.email);
-        employeeId = employeeData._id;
-        console.log('Found employee by email:', employeeId);
+        if (employeeData && employeeData._id) {
+          employeeId = employeeData._id;
+          console.log('Found employee by email for check-out:', employeeId);
+        } else {
+          console.error('Employee not found by email:', currentUser.email);
+          alert('Employee not found. Please contact administrator.');
+          return;
+        }
+      }
+      
+      if (!employeeId) {
+        console.error('No employee ID found');
+        alert('Employee ID not found. Please contact administrator.');
+        return;
       }
       
       const result = await checkOutEmployee(employeeId, {});
       
-      // Update local state with the response from backend
-      setAttendanceData(prev => ({
-        ...prev,
-        today: {
-          ...prev.today,
-          checkOuts: [result.checkOutTime],
-          totalHours: result.hoursWorked
-        }
-      }));
+      if (result && result.checkOutTime) {
+        // Update local state with the response from backend
+        setAttendanceData(prev => ({
+          ...prev,
+          today: {
+            ...prev.today,
+            checkOuts: [result.checkOutTime],
+            totalHours: result.hoursWorked || 0
+          }
+        }));
 
-      alert(`Check-out successful at ${result.checkOutTime}! Hours worked: ${result.hoursWorked.toFixed(2)}`);
+        alert(`Check-out successful at ${result.checkOutTime}! Hours worked: ${(result.hoursWorked || 0).toFixed(2)}`);
+      } else {
+        throw new Error('Invalid response from server');
+      }
     } catch (error) {
       console.error('Error during check-out:', error);
-      alert('Failed to check out. Please try again.');
+      alert(`Failed to check out: ${error.message}. Please try again.`);
     }
   };
 

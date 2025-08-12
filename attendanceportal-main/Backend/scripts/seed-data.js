@@ -6,6 +6,14 @@ const bcrypt = require('bcryptjs');
 // MongoDB connection
 const MONGO_URI = process.env.MONGODB_URI || 'mongodb://admin:password123@localhost:27017/attendanceportal?authSource=admin';
 
+// Helper function to get week start date
+function getWeekStart(date) {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Adjust when day is Sunday
+  return new Date(d.setDate(diff)).toLocaleDateString('en-CA');
+}
+
 async function seedData() {
   try {
     console.log('Connecting to MongoDB...');
@@ -19,7 +27,12 @@ async function seedData() {
     await Employee.deleteMany({});
     console.log('Cleared existing employee data');
 
-    // Create test employees
+    const today = new Date();
+    const todayStr = today.toLocaleDateString('en-CA');
+    const weekStart = getWeekStart(today);
+    const monthKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+
+    // Create test employees with proper attendance structure
     const testEmployees = [
       {
         name: 'John Doe',
@@ -39,18 +52,43 @@ async function seedData() {
         attendance: {
           today: {
             status: 'Present',
-            checkIn: new Date(),
+            checkIn: '09:00 AM',
             checkOut: null,
             isLate: false
           },
           records: [
             {
-              date: new Date(),
+              date: todayStr,
               status: 'Present',
-              checkIn: new Date(),
-              checkOut: null
+              checkIn: '09:00 AM',
+              checkOut: null,
+              hours: 0,
+              isLate: false
+            }
+          ],
+          weeklySummaries: [
+            {
+              weekStart: weekStart,
+              present: 1,
+              absent: 0,
+              late: 0,
+              totalHours: 0
+            }
+          ],
+          monthlySummaries: [
+            {
+              month: monthKey,
+              present: 1,
+              absent: 0,
+              late: 0,
+              totalHours: 0
             }
           ]
+        },
+        leaveBalance: {
+          annual: { total: 20, used: 0, remaining: 20 },
+          sick: { total: 10, used: 0, remaining: 10 },
+          personal: { total: 5, used: 0, remaining: 5 }
         }
       },
       {
@@ -71,18 +109,43 @@ async function seedData() {
         attendance: {
           today: {
             status: 'Present',
-            checkIn: new Date(),
+            checkIn: '08:45 AM',
             checkOut: null,
             isLate: false
           },
           records: [
             {
-              date: new Date(),
+              date: todayStr,
               status: 'Present',
-              checkIn: new Date(),
-              checkOut: null
+              checkIn: '08:45 AM',
+              checkOut: null,
+              hours: 0,
+              isLate: false
+            }
+          ],
+          weeklySummaries: [
+            {
+              weekStart: weekStart,
+              present: 1,
+              absent: 0,
+              late: 0,
+              totalHours: 0
+            }
+          ],
+          monthlySummaries: [
+            {
+              month: monthKey,
+              present: 1,
+              absent: 0,
+              late: 0,
+              totalHours: 0
             }
           ]
+        },
+        leaveBalance: {
+          annual: { total: 20, used: 2, remaining: 18 },
+          sick: { total: 10, used: 1, remaining: 9 },
+          personal: { total: 5, used: 0, remaining: 5 }
         }
       },
       {
@@ -103,18 +166,43 @@ async function seedData() {
         attendance: {
           today: {
             status: 'Present',
-            checkIn: new Date(),
+            checkIn: '08:30 AM',
             checkOut: null,
             isLate: false
           },
           records: [
             {
-              date: new Date(),
+              date: todayStr,
               status: 'Present',
-              checkIn: new Date(),
-              checkOut: null
+              checkIn: '08:30 AM',
+              checkOut: null,
+              hours: 0,
+              isLate: false
+            }
+          ],
+          weeklySummaries: [
+            {
+              weekStart: weekStart,
+              present: 1,
+              absent: 0,
+              late: 0,
+              totalHours: 0
+            }
+          ],
+          monthlySummaries: [
+            {
+              month: monthKey,
+              present: 1,
+              absent: 0,
+              late: 0,
+              totalHours: 0
             }
           ]
+        },
+        leaveBalance: {
+          annual: { total: 20, used: 5, remaining: 15 },
+          sick: { total: 10, used: 2, remaining: 8 },
+          personal: { total: 5, used: 1, remaining: 4 }
         }
       },
       {
@@ -135,18 +223,43 @@ async function seedData() {
         attendance: {
           today: {
             status: 'Late',
-            checkIn: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
+            checkIn: '10:15 AM',
             checkOut: null,
             isLate: true
           },
           records: [
             {
-              date: new Date(),
+              date: todayStr,
               status: 'Late',
-              checkIn: new Date(Date.now() - 2 * 60 * 60 * 1000),
-              checkOut: null
+              checkIn: '10:15 AM',
+              checkOut: null,
+              hours: 0,
+              isLate: true
+            }
+          ],
+          weeklySummaries: [
+            {
+              weekStart: weekStart,
+              present: 0,
+              absent: 0,
+              late: 1,
+              totalHours: 0
+            }
+          ],
+          monthlySummaries: [
+            {
+              month: monthKey,
+              present: 0,
+              absent: 0,
+              late: 1,
+              totalHours: 0
             }
           ]
+        },
+        leaveBalance: {
+          annual: { total: 20, used: 0, remaining: 20 },
+          sick: { total: 10, used: 0, remaining: 10 },
+          personal: { total: 5, used: 0, remaining: 5 }
         }
       },
       {
@@ -173,12 +286,37 @@ async function seedData() {
           },
           records: [
             {
-              date: new Date(),
+              date: todayStr,
               status: 'Absent',
               checkIn: null,
-              checkOut: null
+              checkOut: null,
+              hours: 0,
+              isLate: false
+            }
+          ],
+          weeklySummaries: [
+            {
+              weekStart: weekStart,
+              present: 0,
+              absent: 1,
+              late: 0,
+              totalHours: 0
+            }
+          ],
+          monthlySummaries: [
+            {
+              month: monthKey,
+              present: 0,
+              absent: 1,
+              late: 0,
+              totalHours: 0
             }
           ]
+        },
+        leaveBalance: {
+          annual: { total: 20, used: 0, remaining: 20 },
+          sick: { total: 10, used: 0, remaining: 10 },
+          personal: { total: 5, used: 0, remaining: 5 }
         }
       }
     ];
