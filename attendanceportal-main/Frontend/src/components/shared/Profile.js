@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getProfileData, updateProfileData } from '../../services/api';
 import './Profile.css';
 
 const Profile = ({ currentUser }) => {
@@ -37,11 +38,7 @@ const Profile = ({ currentUser }) => {
         setLoading(true);
         
         // Fetch employee details from backend
-        const response = await fetch(`http://localhost:5000/api/employee/${currentUser.id}`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch employee data');
-        }
-        const employeeData = await response.json();
+        const employeeData = await getProfileData(currentUser.id);
         
         // Map backend data to profile format
         setProfileData({
@@ -115,17 +112,7 @@ const Profile = ({ currentUser }) => {
       };
 
       // Update employee data in backend
-      const response = await fetch(`http://localhost:5000/api/employee/${currentUser.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(updateData)
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to update profile');
-      }
+      await updateProfileData(currentUser.id, updateData);
 
       console.log('Profile updated successfully');
     setIsEditing(false);

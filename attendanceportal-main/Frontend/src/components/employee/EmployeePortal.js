@@ -1,7 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import './EmployeePortal.css';
-import { createLeaveRequest, getEmployeeLeaveRequests } from '../../services/api';
+import { 
+  createLeaveRequest, 
+  getEmployeeLeaveRequests, 
+  findEmployeeByEmail, 
+  getEmployeePortalData,
+  checkInEmployee,
+  checkOutEmployee
+} from '../../services/api';
 
 const EmployeePortal = ({ currentUser }) => {
   const navigate = useNavigate();
@@ -65,12 +72,9 @@ const EmployeePortal = ({ currentUser }) => {
           // Try to find employee by email if ID doesn't work
           let employeeId = currentUser.id;
           if (!employeeId && currentUser.email) {
-            const findResponse = await fetch(`http://localhost:5000/api/employee/find-by-email/${encodeURIComponent(currentUser.email)}`);
-            if (findResponse.ok) {
-              const employeeData = await findResponse.json();
-              employeeId = employeeData._id;
-              console.log('Found employee by email for portal data:', employeeId);
-            }
+            const employeeData = await findEmployeeByEmail(currentUser.email);
+            employeeId = employeeData._id;
+            console.log('Found employee by email for portal data:', employeeId);
           }
           
           if (!employeeId) {
@@ -78,11 +82,7 @@ const EmployeePortal = ({ currentUser }) => {
             return;
           }
           
-          const response = await fetch(`http://localhost:5000/api/employee/${employeeId}/portal-data`);
-          if (!response.ok) {
-            throw new Error('Failed to fetch employee portal data');
-          }
-          const portalData = await response.json();
+          const portalData = await getEmployeePortalData(employeeId);
           
           // Update attendance data with real database data
           setAttendanceData({
@@ -146,30 +146,12 @@ const EmployeePortal = ({ currentUser }) => {
       let employeeId = currentUser.id;
       if (!employeeId) {
         // If no ID, try to find by email
-        const findResponse = await fetch(`http://localhost:5000/api/employee/find-by-email/${encodeURIComponent(currentUser.email)}`);
-        if (findResponse.ok) {
-          const employeeData = await findResponse.json();
-          employeeId = employeeData._id;
-          console.log('Found employee by email:', employeeId);
-        }
+        const employeeData = await findEmployeeByEmail(currentUser.email);
+        employeeId = employeeData._id;
+        console.log('Found employee by email:', employeeId);
       }
       
-      const response = await fetch(`http://localhost:5000/api/employee/${employeeId}/check-in`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      });
-
-      console.log('Response status:', response.status);
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Check-in failed:', errorData);
-        throw new Error(errorData.message || 'Failed to check in');
-      }
-
-      const result = await response.json();
+      const result = await checkInEmployee(employeeId, {});
       
       // Update local state with the response from backend
       setAttendanceData(prev => ({
@@ -212,30 +194,12 @@ const EmployeePortal = ({ currentUser }) => {
       let employeeId = currentUser.id;
       if (!employeeId) {
         // If no ID, try to find by email
-        const findResponse = await fetch(`http://localhost:5000/api/employee/find-by-email/${encodeURIComponent(currentUser.email)}`);
-        if (findResponse.ok) {
-          const employeeData = await findResponse.json();
-          employeeId = employeeData._id;
-          console.log('Found employee by email:', employeeId);
-        }
+        const employeeData = await findEmployeeByEmail(currentUser.email);
+        employeeId = employeeData._id;
+        console.log('Found employee by email:', employeeId);
       }
       
-      const response = await fetch(`http://localhost:5000/api/employee/${employeeId}/check-out`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      });
-
-      console.log('Response status:', response.status);
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Check-out failed:', errorData);
-        throw new Error(errorData.message || 'Failed to check out');
-      }
-
-      const result = await response.json();
+      const result = await checkOutEmployee(employeeId, {});
       
       // Update local state with the response from backend
       setAttendanceData(prev => ({

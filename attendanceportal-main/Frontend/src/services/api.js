@@ -204,4 +204,68 @@ export const deleteLeaveRequest = async (requestId) => {
 export const healthCheck = async () => {
   const response = await fetch(`${API_BASE_URL}/health`);
   return response.json();
+};
+
+// Additional API functions for components still using hardcoded URLs
+export const getEmployeeAttendanceView = async (employeeId) => {
+  const response = await fetch(`${API_BASE_URL}/employee/${employeeId}`);
+  return response.json();
+};
+
+export const getEmployeeManagementData = async () => {
+  const response = await fetch(`${API_BASE_URL}/employee/attendance`);
+  return response.json();
+};
+
+export const getEmployeeManagementById = async (employeeId) => {
+  const response = await fetch(`${API_BASE_URL}/employee/${employeeId}`);
+  return response.json();
+};
+
+export const createEmployeeManagement = async (employeeData) => {
+  const response = await fetch(`${API_BASE_URL}/employee`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(employeeData),
+  });
+  return response.json();
+};
+
+export const updateEmployeeManagement = async (employeeId, employeeData) => {
+  const response = await fetch(`${API_BASE_URL}/employee/${employeeId}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(employeeData),
+  });
+  return response.json();
+};
+
+export const getProfileData = async (employeeId) => {
+  const response = await fetch(`${API_BASE_URL}/employee/${employeeId}`);
+  return response.json();
+};
+
+export const updateProfileData = async (employeeId, profileData) => {
+  const response = await fetch(`${API_BASE_URL}/employee/${employeeId}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(profileData),
+  });
+  return response.json();
+};
+
+export const getAttendanceDetailsByEmail = async (email) => {
+  const response = await fetch(`${API_BASE_URL}/employee/find-by-email/${encodeURIComponent(email)}`);
+  return response.json();
+};
+
+export const getAttendanceDetailsById = async (employeeId, month, year) => {
+  const response = await fetch(`${API_BASE_URL}/employee/${employeeId}/attendance-details?month=${month}&year=${year}`);
+  return response.json();
 }; 
