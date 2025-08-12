@@ -57,6 +57,66 @@ docker-compose down -v
 
 ## 🛠️ Troubleshooting
 
+### Backend Connection Issues
+
+If you see "Connection error: Failed to fetch" in the frontend:
+
+1. **Check if backend is running:**
+```bash
+docker-compose ps
+```
+
+2. **Check backend logs:**
+```bash
+docker-compose logs backend
+```
+
+3. **Test backend directly:**
+```bash
+curl http://localhost:5000/api/health
+```
+
+4. **Check if MongoDB is connected:**
+```bash
+docker-compose logs mongodb
+```
+
+5. **Restart backend service:**
+```bash
+docker-compose restart backend
+```
+
+### Common Issues
+
+#### 1. Backend not starting
+```bash
+# Check backend logs
+docker-compose logs backend
+
+# Rebuild backend
+docker-compose build backend
+docker-compose up -d backend
+```
+
+#### 2. MongoDB connection failed
+```bash
+# Check MongoDB logs
+docker-compose logs mongodb
+
+# Restart MongoDB
+docker-compose restart mongodb
+```
+
+#### 3. Frontend can't connect to backend
+```bash
+# Check if backend is accessible
+curl http://localhost:5000/
+
+# Check network connectivity
+docker network ls
+docker network inspect attendanceportal-main_attendance-network
+```
+
 ### Check Service Status
 ```bash
 docker-compose ps
@@ -79,7 +139,7 @@ docker-compose logs mongodb
 docker-compose restart
 
 # Restart specific service
-docker-compose restart frontend
+docker-compose restart backend
 ```
 
 ### Clean Up
@@ -107,3 +167,24 @@ docker-compose down -v --rmi all
 - Change default MongoDB credentials in production
 - Update JWT_SECRET for production use
 - Consider using Docker secrets for sensitive data
+
+## 🚨 Quick Fix Commands
+
+If the frontend shows connection errors:
+
+```bash
+# 1. Stop all services
+docker-compose down
+
+# 2. Clean up
+docker system prune -f
+
+# 3. Rebuild and start
+docker-compose up --build -d
+
+# 4. Check status
+docker-compose ps
+
+# 5. Test backend
+curl http://localhost:5000/api/health
+```
