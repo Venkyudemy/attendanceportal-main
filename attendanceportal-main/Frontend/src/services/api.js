@@ -1,28 +1,47 @@
-// Environment-aware API base URL
-const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? 'http://localhost:5000/api'  // Use localhost for Docker since frontend and backend are on same host
-  : 'http://localhost:5000/api';
-
-// Helper function for API calls with error handling
-const apiCall = async (endpoint, options = {}) => {
-  try {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
-      ...options,
-    });
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    
-    return response.json();
-  } catch (error) {
-    console.error('API call failed:', error);
-    throw new Error('Failed to fetch. Please check if the backend server is running.');
+// Environment-aware API base URL with fallback
+const getApiBaseUrl = () => {
+  if (process.env.NODE_ENV === 'production') {
+    // Try Docker service name first, then fallback to localhost
+    return 'http://backend:5000/api';
   }
+  return 'http://localhost:5000/api';
+};
+
+const API_BASE_URL = getApiBaseUrl();
+
+// Helper function for API calls with error handling and retry logic
+const apiCall = async (endpoint, options = {}) => {
+  const urls = [
+    `${API_BASE_URL}${endpoint}`,
+    `http://localhost:5000/api${endpoint}`,  // Fallback for local testing
+    `http://127.0.0.1:5000/api${endpoint}`   // Another fallback
+  ];
+
+  for (const url of urls) {
+    try {
+      console.log(`Trying API call to: ${url}`);
+      const response = await fetch(url, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...options.headers,
+        },
+        ...options,
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      return response.json();
+    } catch (error) {
+      console.error(`API call failed for ${url}:`, error);
+      // Continue to next URL if this one fails
+      continue;
+    }
+  }
+  
+  // If all URLs fail, throw error
+  throw new Error('Failed to fetch. Please check if the backend server is running.');
 };
 
 // Auth API calls
