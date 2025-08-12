@@ -23,10 +23,10 @@ const Dashboard = () => {
   const fetchRecentActivities = async () => {
     try {
       const data = await getAdminRecentActivities(5);
-      setRecentActivities(data.recentActivities || []);
+      setRecentActivities(data.recentActivities || data || []);
     } catch (err) {
       console.error('Error fetching recent activities:', err);
-      // Keep existing activities if fetch fails
+      setRecentActivities([]); // Set empty array if fetch fails
     }
   };
 
@@ -36,11 +36,35 @@ const Dashboard = () => {
       try {
         setLoading(true);
         const data = await getEmployeeStats();
-        setAttendanceData(data);
-        setError(null);
+        
+        // Check if we have valid data
+        if (data && typeof data === 'object') {
+          setAttendanceData(data);
+          setError(null);
+        } else {
+          console.log('No valid attendance data received, using default values');
+          setAttendanceData({
+            totalEmployees: 0,
+            presentToday: 0,
+            absentToday: 0,
+            onLeave: 0,
+            lateArrivals: 0,
+            attendanceRate: 0
+          });
+          setError(null);
+        }
       } catch (err) {
         console.error('Error fetching attendance data:', err);
         setError('Failed to load attendance data');
+        // Set default data even on error
+        setAttendanceData({
+          totalEmployees: 0,
+          presentToday: 0,
+          absentToday: 0,
+          onLeave: 0,
+          lateArrivals: 0,
+          attendanceRate: 0
+        });
       } finally {
         setLoading(false);
       }

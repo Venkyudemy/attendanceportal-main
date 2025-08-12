@@ -61,13 +61,53 @@ export const registerUser = async (userData) => {
 
 // Employee API calls
 export const getEmployeeStats = async () => {
-  const response = await fetch(`${API_BASE_URL}/employee/stats`);
-  return response.json();
+  try {
+    const response = await fetch(`${API_BASE_URL}/employee/stats`);
+    const data = await response.json();
+    
+    // Provide fallback data if the response is empty or has errors
+    if (!data || data.error) {
+      console.log('Using fallback employee stats data');
+      return {
+        totalEmployees: 0,
+        presentToday: 0,
+        absentToday: 0,
+        onLeave: 0,
+        lateArrivals: 0,
+        attendanceRate: 0
+      };
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Error fetching employee stats:', error);
+    // Return fallback data on error
+    return {
+      totalEmployees: 0,
+      presentToday: 0,
+      absentToday: 0,
+      onLeave: 0,
+      lateArrivals: 0,
+      attendanceRate: 0
+    };
+  }
 };
 
 export const getEmployeeAttendance = async () => {
-  const response = await fetch(`${API_BASE_URL}/employee/attendance`);
-  return response.json();
+  try {
+    const response = await fetch(`${API_BASE_URL}/employee/attendance`);
+    const data = await response.json();
+    
+    if (!data || data.error) {
+      console.log('Using fallback attendance data');
+      return [];
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Error fetching attendance data:', error);
+    return [];
+  }
 };
 
 export const getEmployeeById = async (employeeId) => {
@@ -136,8 +176,20 @@ export const getEmployeeAttendanceDetails = async (employeeId, month, year) => {
 
 // Admin API calls
 export const getAdminRecentActivities = async (limit = 5) => {
-  const response = await fetch(`${API_BASE_URL}/employee/admin/recent-activities?limit=${limit}`);
-  return response.json();
+  try {
+    const response = await fetch(`${API_BASE_URL}/employee/admin/recent-activities?limit=${limit}`);
+    const data = await response.json();
+    
+    if (!data || data.error) {
+      console.log('Using fallback admin recent activities data');
+      return [];
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Error fetching admin recent activities:', error);
+    return [];
+  }
 };
 
 export const getAdminTotalEmployees = async () => {

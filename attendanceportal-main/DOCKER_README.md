@@ -22,6 +22,17 @@ docker-compose ps
 docker-compose logs -f
 ```
 
+### Seed Database with Test Data
+```bash
+# Run the seed script to add test employees
+docker exec attendance-backend node scripts/seed-data.js
+
+# Or run it manually
+docker exec -it attendance-backend sh
+cd /app
+node scripts/seed-data.js
+```
+
 ### Stop Services
 ```bash
 # Stop all services
