@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { getProfileData, updateProfileData } from '../../services/api';
 import './Profile.css';
 
@@ -28,7 +27,6 @@ const Profile = ({ currentUser }) => {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const navigate = useNavigate();
 
   const isAdmin = currentUser?.role === 'admin';
 

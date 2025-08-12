@@ -1,32 +1,37 @@
-# Simple production build for React app
+# Jenkins CI/CD optimized build for React app
 FROM node:18-alpine AS builder
 
 # Set working directory
 WORKDIR /app
 
-# Set environment variables for build
+# Set environment variables for Jenkins build
 ENV NODE_ENV=production
 ENV CI=false
 ENV GENERATE_SOURCEMAP=false
 ENV DISABLE_ESLINT_PLUGIN=true
+ENV SKIP_PREFLIGHT_CHECK=true
 
 # Copy package files first for better caching
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --only=production=false
+# Install dependencies with verbose output for debugging
+RUN npm ci --only=production=false --verbose
 
 # Copy source code
 COPY . .
 
-# Build the app for production (CI=false to allow warnings)
-RUN npm run build:ci
+# Build the app for production (treat warnings as warnings, not errors)
+RUN npm run build:ci || npm run build:prod
 
 # Production stage with nginx
 FROM nginx:alpine
 
-# Install curl using alternative method
-RUN apk add --no-cache --repository http://dl-cdn.alpinelinux.org/alpine/v3.18/main/ curl
+# Install curl using multiple fallback methods
+RUN apk add --no-cache curl || \
+    (sed -i 's/dl-cdn.alpinelinux.org/mirrors.edge.kernel.org/g' /etc/apk/repositories && \
+     apk update && \
+     apk add --no-cache curl) || \
+    apk add --no-cache --repository http://dl-cdn.alpinelinux.org/alpine/v3.18/main/ curl
 
 # Copy built app from builder stage
 COPY --from=builder /app/build /usr/share/nginx/html
