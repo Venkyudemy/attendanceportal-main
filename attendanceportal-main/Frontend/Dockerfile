@@ -1,67 +1,33 @@
-# Multi-stage build for production React app
-FROM node:18-alpine AS builder
+# Use Alpine-based Node image
+FROM node:18-alpine
 
 # Set working directory
 WORKDIR /app
 
-# Set environment variables for build
-ENV NODE_ENV=production
-ENV CI=true
-ENV GENERATE_SOURCEMAP=false
+# Install curl (and any other Alpine packages needed)
+RUN apk update && apk add --no-cache curl bash
 
-# Copy package files first for better caching
+# Copy package files and install dependencies
 COPY package*.json ./
+RUN npm install
 
-# Install ALL dependencies (including dev dependencies for build)
-RUN npm ci --only=production=false --silent
-
-# Copy source code
+# Copy all frontend code
 COPY . .
 
-# Build the app for production
-RUN npm run build && npm prune --production
+# Build the app
+RUN npm run build
 
-# Production stage with nginx
-FROM nginx:alpine
+# Serve using Nginx
+FROM nginx:1.25-alpine
+RUN apk update && apk add --no-cache curl bash
 
-# Update Alpine repositories and install curl for health checks
-RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.edge.kernel.org/g' /etc/apk/repositories && \
-    apk update && \
-    apk add --no-cache curl && \
-    addgroup -g 1001 -S nginx && \
-    adduser -S -D -H -u 1001 -h /var/cache/nginx -s /sbin/nologin -G nginx -g nginx nginx
+# Copy build output to Nginx html directory
+COPY --from=0 /app/build /usr/share/nginx/html
 
-# Create necessary directories and set permissions
-RUN mkdir -p /var/cache/nginx /var/run /var/log/nginx && \
-    chown -R nginx:nginx /var/cache/nginx /var/run /var/log/nginx
+# Copy custom nginx.conf if you have one
+# COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Copy built app from builder stage
-COPY --from=builder /app/build /usr/share/nginx/html
-
-# Copy custom nginx configuration
-COPY nginx.conf /etc/nginx/nginx.conf
-
-# Set proper ownership for the web root
-RUN chown -R nginx:nginx /usr/share/nginx/html && \
-    chmod -R 755 /usr/share/nginx/html
-
-# Create a non-root user for nginx
-RUN touch /var/run/nginx.pid && \
-    chown -R nginx:nginx /var/run/nginx.pid && \
-    chown -R nginx:nginx /var/cache/nginx && \
-    chown -R nginx:nginx /var/log/nginx && \
-    chown -R nginx:nginx /etc/nginx/conf.d
-
-# Expose port 80
+# Expose port
 EXPOSE 80
 
-# Switch to non-root user
-USER nginx
-
-# Health check with better error handling
-HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
-  CMD curl -f http://localhost/health || exit 1
-
-# Start nginx
 CMD ["nginx", "-g", "daemon off;"]
-
