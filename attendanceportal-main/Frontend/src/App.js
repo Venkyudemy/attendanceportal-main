@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
 import Sidebar from './components/shared/Sidebar';
+import MobileMenu from './components/shared/MobileMenu';
 import Dashboard from './components/shared/Dashboard';
 import EmployeeManagement from './components/employee/EmployeeManagement';
 import AdminPortal from './components/admin/AdminPortal';
@@ -40,6 +41,7 @@ function App() {
     <Router>
       <div className="app">
         <Sidebar currentUser={currentUser} onLogout={handleLogout} isAdmin={isAdmin} />
+        <MobileMenu currentUser={currentUser} onLogout={handleLogout} />
         <div className="main-content">
           <Routes>
             {isAdmin ? (

@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
 import './AttendanceDetails.css';
 
 const AttendanceDetails = ({ currentUser }) => {
@@ -7,7 +6,7 @@ const AttendanceDetails = ({ currentUser }) => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [loading, setLoading] = useState(true);
   const [monthStats, setMonthStats] = useState({ present: 0, late: 0, absent: 0, totalHours: 0 });
-  const location = useLocation();
+  // const location = useLocation(); // Removed unused variable
 
   // Fetch real attendance data from backend
   useEffect(() => {

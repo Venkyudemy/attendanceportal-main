@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Connectivity Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .success {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .error {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .info {
+            color: #17a2b8;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        pre {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 API Connectivity Test</h1>
+    <p class="info">This page tests the connectivity between frontend and backend services.</p>
+
+    <div class="test-section">
+        <h2>Backend Health Check</h2>
+        <button onclick="testBackendHealth()">Test Backend Health</button>
+        <div id="backend-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>API Endpoints Test</h2>
+        <button onclick="testAuthEndpoint()">Test Auth Endpoint</button>
+        <button onclick="testEmployeeEndpoint()">Test Employee Endpoint</button>
+        <button onclick="testLeaveEndpoint()">Test Leave Endpoint</button>
+        <div id="api-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>CORS Test</h2>
+        <button onclick="testCORS()">Test CORS Configuration</button>
+        <div id="cors-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Frontend-Backend Integration</h2>
+        <button onclick="testIntegration()">Test Full Integration</button>
+        <div id="integration-result"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5000/api';
+        
+        async function testBackendHealth() {
+            const resultDiv = document.getElementById('backend-result');
+            resultDiv.innerHTML = '<p class="info">Testing...</p>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/health`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <p class="success">✅ Backend is healthy!</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<p class="error">❌ Backend health check failed: ${response.status}</p>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="error">❌ Connection failed: ${error.message}</p>`;
+            }
+        }
+
+        async function testAuthEndpoint() {
+            const resultDiv = document.getElementById('api-result');
+            resultDiv.innerHTML = '<p class="info">Testing auth endpoint...</p>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: 'test@test.com',
+                        password: 'test123'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <p class="success">✅ Auth endpoint working!</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <p class="info">ℹ️ Auth endpoint responded (expected for invalid credentials)</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="error">❌ Auth endpoint failed: ${error.message}</p>`;
+            }
+        }
+
+        async function testEmployeeEndpoint() {
+            const resultDiv = document.getElementById('api-result');
+            resultDiv.innerHTML = '<p class="info">Testing employee endpoint...</p>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/employee/stats`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <p class="success">✅ Employee endpoint working!</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<p class="error">❌ Employee endpoint failed: ${response.status}</p>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="error">❌ Employee endpoint failed: ${error.message}</p>`;
+            }
+        }
+
+        async function testLeaveEndpoint() {
+            const resultDiv = document.getElementById('api-result');
+            resultDiv.innerHTML = '<p class="info">Testing leave endpoint...</p>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/leave`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <p class="success">✅ Leave endpoint working!</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<p class="error">❌ Leave endpoint failed: ${response.status}</p>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="error">❌ Leave endpoint failed: ${error.message}</p>`;
+            }
+        }
+
+        async function testCORS() {
+            const resultDiv = document.getElementById('cors-result');
+            resultDiv.innerHTML = '<p class="info">Testing CORS configuration...</p>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/health`, {
+                    method: 'OPTIONS',
+                    headers: {
+                        'Origin': 'http://localhost:3000',
+                        'Access-Control-Request-Method': 'GET',
+                        'Access-Control-Request-Headers': 'Content-Type'
+                    }
+                });
+                
+                const corsHeaders = {
+                    'Access-Control-Allow-Origin': response.headers.get('Access-Control-Allow-Origin'),
+                    'Access-Control-Allow-Methods': response.headers.get('Access-Control-Allow-Methods'),
+                    'Access-Control-Allow-Headers': response.headers.get('Access-Control-Allow-Headers')
+                };
+                
+                resultDiv.innerHTML = `
+                    <p class="success">✅ CORS preflight successful!</p>
+                    <pre>${JSON.stringify(corsHeaders, null, 2)}</pre>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="error">❌ CORS test failed: ${error.message}</p>`;
+            }
+        }
+
+        async function testIntegration() {
+            const resultDiv = document.getElementById('integration-result');
+            resultDiv.innerHTML = '<p class="info">Testing full integration...</p>';
+            
+            const tests = [
+                { name: 'Backend Health', test: () => fetch(`${API_BASE}/health`) },
+                { name: 'Employee Stats', test: () => fetch(`${API_BASE}/employee/stats`) },
+                { name: 'Leave Requests', test: () => fetch(`${API_BASE}/leave`) }
+            ];
+            
+            let results = [];
+            
+            for (const test of tests) {
+                try {
+                    const response = await test.test();
+                    if (response.ok) {
+                        results.push(`✅ ${test.name}: OK`);
+                    } else {
+                        results.push(`❌ ${test.name}: ${response.status}`);
+                    }
+                } catch (error) {
+                    results.push(`❌ ${test.name}: ${error.message}`);
+                }
+            }
+            
+            resultDiv.innerHTML = `
+                <h3>Integration Test Results:</h3>
+                <ul>
+                    ${results.map(result => `<li>${result}</li>`).join('')}
+                </ul>
+            `;
+        }
+
+        // Auto-run backend health check on page load
+        window.onload = function() {
+            testBackendHealth();
+        };
+    </script>
+</body>
+</html>

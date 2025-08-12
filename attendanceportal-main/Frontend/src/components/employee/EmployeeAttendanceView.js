@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import './EmployeeAttendanceView.css';
 
 const EmployeeAttendanceView = () => {
   const { employeeId } = useParams();
   const navigate = useNavigate();
-  const location = useLocation();
+  // const location = useLocation(); // Removed unused variable
   const [employee, setEmployee] = useState(null);
   const [attendanceData, setAttendanceData] = useState([]);
   const [companyHolidays, setCompanyHolidays] = useState([]);
@@ -149,7 +149,7 @@ const EmployeeAttendanceView = () => {
     };
 
     fetchEmployeeData();
-  }, [employeeId]);
+  }, [employeeId, getHolidayName, isCompanyHoliday]);
 
   const getStatusColor = (status, isHoliday) => {
     if (isHoliday) return 'holiday';
