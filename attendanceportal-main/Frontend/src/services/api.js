@@ -1,4 +1,7 @@
-const API_BASE_URL = 'http://backend:5000/api';
+// Environment-aware API base URL
+const API_BASE_URL = process.env.NODE_ENV === 'production' 
+  ? 'http://backend:5000/api' 
+  : 'http://localhost:5000/api';
 
 // Auth API calls
 export const loginUser = async (credentials) => {
