@@ -46,14 +46,14 @@ services:
       test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
       interval: 30s
       timeout: 10s
-      retries: 5
-      start_period: 60s
+      retries: 3
+      start_period: 30s
 
   # Frontend Service
   frontend:
     build:
       context: ./Frontend
-      dockerfile: Dockerfile.jenkins
+      dockerfile: Dockerfile
     container_name: attendance-frontend
     restart: unless-stopped
     environment:
@@ -65,7 +65,12 @@ services:
         condition: service_healthy
     networks:
       - attendance-network
-    # Healthcheck removed to prevent blocking startup
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
 volumes:
   mongodb_data:
