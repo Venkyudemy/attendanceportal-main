@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import './EmployeeAttendanceView.css';
 
@@ -32,19 +32,19 @@ const EmployeeAttendanceView = () => {
   };
 
   // Check if a date is a company holiday
-  const isCompanyHoliday = (date) => {
+  const isCompanyHoliday = useCallback((date) => {
     if (!date) return false;
     const dateString = date.toISOString().split('T')[0];
     return companyHolidays.find(holiday => holiday.date === dateString);
-  };
+  }, [companyHolidays]);
 
   // Get holiday name for a date
-  const getHolidayName = (date) => {
+  const getHolidayName = useCallback((date) => {
     if (!date) return null;
     const dateString = date.toISOString().split('T')[0];
     const holiday = companyHolidays.find(holiday => holiday.date === dateString);
     return holiday ? holiday.name : null;
-  };
+  }, [companyHolidays]);
 
   useEffect(() => {
     const fetchEmployeeData = async () => {
