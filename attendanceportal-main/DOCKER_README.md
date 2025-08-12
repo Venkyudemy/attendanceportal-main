@@ -69,32 +69,28 @@ docker-compose down -v
 ## 🛠️ Troubleshooting
 
 ### Backend Connection Issues
-
 If you see "Connection error: Failed to fetch" in the frontend:
+1. **Check if backend is running:** `docker-compose ps`
+2. **Check backend logs:** `docker-compose logs backend`
+3. **Test backend directly:** `curl http://localhost:5000/api/health`
+4. **Check if MongoDB is connected:** `docker-compose logs mongodb`
+5. **Restart backend service:** `docker-compose restart backend`
 
-1. **Check if backend is running:**
+### Testing Connectivity
+Use the test scripts in the `tests/` folder:
 ```bash
-docker-compose ps
-```
+# Run all tests
+node tests/run-all-tests.js
 
-2. **Check backend logs:**
-```bash
-docker-compose logs backend
-```
+# Test API connectivity
+node tests/test-api-connectivity.js
 
-3. **Test backend directly:**
-```bash
-curl http://localhost:5000/api/health
-```
+# Test backend endpoints
+node tests/test-endpoints.js
 
-4. **Check if MongoDB is connected:**
-```bash
-docker-compose logs mongodb
-```
-
-5. **Restart backend service:**
-```bash
-docker-compose restart backend
+# Test from Docker containers
+docker exec attendance-frontend node tests/test-api-connectivity.js
+docker exec attendance-backend node tests/test-endpoints.js
 ```
 
 ### Common Issues

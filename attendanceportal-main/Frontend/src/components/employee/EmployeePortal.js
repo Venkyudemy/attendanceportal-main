@@ -90,9 +90,9 @@ const EmployeePortal = ({ currentUser }) => {
           const portalData = await getEmployeePortalData(employeeId);
           
           if (portalData && portalData.attendance) {
-            // Update attendance data with real database data
-            setAttendanceData({
-              today: {
+          // Update attendance data with real database data
+          setAttendanceData({
+            today: {
                 checkIns: portalData.attendance.today?.checkIn ? [portalData.attendance.today.checkIn] : [],
                 checkOuts: portalData.attendance.today?.checkOut ? [portalData.attendance.today.checkOut] : [],
                 status: portalData.attendance.today?.status || 'Absent',
@@ -110,12 +110,12 @@ const EmployeePortal = ({ currentUser }) => {
                 late: 0,
                 totalHours: 0
               }
-            });
+          });
 
-            // Update leave balance with real database data
-            if (portalData.leaveBalance) {
-              setLeaveBalance(portalData.leaveBalance);
-            }
+          // Update leave balance with real database data
+          if (portalData.leaveBalance) {
+            setLeaveBalance(portalData.leaveBalance);
+          }
 
             // Update recent attendance
             if (portalData.recentAttendance) {
@@ -205,19 +205,19 @@ const EmployeePortal = ({ currentUser }) => {
       const result = await checkInEmployee(employeeId, {});
       
       if (result && result.checkInTime) {
-        // Update local state with the response from backend
-        setAttendanceData(prev => ({
-          ...prev,
-          today: {
-            ...prev.today,
-            checkIns: [result.checkInTime],
-            checkOuts: [],
+      // Update local state with the response from backend
+      setAttendanceData(prev => ({
+        ...prev,
+        today: {
+          ...prev.today,
+          checkIns: [result.checkInTime],
+          checkOuts: [],
             status: result.status || 'Present',
-            totalHours: 0
-          }
-        }));
+          totalHours: 0
+        }
+      }));
 
-        alert(`Check-in successful at ${result.checkInTime}!`);
+      alert(`Check-in successful at ${result.checkInTime}!`);
       } else {
         throw new Error('Invalid response from server');
       }
@@ -268,15 +268,15 @@ const EmployeePortal = ({ currentUser }) => {
       const result = await checkOutEmployee(employeeId, {});
       
       if (result && result.checkOutTime) {
-        // Update local state with the response from backend
-        setAttendanceData(prev => ({
-          ...prev,
-          today: {
-            ...prev.today,
-            checkOuts: [result.checkOutTime],
+      // Update local state with the response from backend
+      setAttendanceData(prev => ({
+        ...prev,
+        today: {
+          ...prev.today,
+          checkOuts: [result.checkOutTime],
             totalHours: result.hoursWorked || 0
-          }
-        }));
+        }
+      }));
 
         alert(`Check-out successful at ${result.checkOutTime}! Hours worked: ${(result.hoursWorked || 0).toFixed(2)}`);
       } else {
