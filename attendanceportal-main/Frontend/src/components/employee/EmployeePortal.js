@@ -60,7 +60,9 @@ const EmployeePortal = ({ currentUser }) => {
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setCurrentTime(new Date());
+      // Use consistent timezone handling
+      const now = new Date();
+      setCurrentTime(now);
     }, 1000);
 
     return () => clearInterval(timer);
@@ -73,13 +75,11 @@ const EmployeePortal = ({ currentUser }) => {
         // Try to find employee by email if ID doesn't work
         let employeeId = currentUser.id;
         if (!employeeId && currentUser.email) {
-          const employeeData = await findEmployeeByEmail(currentUser.email);
-          if (employeeData && employeeData._id) {
+          const findResponse = await fetch(`http://localhost:5000/api/employee/find-by-email/${encodeURIComponent(currentUser.email)}`);
+          if (findResponse.ok) {
+            const employeeData = await findResponse.json();
             employeeId = employeeData._id;
             console.log('Found employee by email for portal data:', employeeId);
-          } else {
-            console.error('Employee not found by email:', currentUser.email);
-            return;
           }
         }
         
@@ -88,29 +88,22 @@ const EmployeePortal = ({ currentUser }) => {
           return;
         }
         
-        const portalData = await getEmployeePortalData(employeeId);
+        const response = await fetch(`http://localhost:5000/api/employee/${employeeId}/portal-data`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch employee portal data');
+        }
+        const portalData = await response.json();
         
-        if (portalData && portalData.attendance) {
         // Update attendance data with real database data
         setAttendanceData({
           today: {
-              checkIns: portalData.attendance.today?.checkIn ? [portalData.attendance.today.checkIn] : [],
-              checkOuts: portalData.attendance.today?.checkOut ? [portalData.attendance.today.checkOut] : [],
-              status: portalData.attendance.today?.status || 'Absent',
-              totalHours: portalData.attendance.today?.hours || 0
-            },
-            thisWeek: portalData.attendance.thisWeek || {
-              present: 0,
-              absent: 0,
-              late: 0,
-              totalHours: 0
-            },
-            thisMonth: portalData.attendance.thisMonth || {
-              present: 0,
-              absent: 0,
-              late: 0,
-              totalHours: 0
-            }
+            checkIns: portalData.attendance.today.checkIn ? [portalData.attendance.today.checkIn] : [],
+            checkOuts: portalData.attendance.today.checkOut ? [portalData.attendance.today.checkOut] : [],
+            status: portalData.attendance.today.status || 'Absent',
+            totalHours: portalData.attendance.today.hours || 0
+          },
+          thisWeek: portalData.attendance.thisWeek,
+          thisMonth: portalData.attendance.thisMonth
         });
 
         // Update leave balance with real database data
@@ -118,36 +111,12 @@ const EmployeePortal = ({ currentUser }) => {
           setLeaveBalance(portalData.leaveBalance);
         }
 
-          // Update recent attendance
-          if (portalData.recentAttendance) {
-            setRecentAttendance(portalData.recentAttendance);
-          }
-        } else {
-          console.log('No portal data received, using default values');
+        // Update recent attendance with real database data
+        if (portalData.recentAttendance) {
+          setRecentAttendance(portalData.recentAttendance);
         }
       } catch (error) {
         console.error('Error loading employee portal data:', error);
-        // Set default values on error
-        setAttendanceData({
-          today: {
-            checkIns: [],
-            checkOuts: [],
-            status: 'Absent',
-            totalHours: 0
-          },
-          thisWeek: {
-            present: 0,
-            absent: 0,
-            late: 0,
-            totalHours: 0
-          },
-          thisMonth: {
-            present: 0,
-            absent: 0,
-            late: 0,
-            totalHours: 0
-          }
-        });
       }
     }
   };
@@ -576,7 +545,14 @@ const EmployeePortal = ({ currentUser }) => {
           <div className="status-content">
             <div className="status-item">
               <span className="label">Current Time</span>
-              <span className="current-time-display">{currentTime.toLocaleTimeString()}</span>
+              <span className="current-time-display">
+                {currentTime.toLocaleTimeString('en-US', { 
+                  hour: '2-digit', 
+                  minute: '2-digit',
+                  second: '2-digit',
+                  hour12: true 
+                })}
+              </span>
             </div>
             <div className="status-item">
               <span className="label">Status</span>

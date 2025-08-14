@@ -909,12 +909,21 @@ router.post('/:id/check-in', async (req, res) => {
     
     console.log('Employee found:', employee.name);
 
+    // Use UTC time to avoid timezone issues
     const now = new Date();
-    const checkInTime = now.toLocaleTimeString('en-US', { 
+    const utcNow = new Date(now.getTime() + (now.getTimezoneOffset() * 60000));
+    
+    // Format time in 12-hour format with AM/PM
+    const checkInTime = utcNow.toLocaleTimeString('en-US', { 
       hour: '2-digit', 
       minute: '2-digit',
-      hour12: true 
+      hour12: true,
+      timeZone: 'UTC'
     });
+    
+    console.log('Check-in time (UTC):', checkInTime);
+    console.log('Current server time:', now.toLocaleTimeString());
+    console.log('UTC time:', utcNow.toLocaleTimeString('en-US', { timeZone: 'UTC' }));
     
     // Check if already checked in today
     if (employee.attendance.today.checkIn) {
@@ -925,10 +934,10 @@ router.post('/:id/check-in', async (req, res) => {
       });
     }
     
-    const isLate = now.getHours() > 9 || (now.getHours() === 9 && now.getMinutes() > 30);
+    const isLate = utcNow.getHours() > 9 || (utcNow.getHours() === 9 && utcNow.getMinutes() > 30);
     const status = isLate ? 'Late' : 'Present';
-    // Use local date to avoid timezone issues
-    const today = now.toLocaleDateString('en-CA'); // YYYY-MM-DD format
+    // Use UTC date to avoid timezone issues
+    const today = utcNow.toISOString().split('T')[0]; // YYYY-MM-DD format
 
     // Update today's attendance
     employee.attendance.today = {
@@ -958,7 +967,7 @@ router.post('/:id/check-in', async (req, res) => {
     }
 
     // Update weekly summary
-    const weekStart = getWeekStart(now);
+    const weekStart = getWeekStart(utcNow);
     let weeklySummary = employee.attendance.weeklySummaries.find(summary => summary.weekStart === weekStart);
     
     if (!weeklySummary) {
@@ -980,7 +989,7 @@ router.post('/:id/check-in', async (req, res) => {
     }
 
     // Update monthly summary
-    const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const monthKey = `${utcNow.getFullYear()}-${String(utcNow.getMonth() + 1).padStart(2, '0')}`;
     let monthlySummary = employee.attendance.monthlySummaries.find(summary => summary.month === monthKey);
     
     if (!monthlySummary) {
@@ -1071,12 +1080,20 @@ router.post('/:id/check-out', async (req, res) => {
       });
     }
 
+    // Use UTC time to avoid timezone issues
     const now = new Date();
-    const checkOutTime = now.toLocaleTimeString('en-US', { 
+    const utcNow = new Date(now.getTime() + (now.getTimezoneOffset() * 60000));
+    
+    const checkOutTime = utcNow.toLocaleTimeString('en-US', { 
       hour: '2-digit', 
       minute: '2-digit',
-      hour12: true 
+      hour12: true,
+      timeZone: 'UTC'
     });
+
+    console.log('Check-out time (UTC):', checkOutTime);
+    console.log('Current server time:', now.toLocaleTimeString());
+    console.log('UTC time:', utcNow.toLocaleTimeString('en-US', { timeZone: 'UTC' }));
 
     // Calculate hours worked
     let hoursWorked = 0;
@@ -1091,7 +1108,7 @@ router.post('/:id/check-out', async (req, res) => {
     employee.attendance.today.hours = hoursWorked;
 
     // Update attendance record
-    const today = now.toLocaleDateString('en-CA'); // YYYY-MM-DD format
+    const today = utcNow.toISOString().split('T')[0]; // YYYY-MM-DD format
     const existingRecordIndex = employee.attendance.records.findIndex(record => record.date === today);
     
     if (existingRecordIndex >= 0) {
@@ -1109,7 +1126,7 @@ router.post('/:id/check-out', async (req, res) => {
     }
 
     // Update weekly summary
-    const weekStart = getWeekStart(now);
+    const weekStart = getWeekStart(utcNow);
     let weeklySummary = employee.attendance.weeklySummaries.find(summary => summary.weekStart === weekStart);
     
     if (weeklySummary) {
@@ -1128,22 +1145,25 @@ router.post('/:id/check-out', async (req, res) => {
     }
 
     // Update monthly summary
-    const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const monthKey = `${utcNow.getFullYear()}-${String(utcNow.getMonth() + 1).padStart(2, '0')}`;
     let monthlySummary = employee.attendance.monthlySummaries.find(summary => summary.month === monthKey);
     
-    if (monthlySummary) {
-      // Update total hours
-      monthlySummary.totalHours += hoursWorked;
-    } else {
-      // Create new monthly summary if it doesn't exist
+    if (!monthlySummary) {
       monthlySummary = {
         month: monthKey,
         present: 0,
         absent: 0,
         late: 0,
-        totalHours: hoursWorked
+        totalHours: 0
       };
       employee.attendance.monthlySummaries.push(monthlySummary);
+    }
+
+    // Update monthly summary counts
+        if (status === 'Present') {
+          monthlySummary.present++;
+        } else if (status === 'Late') {
+          monthlySummary.late++;
     }
 
     // Save the updated employee data with enhanced error handling
