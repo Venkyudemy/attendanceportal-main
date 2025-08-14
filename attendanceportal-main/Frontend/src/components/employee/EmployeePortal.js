@@ -67,92 +67,93 @@ const EmployeePortal = ({ currentUser }) => {
   }, []);
 
   // Load employee portal data from database
-  useEffect(() => {
-    const loadEmployeePortalData = async () => {
-      if (currentUser?.id || currentUser?.email) {
-        try {
-          // Try to find employee by email if ID doesn't work
-          let employeeId = currentUser.id;
-          if (!employeeId && currentUser.email) {
-            const employeeData = await findEmployeeByEmail(currentUser.email);
-            if (employeeData && employeeData._id) {
-              employeeId = employeeData._id;
-              console.log('Found employee by email for portal data:', employeeId);
-            } else {
-              console.error('Employee not found by email:', currentUser.email);
-              return;
-            }
-          }
-          
-          if (!employeeId) {
-            console.error('No employee ID found');
+  const loadEmployeePortalData = async () => {
+    if (currentUser?.id || currentUser?.email) {
+      try {
+        // Try to find employee by email if ID doesn't work
+        let employeeId = currentUser.id;
+        if (!employeeId && currentUser.email) {
+          const employeeData = await findEmployeeByEmail(currentUser.email);
+          if (employeeData && employeeData._id) {
+            employeeId = employeeData._id;
+            console.log('Found employee by email for portal data:', employeeId);
+          } else {
+            console.error('Employee not found by email:', currentUser.email);
             return;
           }
-          
-          const portalData = await getEmployeePortalData(employeeId);
-          
-          if (portalData && portalData.attendance) {
-          // Update attendance data with real database data
-          setAttendanceData({
-            today: {
-                checkIns: portalData.attendance.today?.checkIn ? [portalData.attendance.today.checkIn] : [],
-                checkOuts: portalData.attendance.today?.checkOut ? [portalData.attendance.today.checkOut] : [],
-                status: portalData.attendance.today?.status || 'Absent',
-                totalHours: portalData.attendance.today?.hours || 0
-              },
-              thisWeek: portalData.attendance.thisWeek || {
-                present: 0,
-                absent: 0,
-                late: 0,
-                totalHours: 0
-              },
-              thisMonth: portalData.attendance.thisMonth || {
-                present: 0,
-                absent: 0,
-                late: 0,
-                totalHours: 0
-              }
-          });
-
-          // Update leave balance with real database data
-          if (portalData.leaveBalance) {
-            setLeaveBalance(portalData.leaveBalance);
-          }
-
-            // Update recent attendance
-            if (portalData.recentAttendance) {
-              setRecentAttendance(portalData.recentAttendance);
-            }
-          } else {
-            console.log('No portal data received, using default values');
-          }
-        } catch (error) {
-          console.error('Error loading employee portal data:', error);
-          // Set default values on error
-          setAttendanceData({
-            today: {
-              checkIns: [],
-              checkOuts: [],
-              status: 'Absent',
-              totalHours: 0
-            },
-            thisWeek: {
-              present: 0,
-              absent: 0,
-              late: 0,
-              totalHours: 0
-            },
-            thisMonth: {
-              present: 0,
-              absent: 0,
-              late: 0,
-              totalHours: 0
-            }
-          });
         }
-      }
-    };
+        
+        if (!employeeId) {
+          console.error('No employee ID found');
+          return;
+        }
+        
+        const portalData = await getEmployeePortalData(employeeId);
+        
+        if (portalData && portalData.attendance) {
+        // Update attendance data with real database data
+        setAttendanceData({
+          today: {
+              checkIns: portalData.attendance.today?.checkIn ? [portalData.attendance.today.checkIn] : [],
+              checkOuts: portalData.attendance.today?.checkOut ? [portalData.attendance.today.checkOut] : [],
+              status: portalData.attendance.today?.status || 'Absent',
+              totalHours: portalData.attendance.today?.hours || 0
+            },
+            thisWeek: portalData.attendance.thisWeek || {
+              present: 0,
+              absent: 0,
+              late: 0,
+              totalHours: 0
+            },
+            thisMonth: portalData.attendance.thisMonth || {
+              present: 0,
+              absent: 0,
+              late: 0,
+              totalHours: 0
+            }
+        });
 
+        // Update leave balance with real database data
+        if (portalData.leaveBalance) {
+          setLeaveBalance(portalData.leaveBalance);
+        }
+
+          // Update recent attendance
+          if (portalData.recentAttendance) {
+            setRecentAttendance(portalData.recentAttendance);
+          }
+        } else {
+          console.log('No portal data received, using default values');
+        }
+      } catch (error) {
+        console.error('Error loading employee portal data:', error);
+        // Set default values on error
+        setAttendanceData({
+          today: {
+            checkIns: [],
+            checkOuts: [],
+            status: 'Absent',
+            totalHours: 0
+          },
+          thisWeek: {
+            present: 0,
+            absent: 0,
+            late: 0,
+            totalHours: 0
+          },
+          thisMonth: {
+            present: 0,
+            absent: 0,
+            late: 0,
+            totalHours: 0
+          }
+        });
+      }
+    }
+  };
+
+  // Load employee portal data on component mount
+  useEffect(() => {
     loadEmployeePortalData();
   }, [currentUser]);
 
@@ -249,9 +250,9 @@ const EmployeePortal = ({ currentUser }) => {
         setCheckInStatus(`Check-in successful at ${result.checkInTime}!`);
         setTimeout(() => setCheckInStatus(''), 5000);
         
-        // Reload portal data to get updated statistics
+        // Refresh portal data to get updated statistics without page reload
         setTimeout(() => {
-          window.location.reload();
+          loadEmployeePortalData();
         }, 2000);
       } else {
         throw new Error('Invalid response from server');
@@ -330,9 +331,9 @@ const EmployeePortal = ({ currentUser }) => {
         setCheckInStatus(`Check-out successful at ${result.checkOutTime}! Hours worked: ${(result.hoursWorked || 0).toFixed(2)}`);
         setTimeout(() => setCheckInStatus(''), 5000);
         
-        // Reload portal data to get updated statistics
+        // Refresh portal data to get updated statistics without page reload
         setTimeout(() => {
-          window.location.reload();
+          loadEmployeePortalData();
         }, 2000);
       } else {
         throw new Error('Invalid response from server');
@@ -361,7 +362,10 @@ const EmployeePortal = ({ currentUser }) => {
       if (response.ok) {
         const result = await response.json();
         window.alert(`Manual reset completed! ${result.employeesReset} employees reset.`);
-        window.location.reload();
+        // Refresh portal data after reset
+        setTimeout(() => {
+          loadEmployeePortalData();
+        }, 1000);
       } else {
         window.alert('Manual reset failed. Please try again.');
       }
@@ -390,7 +394,10 @@ const EmployeePortal = ({ currentUser }) => {
       if (response.ok) {
         const result = await response.json();
         window.alert(`Force reset completed! ${result.employeesReset} employees reset.`);
-        window.location.reload();
+        // Refresh portal data after reset
+        setTimeout(() => {
+          loadEmployeePortalData();
+        }, 1000);
       } else {
         window.alert('Force reset failed. Please try again.');
       }

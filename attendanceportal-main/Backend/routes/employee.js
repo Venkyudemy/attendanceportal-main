@@ -2,6 +2,20 @@ const express = require('express');
 const router = express.Router();
 const Employee = require('../models/Employee');
 const bcrypt = require('bcryptjs');
+const mongoose = require('mongoose');
+
+// Helper function to check database connection
+const checkDatabaseConnection = () => {
+  const connectionState = mongoose.connection.readyState;
+  const states = {
+    0: 'disconnected',
+    1: 'connected',
+    2: 'connecting',
+    3: 'disconnecting'
+  };
+  console.log(`📊 Database connection state: ${states[connectionState]} (${connectionState})`);
+  return connectionState === 1; // 1 = connected
+};
 
 // GET /api/employee/stats - Employee statistics for admin dashboard
 router.get('/stats', async (req, res) => {
@@ -66,6 +80,14 @@ router.get('/attendance', async (req, res) => {
 // GET /api/employee/find-by-email/:email - Find employee by email
 router.get('/find-by-email/:email', async (req, res) => {
   try {
+    // Check database connection
+    if (!checkDatabaseConnection()) {
+      return res.status(503).json({
+        error: 'Service unavailable',
+        message: 'Database connection not available'
+      });
+    }
+    
     const employee = await Employee.findOne({ email: req.params.email }).select('-password');
     
     if (!employee) {
@@ -75,12 +97,49 @@ router.get('/find-by-email/:email', async (req, res) => {
       });
     }
 
+    console.log(`✅ Employee found by email: ${employee.name} (ID: ${employee._id})`);
     res.status(200).json(employee);
   } catch (error) {
     console.error('Error fetching employee by email:', error);
     res.status(500).json({ 
       error: 'Internal server error',
       message: 'Failed to fetch employee data' 
+    });
+  }
+});
+
+// GET /api/employee/database-status - Check database health and employee count
+router.get('/database-status', async (req, res) => {
+  try {
+    const connectionState = mongoose.connection.readyState;
+    const states = {
+      0: 'disconnected',
+      1: 'connected',
+      2: 'connecting',
+      3: 'disconnecting'
+    };
+    
+    const employeeCount = await Employee.countDocuments();
+    const recentEmployees = await Employee.find({}).select('name email attendance.today').limit(5);
+    
+    res.status(200).json({
+      databaseStatus: states[connectionState],
+      connectionState: connectionState,
+      totalEmployees: employeeCount,
+      recentEmployees: recentEmployees.map(emp => ({
+        name: emp.name,
+        email: emp.email,
+        todayCheckIn: emp.attendance.today.checkIn,
+        todayCheckOut: emp.attendance.today.checkOut,
+        todayStatus: emp.attendance.today.status
+      })),
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Error checking database status:', error);
+    res.status(500).json({
+      error: 'Internal server error',
+      message: 'Failed to check database status'
     });
   }
 });
@@ -829,6 +888,15 @@ router.get('/reset-status', async (req, res) => {
 router.post('/:id/check-in', async (req, res) => {
   try {
     console.log('Check-in request for employee ID:', req.params.id);
+    
+    // Check database connection before proceeding
+    if (!checkDatabaseConnection()) {
+      console.error('❌ Database not connected during check-in request');
+      return res.status(503).json({
+        error: 'Service unavailable',
+        message: 'Database connection not available'
+      });
+    }
     const employee = await Employee.findById(req.params.id);
     
     if (!employee) {
@@ -933,8 +1001,22 @@ router.post('/:id/check-in', async (req, res) => {
           monthlySummary.late++;
     }
 
-    // Save the updated employee data
-    await employee.save();
+    // Save the updated employee data with enhanced error handling
+    try {
+      await employee.save();
+      console.log('✅ Employee data saved to MongoDB successfully');
+      
+      // Verify the data was actually saved by fetching it back
+      const savedEmployee = await Employee.findById(employee._id);
+      if (savedEmployee && savedEmployee.attendance.today.checkIn === checkInTime) {
+        console.log('✅ Data verification successful - check-in time confirmed in database');
+      } else {
+        console.warn('⚠️ Data verification failed - check-in time not found in database');
+      }
+    } catch (saveError) {
+      console.error('❌ Failed to save employee data to MongoDB:', saveError);
+      throw new Error('Database save operation failed');
+    }
     
     // Log comprehensive data for verification
     console.log('=== CHECK-IN DATA SAVED SUCCESSFULLY ===');
@@ -947,6 +1029,7 @@ router.post('/:id/check-in', async (req, res) => {
     console.log('Total Records:', employee.attendance.records.length);
     console.log('Weekly Summaries:', employee.attendance.weeklySummaries.length);
     console.log('Monthly Summaries:', employee.attendance.monthlySummaries.length);
+    console.log('MongoDB Document ID:', employee._id);
     console.log('========================================');
 
     res.status(200).json({
@@ -968,6 +1051,17 @@ router.post('/:id/check-in', async (req, res) => {
 // POST /api/employee/:id/check-out - Employee check-out
 router.post('/:id/check-out', async (req, res) => {
   try {
+    console.log('Check-out request for employee ID:', req.params.id);
+    
+    // Check database connection before proceeding
+    if (!checkDatabaseConnection()) {
+      console.error('❌ Database not connected during check-out request');
+      return res.status(503).json({
+        error: 'Service unavailable',
+        message: 'Database connection not available'
+      });
+    }
+    
     const employee = await Employee.findById(req.params.id);
     
     if (!employee) {
@@ -1052,8 +1146,22 @@ router.post('/:id/check-out', async (req, res) => {
       employee.attendance.monthlySummaries.push(monthlySummary);
     }
 
-    // Save the updated employee data
-    await employee.save();
+    // Save the updated employee data with enhanced error handling
+    try {
+      await employee.save();
+      console.log('✅ Employee data saved to MongoDB successfully');
+      
+      // Verify the data was actually saved by fetching it back
+      const savedEmployee = await Employee.findById(employee._id);
+      if (savedEmployee && savedEmployee.attendance.today.checkOut === checkOutTime) {
+        console.log('✅ Data verification successful - check-out time confirmed in database');
+      } else {
+        console.warn('⚠️ Data verification failed - check-out time not found in database');
+      }
+    } catch (saveError) {
+      console.error('❌ Failed to save employee data to MongoDB:', saveError);
+      throw new Error('Database save operation failed');
+    }
     
     // Log comprehensive data for verification
     console.log('=== CHECK-OUT DATA SAVED SUCCESSFULLY ===');
@@ -1068,6 +1176,7 @@ router.post('/:id/check-out', async (req, res) => {
     console.log('Total Records:', employee.attendance.records.length);
     console.log('Weekly Summaries:', employee.attendance.weeklySummaries.length);
     console.log('Monthly Summaries:', employee.attendance.monthlySummaries.length);
+    console.log('MongoDB Document ID:', employee._id);
     console.log('==========================================');
 
     res.status(200).json({
