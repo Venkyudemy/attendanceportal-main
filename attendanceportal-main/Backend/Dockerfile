@@ -1,26 +1,4 @@
 # Backend Dockerfile - Optimized Production Build with Daily Reset
-FROM node:18-alpine AS builder
-
-# Set working directory
-WORKDIR /app
-
-# Set environment variables
-ENV NODE_ENV=production
-
-# Install curl for health checks and timezone data
-RUN apk add --no-cache curl tzdata
-
-# Copy package files
-COPY package*.json ./
-
-# Install ALL dependencies (including dev dependencies for potential build tools)
-RUN npm ci --cache /tmp/.npm && \
-    npm cache clean --force
-
-# Copy source code
-COPY . .
-
-# Production stage
 FROM node:18-alpine AS production
 
 # Set working directory
@@ -35,15 +13,15 @@ ENV TZ=UTC
 RUN apk add --no-cache curl tzdata && \
     rm -rf /var/cache/apk/*
 
-# Copy package files
+# Copy package files first for better caching
 COPY package*.json ./
 
 # Install only production dependencies
 RUN npm ci --only=production --cache /tmp/.npm && \
     npm cache clean --force
 
-# Copy built application from builder stage
-COPY --from=builder /app ./
+# Copy application source code
+COPY . .
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs && \

@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Leave PATCH API</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 20px; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .test-result { 
+            margin: 15px 0; 
+            padding: 15px; 
+            border-radius: 8px;
+            border-left: 4px solid;
+        }
+        .success { 
+            background-color: #d4edda; 
+            color: #155724; 
+            border-left-color: #28a745;
+        }
+        .error { 
+            background-color: #f8d7da; 
+            color: #721c24; 
+            border-left-color: #dc3545;
+        }
+        .warning {
+            background-color: #fff3cd;
+            color: #856404;
+            border-left-color: #ffc107;
+        }
+        button { 
+            padding: 12px 24px; 
+            margin: 8px; 
+            cursor: pointer;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        .leave-item {
+            background: #f8f9fa;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Test Leave PATCH API</h1>
+        <p>This will test the exact PATCH method that's failing in the admin portal.</p>
+        
+        <button onclick="testLeavePatch()" class="btn-primary">Test Leave PATCH API</button>
+        <button onclick="testDirectPatch()" class="btn-success">Test Direct PATCH</button>
+        
+        <div id="results"></div>
+        <div id="leave-data"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5000/api';
+        
+        function addResult(message, type = 'success') {
+            const resultsDiv = document.getElementById('results');
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `test-result ${type}`;
+            resultDiv.innerHTML = message;
+            resultsDiv.appendChild(resultDiv);
+        }
+        
+        function displayLeaveData(leaveRequests) {
+            const container = document.getElementById('leave-data');
+            container.innerHTML = '<h3>Current Leave Requests:</h3>';
+            
+            leaveRequests.forEach(request => {
+                const div = document.createElement('div');
+                div.className = 'leave-item';
+                div.innerHTML = `
+                    <strong>ID:</strong> ${request._id}<br>
+                    <strong>Employee:</strong> ${request.employeeName}<br>
+                    <strong>Type:</strong> ${request.leaveType}<br>
+                    <strong>Status:</strong> ${request.status}<br>
+                    <strong>Duration:</strong> ${new Date(request.startDate).toLocaleDateString()} to ${new Date(request.endDate).toLocaleDateString()}<br>
+                    <button onclick="testSpecificPatch('${request._id}')" class="btn-success">Test PATCH for this request</button>
+                `;
+                container.appendChild(div);
+            });
+        }
+        
+        async function testLeavePatch() {
+            try {
+                addResult('<strong>Testing Leave PATCH API...</strong>', 'warning');
+                
+                // Step 1: Get leave requests
+                const response = await fetch(`${API_BASE}/leave/admin`);
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch leave requests: ${response.status}`);
+                }
+                
+                const leaveRequests = await response.json();
+                addResult(`<strong>Found ${leaveRequests.length} leave requests</strong>`, 'success');
+                displayLeaveData(leaveRequests);
+                
+                if (leaveRequests.length === 0) {
+                    addResult('<strong>No leave requests found. Please create some first.</strong>', 'error');
+                    return;
+                }
+                
+                // Step 2: Test PATCH on first request
+                const firstRequest = leaveRequests[0];
+                addResult(`<strong>Testing PATCH for request ID: ${firstRequest._id}</strong>`, 'warning');
+                
+                const patchResponse = await fetch(`${API_BASE}/leave/${firstRequest._id}/status`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        status: 'Approved',
+                        adminNotes: 'Test approval from debug tool'
+                    })
+                });
+                
+                addResult(`<strong>PATCH Response Status: ${patchResponse.status}</strong>`, 'warning');
+                
+                if (!patchResponse.ok) {
+                    const errorText = await patchResponse.text();
+                    addResult(`<strong>PATCH failed:</strong> ${errorText}`, 'error');
+                    return;
+                }
+                
+                const updatedRequest = await patchResponse.json();
+                addResult(`<strong>PATCH successful!</strong> Status updated to: ${updatedRequest.status}`, 'success');
+                
+                // Step 3: Verify the update
+                const verifyResponse = await fetch(`${API_BASE}/leave/admin`);
+                const updatedRequests = await verifyResponse.json();
+                const verifiedRequest = updatedRequests.find(req => req._id === firstRequest._id);
+                
+                if (verifiedRequest && verifiedRequest.status === 'Approved') {
+                    addResult('<strong>Verification successful!</strong> The status was properly updated.', 'success');
+                } else {
+                    addResult('<strong>Verification failed!</strong> The status was not updated properly.', 'error');
+                }
+                
+            } catch (error) {
+                addResult(`<strong>Error during PATCH test:</strong> ${error.message}`, 'error');
+                console.error('Full error:', error);
+            }
+        }
+        
+        async function testSpecificPatch(requestId) {
+            try {
+                addResult(`<strong>Testing PATCH for specific request: ${requestId}</strong>`, 'warning');
+                
+                const patchResponse = await fetch(`${API_BASE}/leave/${requestId}/status`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        status: 'Approved',
+                        adminNotes: 'Test approval from specific test'
+                    })
+                });
+                
+                addResult(`<strong>PATCH Response Status: ${patchResponse.status}</strong>`, 'warning');
+                
+                if (!patchResponse.ok) {
+                    const errorText = await patchResponse.text();
+                    addResult(`<strong>PATCH failed:</strong> ${errorText}`, 'error');
+                    return;
+                }
+                
+                const updatedRequest = await patchResponse.json();
+                addResult(`<strong>PATCH successful!</strong> Status updated to: ${updatedRequest.status}`, 'success');
+                
+                // Refresh the display
+                setTimeout(testLeavePatch, 1000);
+                
+            } catch (error) {
+                addResult(`<strong>Error during specific PATCH test:</strong> ${error.message}`, 'error');
+            }
+        }
+        
+        async function testDirectPatch() {
+            try {
+                addResult('<strong>Testing direct PATCH without fetching first...</strong>', 'warning');
+                
+                // Use a hardcoded request ID for testing
+                const testRequestId = '689cb2a8fb86d89a00227288'; // This should be a real ID from your database
+                
+                const patchResponse = await fetch(`${API_BASE}/leave/${testRequestId}/status`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        status: 'Approved',
+                        adminNotes: 'Direct test approval'
+                    })
+                });
+                
+                addResult(`<strong>Direct PATCH Response Status: ${patchResponse.status}</strong>`, 'warning');
+                
+                if (!patchResponse.ok) {
+                    const errorText = await patchResponse.text();
+                    addResult(`<strong>Direct PATCH failed:</strong> ${errorText}`, 'error');
+                    return;
+                }
+                
+                const updatedRequest = await patchResponse.json();
+                addResult(`<strong>Direct PATCH successful!</strong> Status updated to: ${updatedRequest.status}`, 'success');
+                
+            } catch (error) {
+                addResult(`<strong>Error during direct PATCH test:</strong> ${error.message}`, 'error');
+            }
+        }
+        
+        // Auto-run test on page load
+        window.onload = function() {
+            addResult('<strong>Leave PATCH API test tool loaded. Click "Test Leave PATCH API" to start.</strong>', 'warning');
+        };
+    </script>
+</body>
+</html>

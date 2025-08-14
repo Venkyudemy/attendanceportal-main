@@ -10,7 +10,7 @@ ENV CI=false
 ENV GENERATE_SOURCEMAP=false
 ENV REACT_APP_API_URL=/api
 
-# Copy package files
+# Copy package files first for better caching
 COPY package*.json ./
 
 # Install dependencies with clean npm cache
@@ -41,11 +41,12 @@ COPY nginx.conf /etc/nginx/nginx.conf
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nextjs -u 1001
 
-# Change ownership of the app directory
+# Change ownership of the app directory and nginx files
 RUN chown -R nextjs:nodejs /usr/share/nginx/html && \
     chown -R nextjs:nodejs /var/cache/nginx && \
     chown -R nextjs:nodejs /var/log/nginx && \
-    chown -R nextjs:nodejs /etc/nginx/conf.d
+    chown -R nextjs:nodejs /etc/nginx/conf.d && \
+    chown -R nextjs:nodejs /var/run
 
 # Switch to non-root user
 USER nextjs

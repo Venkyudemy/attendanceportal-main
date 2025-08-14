@@ -23,6 +23,19 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+        reservations:
+          memory: 512M
+          cpus: '0.25'
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   # Backend API Service with Daily Reset
   backend:
@@ -65,12 +78,17 @@ services:
         reservations:
           memory: 512M
           cpus: '0.25'
-    # Add logging for daily reset monitoring
     logging:
       driver: "json-file"
       options:
         max-size: "10m"
         max-file: "3"
+    security_opt:
+      - no-new-privileges:true
+    read_only: false
+    tmpfs:
+      - /tmp
+      - /var/tmp
 
   # Frontend Service with Nginx and Daily Reset UI
   frontend:
@@ -105,12 +123,19 @@ services:
         reservations:
           memory: 256M
           cpus: '0.1'
-    # Add logging for frontend monitoring
     logging:
       driver: "json-file"
       options:
         max-size: "10m"
         max-file: "3"
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/tmp
+      - /var/cache/nginx
+      - /var/log/nginx
 
   # Nginx Reverse Proxy (Optional - for load balancing)
   nginx:
@@ -132,6 +157,26 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.1'
+        reservations:
+          memory: 128M
+          cpus: '0.05'
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/cache/nginx
+      - /var/log/nginx
 
 volumes:
   mongodb_data:
