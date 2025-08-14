@@ -43,18 +43,18 @@ RUN mkdir -p /var/cache/nginx/client_temp \
     /var/cache/nginx/proxy_temp \
     /var/cache/nginx/scgi_temp \
     /var/cache/nginx/uwsgi_temp \
-    /var/log/nginx \
-    /var/run && \
+    /var/log/nginx && \
+    touch /tmp/nginx.pid && \
     chown -R nginx:nginx /var/cache/nginx \
     /var/log/nginx \
     /usr/share/nginx/html \
     /etc/nginx/conf.d \
-    /var/run && \
+    /tmp/nginx.pid && \
     chmod -R 755 /var/cache/nginx \
     /var/log/nginx \
-    /usr/share/nginx/html \
-    /var/run && \
-    chmod 644 /etc/nginx/conf.d/default.conf
+    /usr/share/nginx/html && \
+    chmod 644 /etc/nginx/conf.d/default.conf \
+    /tmp/nginx.pid
 
 # Switch to nginx user (nginx user already exists in nginx:alpine)
 USER nginx
