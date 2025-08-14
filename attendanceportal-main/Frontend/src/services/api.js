@@ -130,7 +130,7 @@ export const getEmployeeAttendance = async () => {
 };
 
 export const getEmployeeById = async (employeeId) => {
-  return apiCall(`/employee/${employeeId}`);
+  return apiCall(`/employee/details/${employeeId}`);
 };
 
 export const updateEmployee = async (employeeId, employeeData) => {

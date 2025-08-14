@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { getEmployeeById, updateEmployee } from '../../services/api';
 import './EditEmployee.css';
 
 const EditEmployee = () => {
@@ -28,13 +29,7 @@ const EditEmployee = () => {
     const fetchEmployee = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`http://localhost:5000/api/employee/details/${employeeId}`);
-        
-        if (!response.ok) {
-          throw new Error('Failed to fetch employee details');
-        }
-        
-        const data = await response.json();
+        const data = await getEmployeeById(employeeId);
         setEmployee(data);
         setFormData({
           name: data.name || '',
@@ -70,30 +65,15 @@ const EditEmployee = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setSaving(true);
-
+    
     try {
-      const response = await fetch(`http://localhost:5000/api/employee/${employeeId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `HTTP ${response.status}: Failed to update employee`);
-      }
-
-      const result = await response.json();
-      console.log('Employee updated successfully:', result);
-      
+      setSaving(true);
+      await updateEmployee(employeeId, formData);
       alert('Employee updated successfully!');
       navigate(`/employee/${employeeId}`);
     } catch (err) {
       console.error('Error updating employee:', err);
-      setError(`Failed to update employee: ${err.message}`);
+      setError('Failed to update employee');
     } finally {
       setSaving(false);
     }

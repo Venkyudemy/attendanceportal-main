@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getEmployeeManagementData, createEmployeeManagement, updateEmployeeManagement } from '../../services/api';
+import { getEmployeeAttendance, createEmployee, updateEmployee } from '../../services/api';
 import './EmployeeManagement.css';
 
 const EmployeeManagement = () => {
@@ -30,7 +30,7 @@ const EmployeeManagement = () => {
     const fetchEmployees = async () => {
       try {
         setLoading(true);
-        const data = await getEmployeeManagementData();
+        const data = await getEmployeeAttendance();
         console.log('Fetched employees:', data);
         setEmployees(data);
         setError(null);
@@ -58,7 +58,7 @@ const EmployeeManagement = () => {
     try {
       if (editingEmployee) {
         // Update existing employee
-        const updatedEmployee = await updateEmployeeManagement(editingEmployee.id, {
+        const updatedEmployee = await updateEmployee(editingEmployee.id, {
           ...formData,
           employeeId: formData.employeeId || '',
           domain: formData.domain || ''
@@ -67,21 +67,19 @@ const EmployeeManagement = () => {
         // Update local state
         setEmployees(employees.map(emp => 
           emp.id === editingEmployee.id 
-            ? updatedEmployee.employee
+            ? updatedEmployee
             : emp
         ));
         setEditingEmployee(null);
       } else {
         // Add new employee
-        const responseData = await createEmployeeManagement({
+        const newEmployee = await createEmployee({
           ...formData,
           employeeId: formData.employeeId || `EMP${Date.now()}`,
           domain: formData.domain || ''
         });
         
-        console.log('New employee response:', responseData);
-        const newEmployee = responseData.employee;
-        console.log('New employee data:', newEmployee);
+        console.log('New employee response:', newEmployee);
         setEmployees([...employees, newEmployee]);
         
         // Automatically navigate to the new employee's profile
