@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { getEmployeeById } from '../../services/api';
 import './EmployeeDetails.css';
 
 const EmployeeDetails = () => {
@@ -15,21 +16,8 @@ const EmployeeDetails = () => {
       try {
         setLoading(true);
         console.log('🔍 Fetching employee details for ID:', employeeId);
-        console.log('🔗 API URL:', `http://localhost:5000/api/employee/details/${employeeId}`);
         
-        const response = await fetch(`http://localhost:5000/api/employee/details/${employeeId}`);
-        
-        console.log('📡 Response status:', response.status);
-        console.log('📡 Response ok:', response.ok);
-        console.log('📡 Response headers:', response.headers);
-        
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('❌ Response not ok. Error text:', errorText);
-          throw new Error(`Failed to fetch employee details: ${response.status} ${response.statusText}`);
-        }
-        
-        const data = await response.json();
+        const data = await getEmployeeById(employeeId);
         console.log('✅ Employee details received:', data);
         console.log('📊 Attendance data:', data.attendance);
         console.log('🆔 Employee ID in data:', data._id);

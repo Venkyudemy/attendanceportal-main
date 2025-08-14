@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getEmployeeManagementData, createEmployeeManagement, updateEmployeeManagement } from '../../services/api';
 import './EmployeeManagement.css';
 
 const EmployeeManagement = () => {
@@ -29,13 +30,7 @@ const EmployeeManagement = () => {
     const fetchEmployees = async () => {
       try {
         setLoading(true);
-        const response = await fetch('http://localhost:5000/api/employee/attendance');
-        
-        if (!response.ok) {
-          throw new Error('Failed to fetch employee data');
-        }
-        
-        const data = await response.json();
+        const data = await getEmployeeManagementData();
         console.log('Fetched employees:', data);
         setEmployees(data);
         setError(null);
@@ -63,52 +58,27 @@ const EmployeeManagement = () => {
     try {
       if (editingEmployee) {
         // Update existing employee
-        const response = await fetch(`http://localhost:5000/api/employee/${editingEmployee.id}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            ...formData,
-            employeeId: formData.employeeId || '',
-            domain: formData.domain || ''
-          })
+        const updatedEmployee = await updateEmployeeManagement(editingEmployee.id, {
+          ...formData,
+          employeeId: formData.employeeId || '',
+          domain: formData.domain || ''
         });
         
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.message || `HTTP ${response.status}: Failed to update employee`);
-        }
-        
         // Update local state
-        const responseData = await response.json();
-        const updatedEmployee = responseData.employee;
         setEmployees(employees.map(emp => 
           emp.id === editingEmployee.id 
-            ? updatedEmployee
+            ? updatedEmployee.employee
             : emp
         ));
         setEditingEmployee(null);
       } else {
         // Add new employee
-        const response = await fetch('http://localhost:5000/api/employee', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            ...formData,
-            employeeId: formData.employeeId || `EMP${Date.now()}`,
-            domain: formData.domain || ''
-          })
+        const responseData = await createEmployeeManagement({
+          ...formData,
+          employeeId: formData.employeeId || `EMP${Date.now()}`,
+          domain: formData.domain || ''
         });
         
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.message || `HTTP ${response.status}: Failed to add employee`);
-        }
-        
-        const responseData = await response.json();
         console.log('New employee response:', responseData);
         const newEmployee = responseData.employee;
         console.log('New employee data:', newEmployee);
@@ -140,7 +110,7 @@ const EmployeeManagement = () => {
     } catch (error) {
       console.error('Error saving employee:', error);
       console.error('Error details:', error.message);
-      alert(`Failed to save employee: ${error.message}. Please check if the backend server is running on http://localhost:5000`);
+      alert(`Failed to save employee: ${error.message}. Please check if the backend server is running.`);
     }
   };
 
