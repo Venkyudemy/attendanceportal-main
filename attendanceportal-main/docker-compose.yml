@@ -120,15 +120,19 @@ services:
         max-file: "3"
     security_opt:
       - no-new-privileges:true
-    read_only: true
+    volumes:
+      - nginx_cache:/var/cache/nginx
+      - nginx_logs:/var/log/nginx
     tmpfs:
       - /tmp
       - /var/tmp
-      - /var/cache/nginx
-      - /var/log/nginx
 
 volumes:
   mongodb_data:
+    driver: local
+  nginx_cache:
+    driver: local
+  nginx_logs:
     driver: local
 
 networks:

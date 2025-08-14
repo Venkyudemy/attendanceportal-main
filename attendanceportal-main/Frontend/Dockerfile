@@ -37,19 +37,24 @@ COPY --from=builder /app/build /usr/share/nginx/html
 # Copy nginx configuration
 COPY nginx.conf /etc/nginx/nginx.conf
 
-# Create non-root user for security
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nextjs -u 1001
+# Create necessary directories and set proper permissions for nginx
+RUN mkdir -p /var/cache/nginx/client_temp \
+    /var/cache/nginx/fastcgi_temp \
+    /var/cache/nginx/proxy_temp \
+    /var/cache/nginx/scgi_temp \
+    /var/cache/nginx/uwsgi_temp \
+    /var/log/nginx && \
+    chown -R nginx:nginx /var/cache/nginx \
+    /var/log/nginx \
+    /usr/share/nginx/html \
+    /etc/nginx/conf.d && \
+    chmod -R 755 /var/cache/nginx \
+    /var/log/nginx \
+    /usr/share/nginx/html && \
+    chmod 644 /etc/nginx/conf.d/default.conf
 
-# Change ownership of the app directory and nginx files
-RUN chown -R nextjs:nodejs /usr/share/nginx/html && \
-    chown -R nextjs:nodejs /var/cache/nginx && \
-    chown -R nextjs:nodejs /var/log/nginx && \
-    chown -R nextjs:nodejs /etc/nginx/conf.d && \
-    chown -R nextjs:nodejs /var/run
-
-# Switch to non-root user
-USER nextjs
+# Switch to nginx user (nginx user already exists in nginx:alpine)
+USER nginx
 
 # Expose port 80
 EXPOSE 80
