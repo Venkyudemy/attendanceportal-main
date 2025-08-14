@@ -25,7 +25,7 @@ RUN npm run build && \
     npm prune --production
 
 # Production stage with nginx
-FROM nginx:alpine
+FROM nginx:alpine AS production
 
 # Install curl for health checks and cleanup
 RUN apk add --no-cache curl && \
