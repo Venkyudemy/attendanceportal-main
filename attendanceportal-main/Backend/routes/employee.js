@@ -2144,7 +2144,7 @@ router.get('/:id/attendance-details', async (req, res) => {
 
     // Default to current month and year if not specified
     const currentDate = new Date();
-    // Use local time instead of UTC to avoid timezone issues
+    // Use consistent timezone handling
     const targetMonth = month ? parseInt(month) - 1 : currentDate.getMonth();
     const targetYear = year ? parseInt(year) : currentDate.getFullYear();
     
@@ -2170,9 +2170,9 @@ router.get('/:id/attendance-details', async (req, res) => {
 
     // Add all days of the month
     for (let day = 1; day <= daysInMonth; day++) {
-      // Create date in local time to avoid timezone issues
-      const date = new Date(targetYear, targetMonth, day, 12, 0, 0); // Use noon to avoid timezone edge cases
-      const dateString = date.toLocaleDateString('en-CA'); // Use YYYY-MM-DD format in local time
+      // Create date with consistent timezone handling
+      const date = new Date(targetYear, targetMonth, day, 12, 0, 0);
+      const dateString = date.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }); // Use consistent timezone
       const isWeekend = date.getDay() === 0 || date.getDay() === 6;
       const isToday = date.toDateString() === currentDate.toDateString();
       
@@ -2207,7 +2207,10 @@ router.get('/:id/attendance-details', async (req, res) => {
       calendarData.push({
         date: date,
         day: day,
-        dayName: date.toLocaleDateString('en-US', { weekday: 'short' }),
+        dayName: date.toLocaleDateString('en-US', { 
+          weekday: 'short',
+          timeZone: 'Asia/Kolkata'
+        }),
         status,
         checkIn,
         checkOut,

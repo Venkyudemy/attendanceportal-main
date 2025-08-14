@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { findEmployeeByEmail, getAttendanceDetailsById } from '../../services/api';
 import './AttendanceDetails.css';
 
 const AttendanceDetails = ({ currentUser }) => {
@@ -13,20 +14,21 @@ const AttendanceDetails = ({ currentUser }) => {
     const fetchAttendanceData = async () => {
       try {
         setLoading(true);
+        console.log('🔍 Fetching attendance data for user:', currentUser);
         
         // Get employee ID from currentUser or location state
         let employeeId = currentUser?.id;
         if (!employeeId && currentUser?.email) {
           // Try to find employee by email if ID doesn't work
-          const findResponse = await fetch(`http://localhost:5000/api/employee/find-by-email/${encodeURIComponent(currentUser.email)}`);
-          if (findResponse.ok) {
-            const employeeData = await findResponse.json();
+          const employeeData = await findEmployeeByEmail(currentUser.email);
+          if (employeeData && employeeData._id) {
             employeeId = employeeData._id;
+            console.log('✅ Found employee by email for attendance details:', employeeId);
           }
         }
         
         if (!employeeId) {
-          console.error('No employee ID found');
+          console.error('❌ No employee ID found');
           setLoading(false);
           return;
         }
@@ -34,18 +36,17 @@ const AttendanceDetails = ({ currentUser }) => {
         const month = currentMonth.getMonth() + 1;
         const year = currentMonth.getFullYear();
         
-        const response = await fetch(`http://localhost:5000/api/employee/${employeeId}/attendance-details?month=${month}&year=${year}`);
+        console.log('📅 Fetching attendance for month:', month, 'year:', year);
+        const data = await getAttendanceDetailsById(employeeId, month, year);
+        console.log('📊 Received attendance data:', data);
+        console.log('📅 Calendar data length:', data.calendarData?.length);
+        console.log('📊 Month stats:', data.monthStats);
         
-        if (!response.ok) {
-          throw new Error('Failed to fetch attendance data');
-        }
-        
-        const data = await response.json();
-        setAttendanceData(data.calendarData);
-        setMonthStats(data.monthStats);
+        setAttendanceData(data.calendarData || []);
+        setMonthStats(data.monthStats || { present: 0, late: 0, absent: 0, totalHours: 0 });
         setLoading(false);
       } catch (error) {
-        console.error('Error fetching attendance data:', error);
+        console.error('❌ Error fetching attendance data:', error);
         setLoading(false);
       }
     };
@@ -153,32 +154,42 @@ const AttendanceDetails = ({ currentUser }) => {
           <div className="day-header">Sat</div>
         </div>
         
-                 <div className="calendar-grid">
-           {attendanceData.map((day, index) => (
-             <div 
-               key={index} 
-               className={`calendar-day ${day.isToday ? 'today' : ''} ${day.status && day.status !== 'empty' ? day.status.toLowerCase() : 'empty'}`}
-             >
-               <div className="day-number">{day.day || ''}</div>
-               {day.status && day.status !== 'empty' && (
-                 <>
-                   <div className="day-status">
-                     <span className={`status-badge ${getStatusColor(day.status)}`}>
-                       {day.status}
-                     </span>
-                   </div>
-                   {day.checkIn && (
-                     <div className="day-time">
-                       <div className="time-in">In: {day.checkIn}</div>
-                       <div className="time-out">Out: {day.checkOut}</div>
-                       <div className="time-hours">{day.hours}h</div>
-                     </div>
-                   )}
-                 </>
-               )}
-             </div>
-           ))}
-         </div>
+        <div className="calendar-grid">
+          {console.log('🎯 Rendering calendar with data:', attendanceData)}
+          {attendanceData && attendanceData.length > 0 ? (
+            attendanceData.map((day, index) => {
+              console.log(`📅 Day ${index}:`, day);
+              return (
+                <div 
+                  key={index} 
+                  className={`calendar-day ${day.isToday ? 'today' : ''} ${day.status && day.status !== 'empty' ? day.status.toLowerCase() : 'empty'}`}
+                >
+                  <div className="day-number">{day.day || ''}</div>
+                  {day.status && day.status !== 'empty' && (
+                    <>
+                      <div className="day-status">
+                        <span className={`status-badge ${getStatusColor(day.status)}`}>
+                          {day.status}
+                        </span>
+                      </div>
+                      {day.checkIn && (
+                        <div className="day-time">
+                          <div className="time-in">In: {day.checkIn}</div>
+                          <div className="time-out">Out: {day.checkOut}</div>
+                          <div className="time-hours">{day.hours}h</div>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              );
+            })
+          ) : (
+            <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '20px', color: '#666' }}>
+              No attendance data available for this month
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="attendance-list">
