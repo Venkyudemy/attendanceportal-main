@@ -47,10 +47,12 @@ RUN mkdir -p /var/cache/nginx/client_temp \
     chown -R nginx:nginx /var/cache/nginx \
     /var/log/nginx \
     /usr/share/nginx/html \
-    /etc/nginx/conf.d && \
+    /etc/nginx/conf.d \
+    /tmp && \
     chmod -R 755 /var/cache/nginx \
     /var/log/nginx \
-    /usr/share/nginx/html && \
+    /usr/share/nginx/html \
+    /tmp && \
     chmod 644 /etc/nginx/conf.d/default.conf
 
 # Switch to nginx user (nginx user already exists in nginx:alpine)
