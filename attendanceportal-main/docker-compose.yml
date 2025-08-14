@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   # MongoDB Database
   mongodb:
@@ -15,32 +17,12 @@ services:
       - ./Backend/scripts:/docker-entrypoint-initdb.d
     networks:
       - attendance-network
-    healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-    deploy:
-      resources:
-        limits:
-          memory: 1G
-          cpus: '0.5'
-        reservations:
-          memory: 512M
-          cpus: '0.25'
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
 
-  # Backend API Service with Daily Reset
+  # Backend API Service
   backend:
     build:
       context: ./Backend
       dockerfile: Dockerfile
-      target: production
     container_name: attendance-backend
     restart: unless-stopped
     environment:
@@ -48,133 +30,29 @@ services:
       MONGODB_URI: mongodb://admin:password123@mongodb:27017/attendanceportal?authSource=admin
       PORT: 5000
       JWT_SECRET: your-super-secret-jwt-key-change-in-production
-      MONGODB_MAX_POOL_SIZE: 10
-      MONGODB_TIMEOUT: 30000
-      TZ: UTC
-      # Daily Reset Configuration
-      DAILY_RESET_ENABLED: "true"
-      DAILY_RESET_TIME: "00:00"
-      DAILY_RESET_TIMEZONE: "UTC"
     ports:
       - "5000:5000"
     depends_on:
-      mongodb:
-        condition: service_healthy
+      - mongodb
     networks:
       - attendance-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
-    deploy:
-      resources:
-        limits:
-          memory: 1G
-          cpus: '0.5'
-        reservations:
-          memory: 512M
-          cpus: '0.25'
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-    security_opt:
-      - no-new-privileges:true
-    read_only: false
-    tmpfs:
-      - /tmp
-      - /var/tmp
 
-  # Frontend Service with Nginx and Daily Reset UI
+  # Frontend Service
   frontend:
     build:
       context: ./Frontend
       dockerfile: Dockerfile
-      target: production
     container_name: attendance-frontend
     restart: unless-stopped
     environment:
       - NODE_ENV=production
       - REACT_APP_API_URL=/api
-      - REACT_APP_DAILY_RESET_ENABLED=true
     ports:
       - "80:80"
     depends_on:
-      backend:
-        condition: service_healthy
-    networks:
-      - attendance-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost/"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
-    deploy:
-      resources:
-        limits:
-          memory: 512M
-          cpus: '0.25'
-        reservations:
-          memory: 256M
-          cpus: '0.1'
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-    security_opt:
-      - no-new-privileges:true
-    read_only: true
-    tmpfs:
-      - /tmp
-      - /var/tmp
-      - /var/cache/nginx
-      - /var/log/nginx
-
-  # Nginx Reverse Proxy (Optional - for load balancing)
-  nginx:
-    image: nginx:alpine
-    container_name: attendance-nginx
-    restart: unless-stopped
-    ports:
-      - "8080:80"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-    depends_on:
-      - frontend
       - backend
     networks:
       - attendance-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost/"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
-    deploy:
-      resources:
-        limits:
-          memory: 256M
-          cpus: '0.1'
-        reservations:
-          memory: 128M
-          cpus: '0.05'
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-    security_opt:
-      - no-new-privileges:true
-    read_only: true
-    tmpfs:
-      - /tmp
-      - /var/cache/nginx
-      - /var/log/nginx
 
 volumes:
   mongodb_data:
@@ -183,6 +61,3 @@ volumes:
 networks:
   attendance-network:
     driver: bridge
-    ipam:
-      config:
-        - subnet: 172.20.0.0/16

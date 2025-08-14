@@ -32,8 +32,7 @@ Backend/
 ├── 📁 startup/          # Startup scripts
 │   ├── start.sh         # Linux/Mac startup
 │   └── start.bat        # Windows startup
-├── 📁 docker/           # Docker files
-│   └── Dockerfile       # Backend container
+
 ├── 📁 config/           # Configuration
 │   └── healthcheck.js   # Health check script
 ├── package.json          # Dependencies
@@ -76,14 +75,7 @@ npm run start
 start.bat           # Windows
 ```
 
-## 🐳 Docker Deployment
-```bash
-# Build image
-docker build -t attendance-backend .
 
-# Run container
-docker run -p 5000:5000 attendance-backend
-```
 
 ## 📊 API Endpoints
 
