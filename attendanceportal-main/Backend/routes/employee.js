@@ -909,20 +909,20 @@ router.post('/:id/check-in', async (req, res) => {
     
     console.log('Employee found:', employee.name);
 
-    // Use UTC time to avoid timezone issues and ensure consistency
+    // Use server local time to match frontend display
     const now = new Date();
-    const utcTime = new Date(now.getTime() + (now.getTimezoneOffset() * 60000));
     
-    // Format time consistently using 12-hour format
-    const checkInTime = utcTime.toLocaleTimeString('en-US', { 
+    // Format time consistently using 12-hour format (server local time)
+    const checkInTime = now.toLocaleTimeString('en-US', { 
       hour: '2-digit', 
       minute: '2-digit',
       hour12: true,
-      timeZone: 'UTC'
+      timeZone: 'Asia/Kolkata'
     });
     
-    console.log('Current UTC time:', utcTime.toISOString());
+    console.log('Current server time:', now.toISOString());
     console.log('Formatted check-in time:', checkInTime);
+    console.log('Server timezone offset:', now.getTimezoneOffset());
     
     // Check if already checked in today
     if (employee.attendance.today.checkIn) {
@@ -933,14 +933,14 @@ router.post('/:id/check-in', async (req, res) => {
       });
     }
     
-    // Check if late (after 9:30 AM)
-    const isLate = utcTime.getHours() > 9 || (utcTime.getHours() === 9 && utcTime.getMinutes() > 30);
+    // Check if late (after 9:30 AM) using server local time
+    const isLate = now.getHours() > 9 || (now.getHours() === 9 && now.getMinutes() > 30);
     const status = isLate ? 'Late' : 'Present';
     
-    // Use UTC date to avoid timezone issues
-    const today = utcTime.toISOString().split('T')[0]; // YYYY-MM-DD format
+    // Use server local date
+    const today = now.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }); // YYYY-MM-DD format
 
-    console.log('Today\'s date (UTC):', today);
+    console.log('Today\'s date (server local):', today);
     console.log('Is late:', isLate);
     console.log('Status:', status);
 
@@ -951,7 +951,7 @@ router.post('/:id/check-in', async (req, res) => {
       status: status,
       isLate: isLate,
       date: today, // Store the date for reference
-      timestamp: utcTime.toISOString() // Store full timestamp for debugging
+      timestamp: now.toISOString() // Store full timestamp for debugging
     };
 
     // Add to attendance records
@@ -961,7 +961,7 @@ router.post('/:id/check-in', async (req, res) => {
       employee.attendance.records[existingRecordIndex].checkIn = checkInTime;
       employee.attendance.records[existingRecordIndex].status = status;
       employee.attendance.records[existingRecordIndex].isLate = isLate;
-      employee.attendance.records[existingRecordIndex].timestamp = utcTime.toISOString();
+      employee.attendance.records[existingRecordIndex].timestamp = now.toISOString();
     } else {
       employee.attendance.records.push({
         date: today,
@@ -970,12 +970,12 @@ router.post('/:id/check-in', async (req, res) => {
         status: status,
         hours: 0,
         isLate: isLate,
-        timestamp: utcTime.toISOString()
+        timestamp: now.toISOString()
       });
     }
 
     // Update weekly summary
-    const weekStart = getWeekStart(utcTime);
+    const weekStart = getWeekStart(now);
     let weeklySummary = employee.attendance.weeklySummaries.find(summary => summary.weekStart === weekStart);
     
     if (!weeklySummary) {
@@ -997,7 +997,7 @@ router.post('/:id/check-in', async (req, res) => {
     }
 
     // Update monthly summary
-    const monthKey = `${utcTime.getFullYear()}-${String(utcTime.getMonth() + 1).padStart(2, '0')}`;
+    const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     let monthlySummary = employee.attendance.monthlySummaries.find(summary => summary.month === monthKey);
     
     if (!monthlySummary) {
@@ -1041,7 +1041,7 @@ router.post('/:id/check-in', async (req, res) => {
     console.log('Employee ID:', employee._id);
     console.log('Date:', today);
     console.log('Check-in Time:', checkInTime);
-    console.log('UTC Timestamp:', utcTime.toISOString());
+    console.log('Server Timestamp:', now.toISOString());
     console.log('Status:', status);
     console.log('Is Late:', isLate);
     console.log('Total Records:', employee.attendance.records.length);
@@ -1056,7 +1056,7 @@ router.post('/:id/check-in', async (req, res) => {
       status: status,
       isLate: isLate,
       employeeName: employee.name,
-      timestamp: utcTime.toISOString()
+      timestamp: now.toISOString()
     });
   } catch (error) {
     console.error('Error during check-in:', error);
@@ -1090,19 +1090,18 @@ router.post('/:id/check-out', async (req, res) => {
       });
     }
 
-    // Use UTC time to avoid timezone issues and ensure consistency
+    // Use server local time to match frontend display
     const now = new Date();
-    const utcTime = new Date(now.getTime() + (now.getTimezoneOffset() * 60000));
     
-    // Format time consistently using 12-hour format
-    const checkOutTime = utcTime.toLocaleTimeString('en-US', { 
+    // Format time consistently using 12-hour format (server local time)
+    const checkOutTime = now.toLocaleTimeString('en-US', { 
       hour: '2-digit', 
       minute: '2-digit',
       hour12: true,
-      timeZone: 'UTC'
+      timeZone: 'Asia/Kolkata'
     });
 
-    console.log('Current UTC time:', utcTime.toISOString());
+    console.log('Current server time:', now.toISOString());
     console.log('Formatted check-out time:', checkOutTime);
 
     // Calculate hours worked
@@ -1116,16 +1115,16 @@ router.post('/:id/check-out', async (req, res) => {
     // Update today's attendance
     employee.attendance.today.checkOut = checkOutTime;
     employee.attendance.today.hours = hoursWorked;
-    employee.attendance.today.timestamp = utcTime.toISOString();
+    employee.attendance.today.timestamp = now.toISOString();
 
     // Update attendance record
-    const today = utcTime.toISOString().split('T')[0]; // YYYY-MM-DD format
+    const today = now.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }); // YYYY-MM-DD format
     const existingRecordIndex = employee.attendance.records.findIndex(record => record.date === today);
     
     if (existingRecordIndex >= 0) {
       employee.attendance.records[existingRecordIndex].checkOut = checkOutTime;
       employee.attendance.records[existingRecordIndex].hours = hoursWorked;
-      employee.attendance.records[existingRecordIndex].timestamp = utcTime.toISOString();
+      employee.attendance.records[existingRecordIndex].timestamp = now.toISOString();
     } else {
       employee.attendance.records.push({
         date: today,
@@ -1134,12 +1133,12 @@ router.post('/:id/check-out', async (req, res) => {
         status: 'Absent',
         hours: hoursWorked,
         isLate: false,
-        timestamp: utcTime.toISOString()
+        timestamp: now.toISOString()
       });
     }
 
     // Update weekly summary
-    const weekStart = getWeekStart(utcTime);
+    const weekStart = getWeekStart(now);
     let weeklySummary = employee.attendance.weeklySummaries.find(summary => summary.weekStart === weekStart);
     
     if (weeklySummary) {

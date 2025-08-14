@@ -70,11 +70,13 @@ const EmployeePortal = ({ currentUser }) => {
 
   // Format time consistently with backend
   const formatTime = (date) => {
+    // Use the same timezone as backend (Asia/Kolkata)
     return date.toLocaleTimeString('en-US', { 
       hour: '2-digit', 
       minute: '2-digit',
       second: '2-digit',
-      hour12: true 
+      hour12: true,
+      timeZone: 'Asia/Kolkata'
     });
   };
 
