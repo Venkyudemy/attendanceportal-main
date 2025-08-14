@@ -1,4 +1,4 @@
-# Simple Backend Dockerfile
+# Backend Dockerfile - Simple Node.js App
 FROM node:18-alpine
 
 # Set working directory
@@ -17,4 +17,4 @@ COPY . .
 EXPOSE 5000
 
 # Start the application
-CMD ["npm", "start"]
+CMD ["node", "index.js"]

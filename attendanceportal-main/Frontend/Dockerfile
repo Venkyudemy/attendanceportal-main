@@ -1,5 +1,5 @@
-# Simple Frontend Dockerfile
-FROM node:18-alpine
+# Frontend Dockerfile - Simple React Build
+FROM node:18-alpine AS builder
 
 # Set working directory
 WORKDIR /app
@@ -13,14 +13,14 @@ RUN npm install
 # Copy source code
 COPY . .
 
-# Build the app
+# Build the React app
 RUN npm run build
 
-# Install nginx
-RUN apk add --no-cache nginx
+# Production stage with nginx
+FROM nginx:alpine
 
-# Copy built app to nginx directory
-RUN cp -r build/* /usr/share/nginx/html/
+# Copy built app from builder stage
+COPY --from=builder /app/build /usr/share/nginx/html
 
 # Copy nginx configuration
 COPY nginx.conf /etc/nginx/nginx.conf
