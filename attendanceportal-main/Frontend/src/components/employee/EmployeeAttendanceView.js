@@ -50,16 +50,24 @@ const EmployeeAttendanceView = () => {
     const fetchEmployeeData = async () => {
       try {
         setLoading(true);
+        console.log('🔍 Fetching employee attendance data for ID:', employeeId);
         
         // Fetch company holidays first
         await fetchCompanyHolidays();
         
         // Fetch employee details
-        const employeeResponse = await fetch(`http://localhost:5000/api/employee/${employeeId}`);
+        console.log('📡 Fetching employee details...');
+        const employeeResponse = await fetch(`http://localhost:5000/api/employee/details/${employeeId}`);
+        console.log('📡 Employee response status:', employeeResponse.status);
+        
         if (!employeeResponse.ok) {
+          const errorText = await employeeResponse.text();
+          console.error('❌ Employee fetch failed:', errorText);
           throw new Error('Failed to fetch employee data');
         }
+        
         const employeeData = await employeeResponse.json();
+        console.log('✅ Employee data received:', employeeData);
         setEmployee(employeeData);
 
         // Generate monthly attendance data with proper calendar alignment
@@ -68,9 +76,13 @@ const EmployeeAttendanceView = () => {
         const month = currentDate.getMonth();
         const daysInMonth = new Date(year, month + 1, 0).getDate();
         
+        console.log('📅 Generating calendar for:', year, month + 1, 'Days in month:', daysInMonth);
+        
         // Get the first day of the month and its day of week (0 = Sunday, 1 = Monday, etc.)
         const firstDayOfMonth = new Date(year, month, 1);
         const startingDayOfWeek = firstDayOfMonth.getDay();
+        
+        console.log('📅 First day of month:', firstDayOfMonth, 'Starting day of week:', startingDayOfWeek);
         
         const monthlyData = [];
         
@@ -139,31 +151,34 @@ const EmployeeAttendanceView = () => {
         }
         
         setAttendanceData(monthlyData);
-        setError(null);
+        console.log('✅ Calendar data generated:', monthlyData.length, 'days');
       } catch (err) {
-        console.error('Error fetching employee data:', err);
-        setError('Failed to load employee data');
+        console.error('❌ Error fetching employee attendance data:', err);
+        setError('Failed to load employee attendance data');
       } finally {
         setLoading(false);
+        console.log('🏁 Employee attendance data loading completed');
       }
     };
 
     fetchEmployeeData();
   }, [employeeId, getHolidayName, isCompanyHoliday]);
 
-  const getStatusColor = (status, isHoliday) => {
-    if (isHoliday) return 'holiday';
-    switch (status) {
-      case 'Present': return 'success';
-      case 'Late': return 'warning';
-      case 'Absent': return 'danger';
-      case 'On Leave': return 'info';
-      case 'Weekend': return 'secondary';
-      default: return 'secondary';
-    }
-  };
-
   const getMonthStats = () => {
+    if (!attendanceData || attendanceData.length === 0) {
+      return {
+        totalDays: 0,
+        presentDays: 0,
+        lateDays: 0,
+        absentDays: 0,
+        leaveDays: 0,
+        weekendDays: 0,
+        holidayDays: 0,
+        totalHours: 0,
+        attendanceRate: 0
+      };
+    }
+
     const totalDays = attendanceData.length;
     const presentDays = attendanceData.filter(day => day.status === 'Present').length;
     const lateDays = attendanceData.filter(day => day.status === 'Late').length;
@@ -186,6 +201,30 @@ const EmployeeAttendanceView = () => {
       totalHours,
       attendanceRate
     };
+  };
+
+  const stats = loading ? {
+    totalDays: 0,
+    presentDays: 0,
+    lateDays: 0,
+    absentDays: 0,
+    leaveDays: 0,
+    weekendDays: 0,
+    holidayDays: 0,
+    totalHours: 0,
+    attendanceRate: 0
+  } : getMonthStats();
+
+  const getStatusColor = (status, isHoliday) => {
+    if (isHoliday) return 'holiday';
+    switch (status) {
+      case 'Present': return 'success';
+      case 'Late': return 'warning';
+      case 'Absent': return 'danger';
+      case 'On Leave': return 'info';
+      case 'Weekend': return 'secondary';
+      default: return 'secondary';
+    }
   };
 
   const changeMonth = (direction) => {
@@ -275,8 +314,6 @@ const EmployeeAttendanceView = () => {
     setAttendanceData(newMonthlyData);
   };
 
-  const stats = getMonthStats();
-
   if (loading) {
     return (
       <div className="employee-attendance-view">
@@ -317,13 +354,21 @@ const EmployeeAttendanceView = () => {
         <div className="header-content">
           <button 
             className="back-btn"
-            onClick={() => navigate('/employees')}
+            onClick={() => navigate(`/employee/${employeeId}`)}
           >
-            ← Back to Employees
+            ← Back to Employee Details
           </button>
           <div className="employee-info">
             <div className="employee-avatar">
-              {employee.name.charAt(0).toUpperCase()}
+              {employee.profileImage ? (
+                <img 
+                  src={employee.profileImage} 
+                  alt={employee.name}
+                  className="profile-image"
+                />
+              ) : (
+                employee.name.charAt(0).toUpperCase()
+              )}
             </div>
             <div className="employee-details">
               <h1 className="page-title">{employee.name}</h1>

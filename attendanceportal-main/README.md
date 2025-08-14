@@ -1,239 +1,374 @@
-# 🚀 Attendance Portal - Full Stack Application
+# 🕛 Attendance Portal with Daily Reset
 
-A modern, responsive attendance management system built with React, Node.js, Express, and MongoDB.
+A comprehensive employee attendance management system with **automatic daily reset functionality** that runs at 12:00 AM every day.
 
-## ✨ Features
+## 🎯 **Features**
 
-- **🔐 User Authentication** - Secure login with JWT tokens
-- **👥 Employee Management** - Complete employee lifecycle management
-- **📊 Attendance Tracking** - Real-time attendance monitoring
-- **📅 Leave Management** - Comprehensive leave request system
-- **📱 Responsive Design** - Works on desktop, tablet, and mobile
-- **🔒 Role-Based Access** - Admin and employee permissions
-- **📈 Analytics Dashboard** - Attendance statistics and reports
-- **⚡ Performance Optimized** - Fast loading and smooth interactions
+### **🕛 Daily Reset System**
+- **Automatic Reset**: Runs every day at 12:00 AM (midnight)
+- **Manual Reset**: Admin-controlled reset for testing
+- **Force Reset**: Emergency reset for critical situations
+- **Status Monitoring**: Real-time reset status dashboard
+- **Timezone Support**: Configurable timezone settings
 
-## 🏗️ Tech Stack
+### **✅ Employee Portal**
+- **Check-in/Check-out**: Daily attendance tracking
+- **Duplicate Prevention**: One check-in per day per employee
+- **Status Messages**: Real-time feedback and notifications
+- **Responsive Design**: Works on all devices
+- **Leave Management**: Request and track leave
 
-### Frontend
-- **React 18** - Modern UI framework
-- **CSS3** - Responsive design with media queries
-- **Nginx** - Production web server
+### **👑 Admin Portal**
+- **Employee Management**: Add, edit, and manage employees
+- **Attendance Monitoring**: Real-time attendance tracking
+- **Reset Controls**: Manual and force reset options
+- **Statistics Dashboard**: Comprehensive attendance analytics
+- **Leave Approval**: Approve/reject leave requests
 
-### Backend
-- **Node.js 18** - Server runtime
-- **Express.js** - Web framework
-- **MongoDB** - NoSQL database
-- **JWT** - Authentication tokens
-- **Bcrypt** - Password hashing
+### **🐳 Docker Support**
+- **Production Ready**: Optimized Docker containers
+- **Easy Deployment**: One-command deployment
+- **Health Checks**: Automated health monitoring
+- **Scalable**: Microservices architecture
 
-### DevOps
-- **Docker** - Containerization
-- **Docker Compose** - Multi-container orchestration
-- **Health Checks** - Service monitoring
-- **Production Optimizations** - Performance tuning
+## 🚀 **Quick Start**
 
-## 🚀 Quick Start
+### **Option 1: Docker Deployment (Recommended)**
 
-### Prerequisites
-- Node.js 18+
-- MongoDB 6.0+
-- Docker & Docker Compose (optional)
-
-### Option 1: Local Development
+#### **Windows:**
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/attendanceportal.git
-cd attendanceportal
+git clone https://github.com/Venkyudemy/attendanceportal-main.git
+cd attendanceportal-main
 
-# Start services using batch scripts
-.\start-services.bat          # Basic startup
-.\start-production.bat        # Production mode
-.\fix-connection.bat          # Troubleshooting
+# Run Docker deployment
+docker-start.bat
 ```
 
-### Option 2: Docker Deployment
+#### **Linux/Mac:**
 ```bash
-# Build and run with Docker Compose
-docker-compose up -d --build
+# Clone the repository
+git clone https://github.com/Venkyudemy/attendanceportal-main.git
+cd attendanceportal-main
 
-# Access the application
-Frontend: http://localhost:80
-Backend: http://localhost:5000
-API Health: http://localhost:5000/api/health
+# Make script executable and run
+chmod +x docker-start.sh
+./docker-start.sh
 ```
 
-## 📁 Project Structure
+### **Option 2: Manual Development Setup**
 
-```
-attendanceportal/
-├── 📁 Frontend/              # React application
-│   ├── 📁 public/            # Static assets
-│   ├── 📁 src/               # Source code
-│   └── Dockerfile            # Frontend container
-├── 📁 Backend/               # Node.js API server
-│   ├── 📁 config/            # Configuration files
-│   ├── 📁 models/            # Database models
-│   ├── 📁 routes/            # API endpoints
-│   ├── 📁 scripts/           # Database scripts
-│   └── Dockerfile            # Backend container
-├── 📁 tests/                 # Test files
-├── docker-compose.yml        # Multi-container setup
-├── .dockerignore             # Docker build exclusions
-└── 📋 Documentation          # Guides and instructions
+#### **Backend Setup:**
+```bash
+cd Backend
+npm install
+npm start
 ```
 
-## 🔐 Default Credentials
+#### **Frontend Setup:**
+```bash
+cd Frontend
+npm install
+npm start
+```
 
-### Admin User
-- **Email**: `admin@company.com`
-- **Password**: `admin123`
+#### **Database Setup:**
+```bash
+# Install MongoDB locally or use Docker
+docker run -d -p 27017:27017 --name mongodb mongo:6.0
+```
 
-### Test Employee
-- **Email**: `venkatesh111@gmail.com`
-- **Password**: `password123`
+## 📋 **Prerequisites**
 
-## 🌐 API Endpoints
+### **For Docker Deployment:**
+- Docker Desktop (Windows/Mac) or Docker Engine (Linux)
+- Docker Compose
+- Git
 
-### Authentication
+### **For Manual Setup:**
+- Node.js 18+
+- MongoDB 6.0+
+- Git
+
+## 🔧 **Configuration**
+
+### **Environment Variables**
+
+#### **Backend (.env):**
+```env
+NODE_ENV=production
+MONGODB_URI=mongodb://localhost:27017/attendanceportal
+PORT=5000
+JWT_SECRET=your-super-secret-jwt-key
+TZ=UTC
+
+# Daily Reset Configuration
+DAILY_RESET_ENABLED=true
+DAILY_RESET_TIME=00:00
+DAILY_RESET_TIMEZONE=UTC
+```
+
+#### **Frontend (.env):**
+```env
+REACT_APP_API_URL=http://localhost:5000/api
+REACT_APP_DAILY_RESET_ENABLED=true
+```
+
+## 🏗️ **Architecture**
+
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Frontend      │    │    Backend      │    │    MongoDB      │
+│   (React)       │◄──►│   (Node.js)     │◄──►│   (Database)    │
+│   Port: 3000    │    │   Port: 5000    │    │   Port: 27017   │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+```
+
+### **Components:**
+- **Frontend**: React.js with responsive UI
+- **Backend**: Node.js/Express.js REST API
+- **Database**: MongoDB with Mongoose ODM
+- **Daily Reset**: Automated scheduling system
+
+## 📊 **API Endpoints**
+
+### **Authentication:**
 - `POST /api/auth/login` - User login
 - `POST /api/auth/register` - User registration
 
-### Employee Management
-- `GET /api/employee/stats` - Employee statistics
-- `GET /api/employee/attendance` - Attendance records
-- `POST /api/employee/checkin` - Check-in
-- `POST /api/employee/checkout` - Check-out
+### **Employee Management:**
+- `GET /api/employee/attendance` - Get all employees
+- `POST /api/employee/:id/check-in` - Employee check-in
+- `POST /api/employee/:id/check-out` - Employee check-out
+- `GET /api/employee/:id/portal-data` - Employee portal data
 
-### Leave Management
-- `GET /api/leave` - Leave requests
+### **Daily Reset:**
+- `POST /api/employee/manual-daily-reset` - Manual reset
+- `POST /api/employee/force-reset` - Force reset
+- `GET /api/employee/reset-status` - Reset status
+
+### **Leave Management:**
 - `POST /api/leave` - Create leave request
-- `PUT /api/leave/:id` - Update leave request
+- `GET /api/leave/employee/:id` - Get employee leave requests
+- `PATCH /api/leave/:id/status` - Update leave status
 
-### Health Check
-- `GET /api/health` - Service health status
+## 🧪 **Testing**
 
-## 🐳 Docker Configuration
-
-### Frontend Container
-- **Base**: Node.js 18 Alpine + Nginx
-- **Port**: 80
-- **Features**: Multi-stage build, security hardening, health checks
-
-### Backend Container
-- **Base**: Node.js 18 Alpine
-- **Port**: 5000
-- **Features**: Multi-stage build, production optimizations, memory management
-
-### MongoDB Container
-- **Base**: MongoDB 6.0
-- **Port**: 27017
-- **Features**: Persistent storage, health monitoring, initialization scripts
-
-## ⚡ Performance Features
-
-- **Gzip Compression** - Faster data transfer
-- **Database Connection Pooling** - Optimized database connections
-- **Memory Optimization** - 2GB heap for backend
-- **Rate Limiting** - 100 requests per 15 minutes per IP
-- **Caching Headers** - Browser caching optimization
-- **Code Splitting** - Lazy loading for better performance
-
-## 🔒 Security Features
-
-- **JWT Authentication** - Secure token-based auth
-- **Password Hashing** - Bcrypt with 12 rounds
-- **CORS Protection** - Configurable origin policies
-- **Rate Limiting** - DDoS protection
-- **Non-root Containers** - Security hardening
-- **Input Validation** - SQL injection prevention
-
-## 📱 Responsive Design
-
-- **Mobile First** - Optimized for mobile devices
-- **Hamburger Menu** - Touch-friendly navigation
-- **Flexible Grid** - Adapts to all screen sizes
-- **Touch Targets** - Proper button sizing for mobile
-
-## 🚨 Troubleshooting
-
-### Common Issues
-
-#### Connection Errors
+### **Automated Testing:**
 ```bash
-# Kill all Node processes
-taskkill /f /im node.exe
+# Run daily reset tests
+node test-daily-reset-enhanced.js
 
-# Restart services
-.\fix-connection.bat
+# Run backend tests
+cd Backend
+npm test
+
+# Run frontend tests
+cd Frontend
+npm test
 ```
 
-#### Port Conflicts
-```bash
-# Check port usage
-netstat -an | findstr :5000
-netstat -an | findstr :3000
+### **Manual Testing:**
+1. **Start the system** using Docker or manual setup
+2. **Access frontend** at http://localhost:80 (Docker) or http://localhost:3000 (dev)
+3. **Test check-in/check-out** functionality
+4. **Use admin portal** to test reset controls
+5. **Monitor logs** for daily reset activity
 
-# Kill conflicting processes
-taskkill /f /PID <process_id>
-```
+## 📈 **Monitoring**
 
-#### Database Issues
+### **Health Checks:**
 ```bash
-# Check MongoDB status
+# Backend health
 curl http://localhost:5000/api/health
 
-# Run database scripts
-cd Backend/scripts
-node createAdmin.js
-node createTestUser.js
+# Daily reset status
+curl http://localhost:5000/api/employee/reset-status
+
+# Frontend health
+curl http://localhost:80
 ```
 
-## 📊 Monitoring & Health Checks
+### **Logs:**
+```bash
+# Docker logs
+docker-compose logs -f
 
-### Service Health
-- **Backend**: `http://localhost:5000/api/health`
-- **Frontend**: `http://localhost/health`
-- **MongoDB**: Container health monitoring
+# Daily reset logs
+docker-compose logs -f backend | grep "Daily reset"
 
-### Performance Metrics
-- Response times
-- Memory usage
-- Database connections
-- Error rates
+# Application logs
+docker-compose logs -f backend
+docker-compose logs -f frontend
+```
 
-## 🚀 Deployment
+## 🛠️ **Management**
 
-### Local Network
-- **Frontend**: `http://YOUR_IP:80`
-- **Backend**: `http://YOUR_IP:5000`
+### **Docker Commands:**
+```bash
+# Start services
+docker-compose up -d
 
-### Production
-- **Load Balancer**: Configure Nginx/Apache
-- **SSL**: Set up HTTPS certificates
-- **Domain**: Configure DNS routing
-- **Monitoring**: Set up application monitoring
+# Stop services
+docker-compose down
 
-## 🤝 Contributing
+# Restart services
+docker-compose restart
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+# View status
+docker-compose ps
 
-## 📄 License
+# View logs
+docker-compose logs -f
+```
+
+### **Development Commands:**
+```bash
+# Backend
+cd Backend
+npm start
+npm run dev
+
+# Frontend
+cd Frontend
+npm start
+npm run build
+```
+
+## 🔒 **Security**
+
+### **Production Considerations:**
+1. **Change default passwords** in environment variables
+2. **Use HTTPS** in production
+3. **Implement rate limiting**
+4. **Set up proper authentication**
+5. **Regular security updates**
+
+### **Environment Security:**
+```env
+# Production settings
+NODE_ENV=production
+JWT_SECRET=your-very-secure-jwt-secret
+MONGODB_URI=mongodb://user:password@host:port/database
+```
+
+## 📚 **Documentation**
+
+### **Guides:**
+- [Daily Reset System](DAILY_RESET_SOLUTION.md)
+- [Docker Deployment](DOCKER_DEPLOYMENT.md)
+- [API Documentation](API_DOCUMENTATION.md)
+
+### **Architecture:**
+- [Project Structure](PROJECT_STRUCTURE.md)
+- [Database Schema](DATABASE_SCHEMA.md)
+- [Component Documentation](COMPONENT_DOCS.md)
+
+## 🚨 **Troubleshooting**
+
+### **Common Issues:**
+
+#### **Daily Reset Not Working:**
+```bash
+# Check logs
+docker-compose logs backend | grep -i reset
+
+# Test reset endpoint
+curl -X POST http://localhost:5000/api/employee/manual-daily-reset
+
+# Check timezone
+docker exec attendance-backend date
+```
+
+#### **Database Connection Issues:**
+```bash
+# Check MongoDB status
+docker-compose logs mongodb
+
+# Test connection
+docker exec attendance-backend node -e "
+const mongoose = require('mongoose');
+mongoose.connect(process.env.MONGODB_URI)
+  .then(() => console.log('Connected'))
+  .catch(err => console.error(err));
+"
+```
+
+#### **Frontend Not Loading:**
+```bash
+# Check frontend logs
+docker-compose logs frontend
+
+# Check nginx configuration
+docker exec attendance-frontend nginx -t
+```
+
+## 🤝 **Contributing**
+
+1. **Fork** the repository
+2. **Create** a feature branch
+3. **Make** your changes
+4. **Test** thoroughly
+5. **Submit** a pull request
+
+### **Development Setup:**
+```bash
+# Clone your fork
+git clone https://github.com/your-username/attendanceportal-main.git
+cd attendanceportal-main
+
+# Install dependencies
+cd Backend && npm install
+cd ../Frontend && npm install
+
+# Start development servers
+cd ../Backend && npm run dev
+cd ../Frontend && npm start
+```
+
+## 📄 **License**
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 📞 Support
+## 🆘 **Support**
 
-- **Issues**: [GitHub Issues](https://github.com/yourusername/attendanceportal/issues)
-- **Documentation**: Check the `docs/` folder
-- **Email**: your-email@example.com
+### **Getting Help:**
+- **GitHub Issues**: Report bugs and feature requests
+- **Documentation**: Check the guides in the docs folder
+- **Logs**: Use `docker-compose logs` for debugging
+
+### **Contact:**
+- **Repository**: https://github.com/Venkyudemy/attendanceportal-main
+- **Issues**: https://github.com/Venkyudemy/attendanceportal-main/issues
+
+## 🎉 **Success Indicators**
+
+### **System Working Correctly:**
+- ✅ All services are running
+- ✅ Health checks are passing
+- ✅ Frontend is accessible
+- ✅ Backend API is responding
+- ✅ Daily reset is scheduled
+- ✅ Admin controls are functional
+
+### **Daily Reset Verification:**
+- ✅ Console shows reset scheduling
+- ✅ Manual reset button works
+- ✅ Reset status endpoint returns data
+- ✅ All employees reset to "Absent"
 
 ---
 
-**🎉 Built with ❤️ for modern attendance management**
+## 🚀 **Next Steps**
 
-**⭐ Star this repository if you find it helpful!** 
+1. **Deploy**: Use Docker for production deployment
+2. **Configure**: Set up environment variables
+3. **Monitor**: Implement logging and monitoring
+4. **Scale**: Add load balancing as needed
+5. **Secure**: Implement production security measures
+
+**Your attendance portal with daily reset functionality is ready!** 🎉
+
+---
+
+**Made with ❤️ for efficient employee attendance management** 

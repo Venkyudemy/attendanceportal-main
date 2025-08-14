@@ -48,6 +48,8 @@ const EmployeePortal = ({ currentUser }) => {
 
   const [showLeaveForm, setShowLeaveForm] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [isLoading, setIsLoading] = useState(false);
+  const [checkInStatus, setCheckInStatus] = useState('');
 
   const [leaveFormData, setLeaveFormData] = useState({
     type: '',
@@ -157,9 +159,30 @@ const EmployeePortal = ({ currentUser }) => {
   // Load employee leave requests
   useEffect(() => {
     const loadLeaveRequests = async () => {
-      if (currentUser?.id) {
+      if (currentUser?.id || currentUser?.email) {
         try {
-          const requests = await getEmployeeLeaveRequests(currentUser.id);
+          // Try to find employee by email if ID doesn't work
+          let employeeId = currentUser.id;
+          if (!employeeId && currentUser.email) {
+            const employeeData = await findEmployeeByEmail(currentUser.email);
+            if (employeeData && employeeData._id) {
+              employeeId = employeeData._id;
+              console.log('Found employee by email for leave requests:', employeeId);
+            } else {
+              console.error('Employee not found by email:', currentUser.email);
+              return;
+            }
+          }
+          
+          if (!employeeId) {
+            console.error('No employee ID found for leave requests');
+            return;
+          }
+          
+          console.log('Loading leave requests for employee ID:', employeeId);
+          const requests = await getEmployeeLeaveRequests(employeeId);
+          console.log('Leave requests loaded:', requests);
+          console.log('Leave requests with status:', requests.map(req => ({ id: req._id, status: req.status, type: req.leaveType })));
           setMyLeaveRequests(requests);
         } catch (error) {
           console.error('Error loading leave requests:', error);
@@ -168,14 +191,18 @@ const EmployeePortal = ({ currentUser }) => {
     };
 
     loadLeaveRequests();
-  }, [currentUser?.id]);
+  }, [currentUser?.id, currentUser?.email]);
 
   const handleCheckIn = async () => {
     // Check if already checked in today
     if (attendanceData.today.checkIns.length > 0) {
-      alert('You have already checked in today!');
+      setCheckInStatus('You have already checked in today!');
+      setTimeout(() => setCheckInStatus(''), 3000);
       return;
     }
+
+    setIsLoading(true);
+    setCheckInStatus('Processing check-in...');
 
     try {
       console.log('Attempting check-in for user:', currentUser);
@@ -191,54 +218,74 @@ const EmployeePortal = ({ currentUser }) => {
           console.log('Found employee by email for check-in:', employeeId);
         } else {
           console.error('Employee not found by email:', currentUser.email);
-          alert('Employee not found. Please contact administrator.');
+          setCheckInStatus('Employee not found. Please contact administrator.');
+          setTimeout(() => setCheckInStatus(''), 5000);
           return;
         }
       }
       
       if (!employeeId) {
         console.error('No employee ID found');
-        alert('Employee ID not found. Please contact administrator.');
+        setCheckInStatus('Employee ID not found. Please contact administrator.');
+        setTimeout(() => setCheckInStatus(''), 5000);
         return;
       }
 
       const result = await checkInEmployee(employeeId, {});
       
       if (result && result.checkInTime) {
-      // Update local state with the response from backend
-      setAttendanceData(prev => ({
-        ...prev,
-        today: {
-          ...prev.today,
-          checkIns: [result.checkInTime],
-          checkOuts: [],
+        // Update local state with the response from backend
+        setAttendanceData(prev => ({
+          ...prev,
+          today: {
+            ...prev.today,
+            checkIns: [result.checkInTime],
+            checkOuts: [],
             status: result.status || 'Present',
-          totalHours: 0
-        }
-      }));
+            totalHours: 0
+          }
+        }));
 
-      alert(`Check-in successful at ${result.checkInTime}!`);
+        setCheckInStatus(`Check-in successful at ${result.checkInTime}!`);
+        setTimeout(() => setCheckInStatus(''), 5000);
+        
+        // Reload portal data to get updated statistics
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
       } else {
         throw new Error('Invalid response from server');
       }
     } catch (error) {
       console.error('Error during check-in:', error);
-      alert(`Failed to check in: ${error.message}. Please try again.`);
+      if (error.message.includes('Already checked in')) {
+        setCheckInStatus('You have already checked in today!');
+      } else {
+        setCheckInStatus(`Failed to check in: ${error.message}. Please try again.`);
+      }
+      setTimeout(() => setCheckInStatus(''), 5000);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleCheckOut = async () => {
     // Check if not checked in today
     if (attendanceData.today.checkIns.length === 0) {
-      alert('Please check in first before checking out!');
+      setCheckInStatus('Please check in first before checking out!');
+      setTimeout(() => setCheckInStatus(''), 3000);
       return;
     }
 
     // Check if already checked out today
     if (attendanceData.today.checkOuts.length > 0) {
-      alert('You have already checked out today!');
+      setCheckInStatus('You have already checked out today!');
+      setTimeout(() => setCheckInStatus(''), 3000);
       return;
     }
+
+    setIsLoading(true);
+    setCheckInStatus('Processing check-out...');
 
     try {
       console.log('Attempting check-out for user:', currentUser);
@@ -254,39 +301,128 @@ const EmployeePortal = ({ currentUser }) => {
           console.log('Found employee by email for check-out:', employeeId);
         } else {
           console.error('Employee not found by email:', currentUser.email);
-          alert('Employee not found. Please contact administrator.');
+          setCheckInStatus('Employee not found. Please contact administrator.');
+          setTimeout(() => setCheckInStatus(''), 5000);
           return;
         }
       }
       
       if (!employeeId) {
         console.error('No employee ID found');
-        alert('Employee ID not found. Please contact administrator.');
+        setCheckInStatus('Employee ID not found. Please contact administrator.');
+        setTimeout(() => setCheckInStatus(''), 5000);
         return;
       }
       
       const result = await checkOutEmployee(employeeId, {});
       
       if (result && result.checkOutTime) {
-      // Update local state with the response from backend
-      setAttendanceData(prev => ({
-        ...prev,
-        today: {
-          ...prev.today,
-          checkOuts: [result.checkOutTime],
+        // Update local state with the response from backend
+        setAttendanceData(prev => ({
+          ...prev,
+          today: {
+            ...prev.today,
+            checkOuts: [result.checkOutTime],
             totalHours: result.hoursWorked || 0
-        }
-      }));
+          }
+        }));
 
-        alert(`Check-out successful at ${result.checkOutTime}! Hours worked: ${(result.hoursWorked || 0).toFixed(2)}`);
+        setCheckInStatus(`Check-out successful at ${result.checkOutTime}! Hours worked: ${(result.hoursWorked || 0).toFixed(2)}`);
+        setTimeout(() => setCheckInStatus(''), 5000);
+        
+        // Reload portal data to get updated statistics
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
       } else {
         throw new Error('Invalid response from server');
       }
     } catch (error) {
       console.error('Error during check-out:', error);
-      alert(`Failed to check out: ${error.message}. Please try again.`);
+      setCheckInStatus(`Failed to check out: ${error.message}. Please try again.`);
+      setTimeout(() => setCheckInStatus(''), 5000);
+    } finally {
+      setIsLoading(false);
     }
   };
+
+  // Manual reset function for testing (admin only)
+  const handleManualReset = async () => {
+    if (!isAdminView) return;
+    
+    try {
+      const response = await fetch('/api/employee/manual-daily-reset', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        alert(`Manual reset completed! ${result.employeesReset} employees reset.`);
+        window.location.reload();
+      } else {
+        alert('Manual reset failed. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error during manual reset:', error);
+      alert('Manual reset failed. Please try again.');
+    }
+  };
+
+  // Force reset function for emergency use (admin only)
+  const handleForceReset = async () => {
+    if (!isAdminView) return;
+    
+    if (!confirm('⚠️ FORCE RESET: This will clear ALL attendance data for today. Are you sure?')) {
+      return;
+    }
+    
+    try {
+      const response = await fetch('/api/employee/force-reset', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        alert(`Force reset completed! ${result.employeesReset} employees reset.`);
+        window.location.reload();
+      } else {
+        alert('Force reset failed. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error during force reset:', error);
+      alert('Force reset failed. Please try again.');
+    }
+  };
+
+  // Check reset status (admin only)
+  const [resetStatus, setResetStatus] = useState(null);
+  
+  useEffect(() => {
+    if (isAdminView) {
+      const checkResetStatus = async () => {
+        try {
+          const response = await fetch('/api/employee/reset-status');
+          if (response.ok) {
+            const status = await response.json();
+            setResetStatus(status);
+          }
+        } catch (error) {
+          console.error('Error checking reset status:', error);
+        }
+      };
+      
+      checkResetStatus();
+      // Check status every 5 minutes
+      const interval = setInterval(checkResetStatus, 5 * 60 * 1000);
+      return () => clearInterval(interval);
+    }
+  }, [isAdminView]);
 
   const handleLeaveSubmit = async (e) => {
     e.preventDefault();
@@ -359,9 +495,70 @@ const EmployeePortal = ({ currentUser }) => {
             >
               ← Back to Employees
             </button>
-        </div>
+            <button 
+              className="btn btn-warning btn-sm"
+              onClick={handleManualReset}
+              title="Reset all employee check-ins for testing"
+            >
+              🔄 Manual Reset
+            </button>
+            <button 
+              className="btn btn-danger btn-sm"
+              onClick={handleForceReset}
+              title="Force reset all employee attendance data for today"
+            >
+              💥 Force Reset
+            </button>
+          </div>
+        )}
+
+        {/* Reset Status for Admin */}
+        {isAdminView && resetStatus && (
+          <div className="reset-status-card">
+            <div className="reset-status-header">
+              <span className="status-icon">🕛</span>
+              <h3>Daily Reset Status</h3>
+            </div>
+            <div className="reset-status-content">
+              <div className="status-row">
+                <span className="label">Today's Date:</span>
+                <span className="value">{resetStatus.date}</span>
+              </div>
+              <div className="status-row">
+                <span className="label">Total Employees:</span>
+                <span className="value">{resetStatus.totalEmployees}</span>
+              </div>
+              <div className="status-row">
+                <span className="label">Checked In:</span>
+                <span className="value success">{resetStatus.checkedIn}</span>
+              </div>
+              <div className="status-row">
+                <span className="label">Checked Out:</span>
+                <span className="value info">{resetStatus.checkedOut}</span>
+              </div>
+              <div className="status-row">
+                <span className="label">Absent:</span>
+                <span className="value warning">{resetStatus.absent}</span>
+              </div>
+              <div className="status-row">
+                <span className="label">Last Reset:</span>
+                <span className="value">{resetStatus.lastReset}</span>
+              </div>
+              <div className="status-row">
+                <span className="label">Next Reset:</span>
+                <span className="value highlight">{resetStatus.nextReset}</span>
+              </div>
+            </div>
+          </div>
         )}
       </div>
+
+      {/* Status Message */}
+      {checkInStatus && (
+        <div className={`status-message ${checkInStatus.includes('successful') ? 'success' : 'error'}`}>
+          {checkInStatus}
+        </div>
+      )}
 
       <div className="attendance-card">
         <div className="current-status-section">
@@ -421,61 +618,67 @@ const EmployeePortal = ({ currentUser }) => {
                 ? attendanceData.today.checkIns[attendanceData.today.checkIns.length - 1]
                 : 'None'}
             </span>
-              </div>
-            </div>
-            
+          </div>
+        </div>
+
         <div className="action-buttons">
-              <button 
+          <button 
                 className="check-in-btn"
-                onClick={handleCheckIn}
-            disabled={attendanceData.today.checkIns.length > 0}
-              >
+            onClick={handleCheckIn}
+            disabled={attendanceData.today.checkIns.length > 0 || isLoading}
+          >
                 <div className="btn-icon">✅</div>
                 <div className="btn-content">
-                  <div className="btn-title">Check In</div>
-              <div className="btn-subtitle">{attendanceData.today.checkIns.length > 0 ? 'Already checked in' : 'Start your shift'}</div>
-                </div>
+                  <div className="btn-title">
+                    {isLoading ? 'Processing...' : 'Check In'}
+                  </div>
+              <div className="btn-subtitle">
+                {attendanceData.today.checkIns.length > 0 ? 'Already checked in' : 'Start your shift'}
+              </div>
+      </div>
               </button>
               
               <button 
                 className="check-out-btn"
                 onClick={handleCheckOut}
-            disabled={attendanceData.today.checkIns.length === 0 || attendanceData.today.checkOuts.length > 0}
+            disabled={attendanceData.today.checkIns.length === 0 || attendanceData.today.checkOuts.length > 0 || isLoading}
               >
                 <div className="btn-icon">🚪</div>
                 <div className="btn-content">
-                  <div className="btn-title">Check Out</div>
+                  <div className="btn-title">
+                    {isLoading ? 'Processing...' : 'Check Out'}
+                  </div>
               <div className="btn-subtitle">
                 {attendanceData.today.checkIns.length === 0 ? 'Check in first' : 
                  attendanceData.today.checkOuts.length > 0 ? 'Already checked out' : 'End your shift'}
               </div>
                 </div>
               </button>
-            </div>
-            
+          </div>
+
         {attendanceData.today.checkIns.length > 0 && attendanceData.today.checkOuts.length > 0 && (
           <div className="day-complete-section">
             <div className="day-complete-btn">
               <div className="complete-icon">✅</div>
               <div className="complete-text">Day Complete!</div>
-              </div>
+            </div>
           </div>
         )}
-      </div>
-
+            </div>
+            
       <div className="stats-grid">
         <div className="stat-card" onClick={() => navigate('/attendance-details')}>
           <div className="stat-number">{attendanceData.thisWeek.present}</div>
           <div className="stat-label">Present This Week</div>
-        </div>
+                          </div>
         <div className="stat-card" onClick={() => navigate('/attendance-details')}>
           <div className="stat-number">{attendanceData.thisWeek.totalHours}</div>
           <div className="stat-label">Hours This Week</div>
-        </div>
+                  </div>
         <div className="stat-card" onClick={() => navigate('/attendance-details')}>
           <div className="stat-number">{attendanceData.thisMonth.present}</div>
           <div className="stat-label">Present This Month</div>
-        </div>
+              </div>
         <div className="stat-card" onClick={() => navigate('/attendance-details')}>
           <div className="stat-number">{attendanceData.thisMonth.totalHours}</div>
           <div className="stat-label">Hours This Month</div>
@@ -492,55 +695,55 @@ const EmployeePortal = ({ currentUser }) => {
                 <span className="remaining">{leaveBalance.annual.remaining}</span>
                 <span className="separator">/</span>
                 <span className="total">{leaveBalance.annual.total}</span>
-              </div>
-              <div className="leave-progress">
-                <div 
-                  className="progress-bar" 
-                  style={{ width: `${(leaveBalance.annual.used / leaveBalance.annual.total) * 100}%` }}
-                ></div>
-              </div>
             </div>
+            <div className="leave-progress">
+              <div 
+                className="progress-bar" 
+                style={{ width: `${(leaveBalance.annual.used / leaveBalance.annual.total) * 100}%` }}
+              ></div>
+            </div>
+          </div>
             <div className="leave-card">
               <div className="leave-type">Sick Leave</div>
               <div className="leave-stats">
                 <span className="remaining">{leaveBalance.sick.remaining}</span>
                 <span className="separator">/</span>
                 <span className="total">{leaveBalance.sick.total}</span>
-              </div>
-              <div className="leave-progress">
-                <div 
-                  className="progress-bar" 
-                  style={{ width: `${(leaveBalance.sick.used / leaveBalance.sick.total) * 100}%` }}
-                ></div>
-              </div>
             </div>
+            <div className="leave-progress">
+              <div 
+                className="progress-bar" 
+                style={{ width: `${(leaveBalance.sick.used / leaveBalance.sick.total) * 100}%` }}
+              ></div>
+            </div>
+          </div>
             <div className="leave-card">
               <div className="leave-type">Personal Leave</div>
               <div className="leave-stats">
                 <span className="remaining">{leaveBalance.personal.remaining}</span>
                 <span className="separator">/</span>
                 <span className="total">{leaveBalance.personal.total}</span>
-              </div>
-              <div className="leave-progress">
-                <div 
-                  className="progress-bar" 
-                  style={{ width: `${(leaveBalance.personal.used / leaveBalance.personal.total) * 100}%` }}
-                ></div>
-              </div>
+            </div>
+            <div className="leave-progress">
+              <div 
+                className="progress-bar" 
+                style={{ width: `${(leaveBalance.personal.used / leaveBalance.personal.total) * 100}%` }}
+              ></div>
             </div>
           </div>
+        </div>
           <button 
             className="btn btn-primary"
             onClick={() => setShowLeaveForm(true)}
           >
             Request Leave
           </button>
-        </div>
+      </div>
 
         <div className="recent-attendance">
           <h3>Recent Attendance</h3>
-          <div className="attendance-list">
-            {recentAttendance.map((record, index) => (
+        <div className="attendance-list">
+          {recentAttendance.map((record, index) => (
               <div key={index} className="attendance-item">
                 <div className="attendance-date">
                   {new Date(record.date).toLocaleDateString()}
@@ -549,22 +752,22 @@ const EmployeePortal = ({ currentUser }) => {
                   <div className="time-info">
                     {record.checkIn && <span>In: {record.checkIn}</span>}
                     {record.checkOut && <span>Out: {record.checkOut}</span>}
-                  </div>
+              </div>
                   <div className="status-info">
-                    <span className={`status-badge ${getStatusColor(record.status)}`}>
-                      {record.status}
-                    </span>
+                <span className={`status-badge ${getStatusColor(record.status)}`}>
+                  {record.status}
+                </span>
                     {record.hours > 0 && <span className="hours">{record.hours}h</span>}
                   </div>
                 </div>
               </div>
             ))}
-          </div>
+            </div>
         </div>
       </div>
 
       <div className="my-leave-requests">
-        <h3>My Leave Requests</h3>
+          <h3>My Leave Requests</h3>
         <div className="leave-requests-table">
           <table className="table">
             <thead>
@@ -577,32 +780,40 @@ const EmployeePortal = ({ currentUser }) => {
               </tr>
             </thead>
             <tbody>
-              {myLeaveRequests.map((request) => (
-                <tr key={request._id}>
-                  <td>
-                    <span className="leave-type-badge">
-                      {request.leaveType}
+                            {myLeaveRequests.map((request) => {
+                console.log('Rendering leave request:', { 
+                  id: request._id, 
+                  status: request.status, 
+                  type: request.leaveType,
+                  fullRequest: request 
+                });
+                return (
+                  <tr key={request._id}>
+                    <td>
+                      <span className="leave-type-badge">
+                        {request.leaveType}
+                      </span>
+                    </td>
+                    <td>
+                      <div className="leave-duration">
+                        <div>{new Date(request.startDate).toLocaleDateString()}</div>
+                        <div>to</div>
+                        <div>{new Date(request.endDate).toLocaleDateString()}</div>
+                        <div className="days-count">({request.days} days)</div>
+                      </div>
+                    </td>
+                    <td>
+                      <div className="leave-reason">{request.reason}</div>
+                    </td>
+                                      <td>
+                    <span className={`status-badge status-${getStatusColor(request.status)}`}>
+                      {request.status || 'Pending'}
                     </span>
                   </td>
-                  <td>
-                    <div className="leave-duration">
-                      <div>{new Date(request.startDate).toLocaleDateString()}</div>
-                      <div>to</div>
-                      <div>{new Date(request.endDate).toLocaleDateString()}</div>
-                      <div className="days-count">({request.days} days)</div>
-                    </div>
-                  </td>
-                  <td>
-                    <div className="leave-reason">{request.reason}</div>
-                  </td>
-                  <td>
-                    <span className={`status-badge ${getStatusColor(request.status)}`}>
-                      {request.status}
-                    </span>
-                  </td>
-                  <td>{new Date().toLocaleDateString()}</td>
-                </tr>
-              ))}
+                    <td>{new Date().toLocaleDateString()}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

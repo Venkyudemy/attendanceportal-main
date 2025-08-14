@@ -11,13 +11,16 @@ const leaveRoutes = require('./routes/leave');
 const employeeRoutes = require('./routes/employee');
 const healthRoutes = require('./routes/health');
 
+// Import Employee model for daily reset
+const Employee = require('./models/Employee');
+
 // CORS configuration - More flexible for production
 const corsOptions = {
   origin: process.env.NODE_ENV === 'production' 
     ? true  // Allow all origins in production
     : ['http://localhost:3000', 'http://localhost:80', 'http://localhost', 'http://127.0.0.1:3000', 'http://127.0.0.1:80', 'http://127.0.0.1'],
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 };
 
@@ -40,6 +43,122 @@ app.get('/', (req, res) => {
     timestamp: new Date().toISOString()
   });
 });
+
+// Daily Reset Function - Runs at 12 AM every day
+const scheduleDailyReset = () => {
+  const now = new Date();
+  const tomorrow = new Date(now);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  tomorrow.setHours(0, 0, 0, 0); // Set to 12:00:00 AM
+  
+  const timeUntilMidnight = tomorrow.getTime() - now.getTime();
+  
+  console.log(`🕛 Daily reset scheduled for ${tomorrow.toLocaleString()}`);
+  console.log(`⏰ Time until reset: ${Math.round(timeUntilMidnight / (1000 * 60 * 60))} hours`);
+  
+  // Schedule the first reset
+  setTimeout(() => {
+    console.log('🔄 Executing scheduled daily reset...');
+    performDailyReset();
+    // Then schedule it to run every 24 hours
+    setInterval(performDailyReset, 24 * 60 * 60 * 1000);
+  }, timeUntilMidnight);
+  
+  // Also check if we need to reset immediately (if it's a new day)
+  const today = now.toLocaleDateString('en-CA');
+  const lastResetDate = process.env.LAST_RESET_DATE || 'unknown';
+  
+  if (today !== lastResetDate) {
+    console.log(`📅 New day detected (${today}), performing immediate reset...`);
+    // Perform reset immediately for new day
+    setTimeout(() => {
+      performDailyReset();
+    }, 2000); // Wait 2 seconds for server to fully start
+  }
+  
+  // Additional safety check - run every hour to ensure reset happens
+  setInterval(() => {
+    const currentTime = new Date();
+    const currentHour = currentTime.getHours();
+    const currentDate = currentTime.toLocaleDateString('en-CA');
+    
+    // If it's midnight (12 AM) and we haven't reset today
+    if (currentHour === 0 && currentDate !== process.env.LAST_RESET_DATE) {
+      console.log('🕐 Hourly check: Midnight detected, performing reset...');
+      performDailyReset();
+    }
+  }, 60 * 60 * 1000); // Check every hour
+};
+
+// Function to perform daily reset
+const performDailyReset = async () => {
+  try {
+    console.log('🔄 Starting daily attendance reset...');
+    const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD format
+    
+    // Check if we already reset today
+    if (process.env.LAST_RESET_DATE === today) {
+      console.log(`✅ Already reset today (${today}), skipping...`);
+      return;
+    }
+    
+    // Get all employees
+    const employees = await Employee.find({});
+    let resetCount = 0;
+    
+    console.log(`📊 Found ${employees.length} employees to reset...`);
+    
+    for (const employee of employees) {
+      try {
+        // Reset today's attendance status
+        employee.attendance.today = {
+          checkIn: null,
+          checkOut: null,
+          status: 'Absent',
+          isLate: false
+        };
+        
+        // Save the updated employee
+        await employee.save();
+        resetCount++;
+        
+        console.log(`✅ Reset attendance for employee: ${employee.name}`);
+      } catch (empError) {
+        console.error(`❌ Failed to reset employee ${employee.name}:`, empError.message);
+      }
+    }
+    
+    // Update environment variable to track last reset
+    process.env.LAST_RESET_DATE = today;
+    
+    console.log(`🎉 Daily reset completed! ${resetCount}/${employees.length} employees reset at ${new Date().toLocaleString()}`);
+    
+    // Log the reset in a more visible way
+    console.log('='.repeat(60));
+    console.log(`🕛 DAILY ATTENDANCE RESET COMPLETED AT ${new Date().toLocaleString()}`);
+    console.log(`📊 Total employees reset: ${resetCount}`);
+    console.log(`📅 Date: ${today}`);
+    console.log('='.repeat(60));
+    
+  } catch (error) {
+    console.error('❌ Error during daily reset:', error);
+    console.error('Error stack:', error.stack);
+  }
+};
+
+// Function to force reset (for testing and emergency use)
+const forceDailyReset = async () => {
+  try {
+    console.log('🚨 FORCE RESET REQUESTED...');
+    // Clear the last reset date to force a reset
+    process.env.LAST_RESET_DATE = 'force';
+    await performDailyReset();
+    return { success: true, message: 'Force reset completed' };
+  } catch (error) {
+    console.error('❌ Force reset failed:', error);
+    return { success: false, message: error.message };
+  }
+};
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -67,13 +186,16 @@ mongoose.connect(MONGO_URI, {
     console.log('✅ Employee routes: /api/employee/stats, /api/employee/attendance');
     console.log('✅ Leave routes: /api/leave');
     console.log('✅ Health check: /api/health');
+    
+    // Schedule daily reset after server starts
+    scheduleDailyReset();
   });
 })
 .catch((err) => {
   console.error('MongoDB connection error:', err);
   console.log('Starting server without database connection...');
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running on http://0.0.0.0:${PORT}`);
+    console.log(`Server running on http://localhost:${PORT}`);
     console.log('Using mock data - MongoDB connection failed');
   });
 });

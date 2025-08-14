@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Leave Status Issue</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 20px; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .test-result { 
+            margin: 15px 0; 
+            padding: 15px; 
+            border-radius: 8px;
+            border-left: 4px solid;
+        }
+        .success { 
+            background-color: #d4edda; 
+            color: #155724; 
+            border-left-color: #28a745;
+        }
+        .error { 
+            background-color: #f8d7da; 
+            color: #721c24; 
+            border-left-color: #dc3545;
+        }
+        .warning {
+            background-color: #fff3cd;
+            color: #856404;
+            border-left-color: #ffc107;
+        }
+        button { 
+            padding: 12px 24px; 
+            margin: 8px; 
+            cursor: pointer;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        .leave-request {
+            background: #f8f9fa;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .status-pending { background: #fff3cd; color: #856404; }
+        .status-approved { background: #d4edda; color: #155724; }
+        .status-rejected { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Debug Leave Status Issue</h1>
+        <p>This tool will help identify the exact issue with leave status updates between admin and employee portals.</p>
+        
+        <button onclick="testLeaveRequests()" class="btn-primary">1. Fetch Leave Requests</button>
+        <button onclick="testStatusUpdate()" class="btn-success">2. Test Status Update</button>
+        <button onclick="testEmployeeView()" class="btn-danger">3. Test Employee View</button>
+        
+        <div id="results"></div>
+        <div id="leave-requests"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5000/api';
+        let currentLeaveRequest = null;
+        
+        function addResult(message, type = 'success') {
+            const resultsDiv = document.getElementById('results');
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `test-result ${type}`;
+            resultDiv.innerHTML = message;
+            resultsDiv.appendChild(resultDiv);
+        }
+        
+        function displayLeaveRequests(requests) {
+            const container = document.getElementById('leave-requests');
+            container.innerHTML = '<h3>Current Leave Requests:</h3>';
+            
+            requests.forEach(request => {
+                const div = document.createElement('div');
+                div.className = 'leave-request';
+                div.innerHTML = `
+                    <strong>ID:</strong> ${request._id}<br>
+                    <strong>Employee:</strong> ${request.employeeName} (${request.employeeId})<br>
+                    <strong>Type:</strong> ${request.leaveType}<br>
+                    <strong>Status:</strong> <span class="status-badge status-${request.status.toLowerCase()}">${request.status}</span><br>
+                    <strong>Duration:</strong> ${new Date(request.startDate).toLocaleDateString()} to ${new Date(request.endDate).toLocaleDateString()}<br>
+                    <strong>Reason:</strong> ${request.reason}<br>
+                    <strong>Submitted:</strong> ${new Date(request.submittedDate).toLocaleDateString()}
+                `;
+                container.appendChild(div);
+            });
+        }
+        
+        async function testLeaveRequests() {
+            try {
+                addResult('<strong>1. Fetching leave requests...</strong>', 'warning');
+                
+                const response = await fetch(`${API_BASE}/leave/admin`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const requests = await response.json();
+                addResult(`<strong>✅ Found ${requests.length} leave requests</strong>`, 'success');
+                
+                if (requests.length > 0) {
+                    currentLeaveRequest = requests[0];
+                    addResult(`<strong>Selected for testing:</strong> ${currentLeaveRequest.employeeName} - ${currentLeaveRequest.leaveType} (${currentLeaveRequest.status})`, 'success');
+                    displayLeaveRequests(requests);
+                } else {
+                    addResult('<strong>❌ No leave requests found. Please create some first.</strong>', 'error');
+                }
+            } catch (error) {
+                addResult(`<strong>❌ Error fetching leave requests:</strong> ${error.message}`, 'error');
+            }
+        }
+        
+        async function testStatusUpdate() {
+            if (!currentLeaveRequest) {
+                addResult('<strong>❌ No leave request selected. Please fetch leave requests first.</strong>', 'error');
+                return;
+            }
+            
+            try {
+                addResult(`<strong>2. Testing status update for request ID: ${currentLeaveRequest._id}</strong>`, 'warning');
+                
+                const updateData = {
+                    status: 'Approved',
+                    adminNotes: 'Test approval from debug tool'
+                };
+                
+                const response = await fetch(`${API_BASE}/leave/${currentLeaveRequest._id}/status`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(updateData)
+                });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                }
+                
+                const updatedRequest = await response.json();
+                addResult(`<strong>✅ Status update successful!</strong><br>New Status: ${updatedRequest.status}<br>Admin Notes: ${updatedRequest.adminNotes}`, 'success');
+                
+                // Refresh the display
+                setTimeout(testLeaveRequests, 1000);
+                
+            } catch (error) {
+                addResult(`<strong>❌ Error updating status:</strong> ${error.message}`, 'error');
+            }
+        }
+        
+        async function testEmployeeView() {
+            if (!currentLeaveRequest) {
+                addResult('<strong>❌ No leave request selected. Please fetch leave requests first.</strong>', 'error');
+                return;
+            }
+            
+            try {
+                addResult(`<strong>3. Testing employee view for employee ID: ${currentLeaveRequest.employeeId}</strong>`, 'warning');
+                
+                const response = await fetch(`${API_BASE}/leave/employee/${currentLeaveRequest.employeeId}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const employeeRequests = await response.json();
+                addResult(`<strong>✅ Employee can see ${employeeRequests.length} leave requests</strong>`, 'success');
+                
+                const employeeRequest = employeeRequests.find(req => req._id === currentLeaveRequest._id);
+                if (employeeRequest) {
+                    addResult(`<strong>✅ Employee can see their request with status: ${employeeRequest.status}</strong>`, 'success');
+                } else {
+                    addResult('<strong>❌ Employee cannot see their updated request</strong>', 'error');
+                }
+                
+            } catch (error) {
+                addResult(`<strong>❌ Error testing employee view:</strong> ${error.message}`, 'error');
+            }
+        }
+        
+        // Auto-run first test on page load
+        window.onload = function() {
+            addResult('<strong>🚀 Debug tool loaded. Click "Fetch Leave Requests" to start.</strong>', 'warning');
+        };
+    </script>
+</body>
+</html>

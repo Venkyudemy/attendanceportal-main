@@ -8,23 +8,36 @@ const EmployeeDetails = () => {
   const [employee, setEmployee] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showAttendanceHistory, setShowAttendanceHistory] = useState(false);
 
   useEffect(() => {
     const fetchEmployeeDetails = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`http://localhost:5000/api/employee/${employeeId}`);
+        console.log('🔍 Fetching employee details for ID:', employeeId);
+        console.log('🔗 API URL:', `http://localhost:5000/api/employee/details/${employeeId}`);
+        
+        const response = await fetch(`http://localhost:5000/api/employee/details/${employeeId}`);
+        
+        console.log('📡 Response status:', response.status);
+        console.log('📡 Response ok:', response.ok);
+        console.log('📡 Response headers:', response.headers);
         
         if (!response.ok) {
-          throw new Error('Failed to fetch employee details');
+          const errorText = await response.text();
+          console.error('❌ Response not ok. Error text:', errorText);
+          throw new Error(`Failed to fetch employee details: ${response.status} ${response.statusText}`);
         }
         
         const data = await response.json();
+        console.log('✅ Employee details received:', data);
+        console.log('📊 Attendance data:', data.attendance);
+        console.log('🆔 Employee ID in data:', data._id);
         setEmployee(data);
         setError(null);
       } catch (err) {
-        console.error('Error fetching employee details:', err);
-        setError('Failed to load employee details');
+        console.error('❌ Error fetching employee details:', err);
+        setError(`Failed to load employee details: ${err.message}`);
       } finally {
         setLoading(false);
       }
@@ -61,6 +74,14 @@ const EmployeeDetails = () => {
       default:
         return '❓';
     }
+  };
+
+  const handleEditEmployee = () => {
+    navigate(`/employee/${employeeId}/edit`);
+  };
+
+  const handleViewAttendanceHistory = () => {
+    setShowAttendanceHistory(!showAttendanceHistory);
   };
 
   if (loading) {
@@ -104,8 +125,15 @@ const EmployeeDetails = () => {
     <div className="employee-details-page">
       <div className="page-header">
         <div className="header-content">
-          <h1 className="page-title">Employee Details</h1>
-          <p className="page-subtitle">Complete information for {employee.name}</p>
+          <h1 className="page-title">
+            {showAttendanceHistory ? 'Monthly Attendance Details' : 'Employee Details'}
+          </h1>
+          <p className="page-subtitle">
+            {showAttendanceHistory 
+              ? `Attendance history for ${employee.name}` 
+              : `Complete information for ${employee.name}`
+            }
+          </p>
         </div>
         <button 
           className="btn btn-secondary back-btn"
@@ -116,137 +144,238 @@ const EmployeeDetails = () => {
       </div>
 
       <div className="employee-details-container">
-        <div className="employee-card">
-          <div className="employee-header">
-            <div className="employee-avatar">
-              {employee.name.charAt(0).toUpperCase()}
-            </div>
-            <div className="employee-status">
-              <span 
-                className="status-badge"
-                style={{ backgroundColor: getStatusColor(employee.attendance?.status || 'Unknown') }}
-              >
-                {getStatusIcon(employee.attendance?.status || 'Unknown')} {employee.attendance?.status || 'Unknown'}
-              </span>
-            </div>
-          </div>
-
-          <div className="employee-info">
-            <h2 className="employee-name">{employee.name}</h2>
-            <p className="employee-email">{employee.email}</p>
-            <p className="employee-position">{employee.position}</p>
-            <p className="employee-department">{employee.department}</p>
-          </div>
-
-          <div className="details-grid">
-            <div className="detail-section">
-              <h3 className="section-title">Basic Information</h3>
-              <div className="detail-item">
-                <span className="detail-label">Employee ID:</span>
-                <span className="detail-value">{employee.employeeId}</span>
+        {!showAttendanceHistory && (
+          <div className="employee-card">
+            <div className="employee-header">
+              <div className="employee-avatar-section">
+                <div className="employee-avatar">
+                  {employee.profileImage ? (
+                    <img 
+                      src={employee.profileImage} 
+                      alt={employee.name}
+                      className="profile-image"
+                    />
+                  ) : (
+                    employee.name.charAt(0).toUpperCase()
+                  )}
+                </div>
               </div>
-              <div className="detail-item">
-                <span className="detail-label">Phone:</span>
-                <span className="detail-value">{employee.phone}</span>
-              </div>
-              <div className="detail-item">
-                <span className="detail-label">Join Date:</span>
-                <span className="detail-value">{employee.joinDate}</span>
-              </div>
-              <div className="detail-item">
-                <span className="detail-label">Domain:</span>
-                <span className="detail-value">{employee.domain}</span>
-              </div>
-              <div className="detail-item">
-                <span className="detail-label">Status:</span>
-                <span className="detail-value">{employee.status}</span>
-              </div>
-            </div>
-
-            <div className="detail-section">
-              <h3 className="section-title">Today's Attendance</h3>
-              <div className="detail-item">
-                <span className="detail-label">Status:</span>
-                <span className="detail-value">
-                  <span 
-                    className="status-indicator"
-                    style={{ backgroundColor: getStatusColor(employee.attendance?.status || 'Unknown') }}
-                  >
-                    {employee.attendance?.status || 'Not Available'}
-                  </span>
+              <div className="employee-status">
+                <span 
+                  className="status-badge"
+                  style={{ backgroundColor: getStatusColor(employee.attendance?.today?.status || 'Unknown') }}
+                >
+                  {getStatusIcon(employee.attendance?.today?.status || 'Unknown')} {employee.attendance?.today?.status || 'Unknown'}
                 </span>
               </div>
-              <div className="detail-item">
-                <span className="detail-label">Check-in:</span>
-                <span className="detail-value">{employee.attendance?.checkIn || 'Not Available'}</span>
+            </div>
+
+            <div className="employee-info">
+              <h2 className="employee-name">{employee.name}</h2>
+              <p className="employee-email">{employee.email}</p>
+              <p className="employee-position">{employee.position}</p>
+              <p className="employee-department">{employee.department}</p>
+            </div>
+
+            <div className="details-grid">
+              <div className="detail-section">
+                <h3 className="section-title">Basic Information</h3>
+                <div className="detail-item">
+                  <span className="detail-label">Employee ID:</span>
+                  <span className="detail-value">{employee.employeeId}</span>
+                </div>
+                <div className="detail-item">
+                  <span className="detail-label">Phone:</span>
+                  <span className="detail-value">{employee.phone}</span>
+                </div>
+                <div className="detail-item">
+                  <span className="detail-label">Join Date:</span>
+                  <span className="detail-value">{employee.joinDate}</span>
+                </div>
+                <div className="detail-item">
+                  <span className="detail-label">Domain:</span>
+                  <span className="detail-value">{employee.domain}</span>
+                </div>
+                <div className="detail-item">
+                  <span className="detail-label">Status:</span>
+                  <span className="detail-value">{employee.status}</span>
+                </div>
               </div>
-              <div className="detail-item">
-                <span className="detail-label">Check-out:</span>
-                <span className="detail-value">{employee.attendance?.checkOut || 'Not Available'}</span>
+
+              <div className="detail-section">
+                <h3 className="section-title">Today's Attendance</h3>
+                <div className="detail-item">
+                  <span className="detail-label">Status:</span>
+                  <span className="detail-value">
+                    <span 
+                      className="status-indicator"
+                      style={{ backgroundColor: getStatusColor(employee.attendance?.today?.status || 'Unknown') }}
+                    >
+                      {employee.attendance?.today?.status || 'Not Available'}
+                    </span>
+                  </span>
+                </div>
+                <div className="detail-item">
+                  <span className="detail-label">Check-in:</span>
+                  <span className="detail-value">
+                    {employee.attendance?.today?.checkIn || 'Not Available'}
+                  </span>
+                </div>
+                <div className="detail-item">
+                  <span className="detail-label">Check-out:</span>
+                  <span className="detail-value">
+                    {employee.attendance?.today?.checkOut || 'Not Available'}
+                  </span>
+                </div>
+                <div className="detail-item">
+                  <span className="detail-label">Late Arrival:</span>
+                  <span className="detail-value">{employee.attendance?.today?.isLate ? 'Yes' : 'No'}</span>
+                </div>
               </div>
-              <div className="detail-item">
-                <span className="detail-label">Late Arrival:</span>
-                <span className="detail-value">{employee.attendance?.isLate ? 'Yes' : 'No'}</span>
+
+              <div className="detail-section">
+                <h3 className="section-title">Leave Balance</h3>
+                <div className="leave-balance-grid">
+                  <div className="leave-type">
+                    <span className="leave-label">Annual Leave:</span>
+                    <span className="leave-value">
+                      {employee.leaveBalance?.annual?.remaining || 0} / {employee.leaveBalance?.annual?.total || 0}
+                    </span>
+                  </div>
+                  <div className="leave-type">
+                    <span className="leave-label">Sick Leave:</span>
+                    <span className="leave-value">
+                      {employee.leaveBalance?.sick?.remaining || 0} / {employee.leaveBalance?.sick?.total || 0}
+                    </span>
+                  </div>
+                  <div className="leave-type">
+                    <span className="leave-label">Personal Leave:</span>
+                    <span className="leave-value">
+                      {employee.leaveBalance?.personal?.remaining || 0} / {employee.leaveBalance?.personal?.total || 0}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="detail-section">
+                <h3 className="section-title">Contact Information</h3>
+                <div className="detail-item">
+                  <span className="detail-label">Address:</span>
+                  <span className="detail-value">{employee.address}</span>
+                </div>
+                <div className="detail-item">
+                  <span className="detail-label">Manager:</span>
+                  <span className="detail-value">{employee.manager}</span>
+                </div>
+                <div className="detail-item">
+                  <span className="detail-label">Salary:</span>
+                  <span className="detail-value">{employee.salary}</span>
+                </div>
               </div>
             </div>
 
-            <div className="detail-section">
-              <h3 className="section-title">Leave Balance</h3>
-              <div className="leave-balance-grid">
-                <div className="leave-type">
-                  <span className="leave-label">Annual Leave:</span>
-                  <span className="leave-value">
-                    {employee.leaveBalance?.annual?.remaining || 0} / {employee.leaveBalance?.annual?.total || 0}
-                  </span>
-                </div>
-                <div className="leave-type">
-                  <span className="leave-label">Sick Leave:</span>
-                  <span className="leave-value">
-                    {employee.leaveBalance?.sick?.remaining || 0} / {employee.leaveBalance?.sick?.total || 0}
-                  </span>
-                </div>
-                <div className="leave-type">
-                  <span className="leave-label">Personal Leave:</span>
-                  <span className="leave-value">
-                    {employee.leaveBalance?.personal?.remaining || 0} / {employee.leaveBalance?.personal?.total || 0}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div className="detail-section">
-              <h3 className="section-title">Contact Information</h3>
-              <div className="detail-item">
-                <span className="detail-label">Address:</span>
-                <span className="detail-value">{employee.address}</span>
-              </div>
-              <div className="detail-item">
-                <span className="detail-label">Manager:</span>
-                <span className="detail-value">{employee.manager}</span>
-              </div>
-              <div className="detail-item">
-                <span className="detail-label">Salary:</span>
-                <span className="detail-value">{employee.salary}</span>
-              </div>
+            <div className="employee-actions">
+              <button 
+                className="btn btn-primary"
+                onClick={handleEditEmployee}
+              >
+                Edit Employee
+              </button>
+              <button 
+                className="btn btn-secondary"
+                onClick={handleViewAttendanceHistory}
+              >
+                {showAttendanceHistory ? '← Back to Employee Details' : 'View Attendance History'}
+              </button>
             </div>
           </div>
+        )}
+      </div>
 
-          <div className="employee-actions">
-            <button 
-              className="btn btn-primary"
-              onClick={() => navigate(`/employee/${employee._id}/edit`)}
-            >
-              Edit Employee
-            </button>
-            <button 
-              className="btn btn-secondary"
-              onClick={() => navigate(`/employee-attendance/${employee._id}`)}
-            >
-              View Attendance History
-            </button>
+      {/* Attendance History View */}
+      {showAttendanceHistory && (
+        <div className="attendance-history-container">
+          <div className="attendance-history-card">
+            <div className="attendance-history-header">
+              <div className="employee-info-summary">
+                <div className="employee-avatar-summary">
+                  {employee.profileImage ? (
+                    <img 
+                      src={employee.profileImage} 
+                      alt={employee.name}
+                      className="profile-image-summary"
+                    />
+                  ) : (
+                    employee.name.charAt(0).toUpperCase()
+                  )}
+                </div>
+                <div className="employee-details-summary">
+                  <h2 className="employee-name-summary">{employee.name}</h2>
+                  <p className="employee-email-summary">{employee.email}</p>
+                  <p className="employee-position-summary">{employee.position} • {employee.department}</p>
+                </div>
+              </div>
+              <div className="attendance-actions">
+                <button 
+                  className="btn btn-primary"
+                  onClick={handleEditEmployee}
+                >
+                  Edit Employee
+                </button>
+                <button 
+                  className="btn btn-secondary"
+                  onClick={handleViewAttendanceHistory}
+                >
+                  ← Back to Employee Details
+                </button>
+              </div>
+            </div>
+
+            <div className="attendance-summary-grid">
+              <div className="summary-section">
+                <h3 className="section-title">Leave Balance</h3>
+                <div className="leave-balance-grid">
+                  <div className="leave-type">
+                    <span className="leave-label">Annual Leave:</span>
+                    <span className="leave-value">
+                      {employee.leaveBalance?.annual?.remaining || 0} / {employee.leaveBalance?.annual?.total || 0}
+                    </span>
+                  </div>
+                  <div className="leave-type">
+                    <span className="leave-label">Sick Leave:</span>
+                    <span className="leave-value">
+                      {employee.leaveBalance?.sick?.remaining || 0} / {employee.leaveBalance?.sick?.total || 0}
+                    </span>
+                  </div>
+                  <div className="leave-type">
+                    <span className="leave-label">Personal Leave:</span>
+                    <span className="leave-value">
+                      {employee.leaveBalance?.personal?.remaining || 0} / {employee.leaveBalance?.personal?.total || 0}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="summary-section">
+                <h3 className="section-title">Today's Status</h3>
+                <div className="today-status">
+                  <span 
+                    className="status-badge-large"
+                    style={{ backgroundColor: getStatusColor(employee.attendance?.today?.status || 'Unknown') }}
+                  >
+                    {getStatusIcon(employee.attendance?.today?.status || 'Unknown')} {employee.attendance?.today?.status || 'Unknown'}
+                  </span>
+                  <div className="today-details">
+                    <p><strong>Check-in:</strong> {employee.attendance?.today?.checkIn || 'Not Available'}</p>
+                    <p><strong>Check-out:</strong> {employee.attendance?.today?.checkOut || 'Not Available'}</p>
+                    <p><strong>Late Arrival:</strong> {employee.attendance?.today?.isLate ? 'Yes' : 'No'}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

@@ -40,10 +40,10 @@ async function createTestUser() {
       employeeId: 'EMP001',
       attendance: {
         today: {
-          checkIn: null,
-          checkOut: null,
-          status: 'Absent',
-          isLate: false
+          checkIn: '09:15 AM',
+          checkOut: '05:30 PM',
+          status: 'Present',
+          isLate: true
         }
       }
     });

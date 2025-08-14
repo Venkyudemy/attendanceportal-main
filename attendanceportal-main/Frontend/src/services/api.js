@@ -250,10 +250,38 @@ export const createAdminLeaveRequest = async (leaveData) => {
 };
 
 export const updateLeaveRequestStatus = async (requestId, statusData) => {
-  return apiCall(`/leave/${requestId}/status`, {
-    method: 'PATCH',
-    body: JSON.stringify(statusData),
-  });
+  console.log('🔄 Updating leave request status:', { requestId, statusData });
+  
+  try {
+    // Use direct fetch instead of apiCall for PATCH requests
+    const url = `http://localhost:5000/api/leave/${requestId}/status`;
+    console.log('🔄 Making PATCH request to:', url);
+    
+    const response = await fetch(url, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(statusData),
+    });
+    
+    console.log('🔄 PATCH response status:', response.status);
+    console.log('🔄 PATCH response headers:', response.headers);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ PATCH request failed:', errorText);
+      throw new Error(`HTTP ${response.status}: ${errorText}`);
+    }
+    
+    const data = await response.json();
+    console.log('✅ Leave status update successful:', data);
+    return data;
+  } catch (error) {
+    console.error('❌ Leave status update failed:', error);
+    console.error('Request details:', { requestId, statusData });
+    throw error;
+  }
 };
 
 export const deleteLeaveRequest = async (requestId) => {

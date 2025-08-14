@@ -16,10 +16,18 @@ router.get('/admin', async (req, res) => {
 // Get leave requests for specific employee
 router.get('/employee/:employeeId', async (req, res) => {
   try {
+    console.log('=== EMPLOYEE LEAVE REQUESTS ROUTE CALLED ===');
+    console.log('Employee ID requested:', req.params.employeeId);
+    
     const leaveRequests = await LeaveRequest.find({ employeeId: req.params.employeeId })
       .sort({ submittedDate: -1 });
+    
+    console.log('Found leave requests:', leaveRequests.length);
+    console.log('Leave requests data:', leaveRequests);
+    
     res.json(leaveRequests);
   } catch (error) {
+    console.error('Error fetching employee leave requests:', error);
     res.status(500).json({ message: 'Error fetching employee leave requests', error: error.message });
   }
 });
@@ -185,7 +193,28 @@ router.get('/admin/stats', async (req, res) => {
 // Update leave request status (admin)
 router.patch('/:id/status', async (req, res) => {
   try {
+    console.log('=== LEAVE STATUS UPDATE ROUTE CALLED ===');
+    console.log('Request ID:', req.params.id);
+    console.log('Request body:', req.body);
+    console.log('Request headers:', req.headers);
+    console.log('Request method:', req.method);
+    console.log('Request URL:', req.url);
+    
     const { status, adminNotes } = req.body;
+    
+    if (!status) {
+      console.log('❌ No status provided in request body');
+      return res.status(400).json({ message: 'Status is required' });
+    }
+    
+    console.log('Updating leave request with status:', status);
+    
+    // Validate the request ID format
+    if (!req.params.id || req.params.id.length !== 24) {
+      console.log('❌ Invalid request ID format:', req.params.id);
+      return res.status(400).json({ message: 'Invalid request ID format' });
+    }
+    
     const leaveRequest = await LeaveRequest.findByIdAndUpdate(
       req.params.id,
       { status, adminNotes },
@@ -193,10 +222,11 @@ router.patch('/:id/status', async (req, res) => {
     );
     
     if (!leaveRequest) {
+      console.log('❌ Leave request not found with ID:', req.params.id);
       return res.status(404).json({ message: 'Leave request not found' });
     }
 
-    console.log('Leave request status updated in MongoDB:', {
+    console.log('✅ Leave request status updated in MongoDB:', {
       id: leaveRequest._id,
       employeeId: leaveRequest.employeeId,
       status: status,
@@ -245,9 +275,16 @@ router.patch('/:id/status', async (req, res) => {
       }
     }
     
+    console.log('✅ Sending response with updated leave request:', {
+      id: leaveRequest._id,
+      status: leaveRequest.status,
+      employeeName: leaveRequest.employeeName
+    });
+    
     res.json(leaveRequest);
   } catch (error) {
-    console.error('Error updating leave request status:', error);
+    console.error('❌ Error updating leave request status:', error);
+    console.error('Error stack:', error.stack);
     res.status(400).json({ message: 'Error updating leave request', error: error.message });
   }
 });
@@ -265,6 +302,14 @@ router.delete('/:id', async (req, res) => {
   } catch (error) {
     res.status(400).json({ message: 'Error deleting leave request', error: error.message });
   }
+});
+
+// Test route for PATCH method
+router.patch('/test', (req, res) => {
+  console.log('=== PATCH TEST ROUTE CALLED ===');
+  console.log('Request body:', req.body);
+  console.log('Request headers:', req.headers);
+  res.json({ message: 'PATCH method is working', receivedData: req.body });
 });
 
 module.exports = router; 

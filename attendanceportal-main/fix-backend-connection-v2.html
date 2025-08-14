@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Backend Connection Fix v2</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 20px; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .test-result { 
+            margin: 15px 0; 
+            padding: 15px; 
+            border-radius: 8px;
+            border-left: 4px solid;
+        }
+        .success { 
+            background-color: #d4edda; 
+            color: #155724; 
+            border-left-color: #28a745;
+        }
+        .error { 
+            background-color: #f8d7da; 
+            color: #721c24; 
+            border-left-color: #dc3545;
+        }
+        .warning {
+            background-color: #fff3cd;
+            color: #856404;
+            border-left-color: #ffc107;
+        }
+        button { 
+            padding: 12px 24px; 
+            margin: 8px; 
+            cursor: pointer;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .status-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid #dee2e6;
+        }
+        .status-card h3 {
+            margin: 0 0 10px 0;
+            color: #495057;
+        }
+        .status-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #212529;
+        }
+        .fix-steps {
+            background: #e7f3ff;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #007bff;
+        }
+        .fix-steps h3 {
+            margin-top: 0;
+            color: #0056b3;
+        }
+        .fix-steps ol {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .fix-steps li {
+            margin: 8px 0;
+            color: #495057;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Backend Connection Diagnostic & Fix</h1>
+        <p>This tool will help diagnose and fix backend connection issues.</p>
+        
+        <div class="status-grid">
+            <div class="status-card">
+                <h3>Backend Status</h3>
+                <div id="backend-status" class="status-value">Checking...</div>
+            </div>
+            <div class="status-card">
+                <h3>Frontend Status</h3>
+                <div id="frontend-status" class="status-value">Checking...</div>
+            </div>
+            <div class="status-card">
+                <h3>Database Status</h3>
+                <div id="database-status" class="status-value">Checking...</div>
+            </div>
+            <div class="status-card">
+                <h3>API Status</h3>
+                <div id="api-status" class="status-value">Checking...</div>
+            </div>
+        </div>
+        
+        <button onclick="runFullDiagnostic()" class="btn-primary">🔍 Run Full Diagnostic</button>
+        <button onclick="testLogin()" class="btn-secondary">🔐 Test Login</button>
+        <button onclick="clearCache()" class="btn-success">🗑️ Clear Browser Cache</button>
+        
+        <div id="results"></div>
+        
+        <div class="fix-steps">
+            <h3>🚀 Quick Fix Steps:</h3>
+            <ol>
+                <li><strong>Clear Browser Cache:</strong> Press Ctrl+Shift+R (hard refresh)</li>
+                <li><strong>Try Incognito Mode:</strong> Open in private/incognito browser window</li>
+                <li><strong>Check Console:</strong> Press F12 and look for errors in Console tab</li>
+                <li><strong>Test Credentials:</strong> Use admin@company.com / admin123</li>
+                <li><strong>Restart Services:</strong> If issues persist, restart backend and frontend</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5000/api';
+        
+        function addResult(message, type = 'success') {
+            const resultsDiv = document.getElementById('results');
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `test-result ${type}`;
+            resultDiv.innerHTML = message;
+            resultsDiv.appendChild(resultDiv);
+        }
+        
+        function updateStatus(elementId, status, color = '#28a745') {
+            const element = document.getElementById(elementId);
+            element.textContent = status;
+            element.style.color = color;
+        }
+        
+        async function testBackend() {
+            try {
+                const response = await fetch(`${API_BASE}/health`);
+                if (response.ok) {
+                    const data = await response.json();
+                    updateStatus('backend-status', '✅ Running');
+                    addResult(`✅ <strong>Backend Health Check:</strong> ${data.status} - Uptime: ${data.uptime.toFixed(2)}s`);
+                    return true;
+                } else {
+                    updateStatus('backend-status', '❌ Failed', '#dc3545');
+                    addResult(`❌ <strong>Backend Health Check Failed:</strong> ${response.status}`, 'error');
+                    return false;
+                }
+            } catch (error) {
+                updateStatus('backend-status', '❌ Error', '#dc3545');
+                addResult(`❌ <strong>Backend Connection Error:</strong> ${error.message}`, 'error');
+                return false;
+            }
+        }
+        
+        async function testFrontend() {
+            try {
+                const response = await fetch('http://localhost:3000');
+                if (response.ok) {
+                    updateStatus('frontend-status', '✅ Running');
+                    addResult(`✅ <strong>Frontend Status:</strong> React app is running on port 3000`);
+                    return true;
+                } else {
+                    updateStatus('frontend-status', '❌ Failed', '#dc3545');
+                    addResult(`❌ <strong>Frontend Status:</strong> Not responding`, 'error');
+                    return false;
+                }
+            } catch (error) {
+                updateStatus('frontend-status', '❌ Error', '#dc3545');
+                addResult(`❌ <strong>Frontend Connection Error:</strong> ${error.message}`, 'error');
+                return false;
+            }
+        }
+        
+        async function testDatabase() {
+            try {
+                const response = await fetch(`${API_BASE}/employee/attendance`);
+                if (response.ok) {
+                    const data = await response.json();
+                    updateStatus('database-status', '✅ Connected');
+                    addResult(`✅ <strong>Database Connection:</strong> Found ${data.length} employees`);
+                    return true;
+                } else {
+                    updateStatus('database-status', '❌ Failed', '#dc3545');
+                    addResult(`❌ <strong>Database Connection Failed:</strong> ${response.status}`, 'error');
+                    return false;
+                }
+            } catch (error) {
+                updateStatus('database-status', '❌ Error', '#dc3545');
+                addResult(`❌ <strong>Database Connection Error:</strong> ${error.message}`, 'error');
+                return false;
+            }
+        }
+        
+        async function testAPI() {
+            try {
+                const response = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: 'admin@company.com',
+                        password: 'admin123'
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    updateStatus('api-status', '✅ Working');
+                    addResult(`✅ <strong>API Login Test:</strong> ${data.message} - Token received`);
+                    return true;
+                } else {
+                    const errorText = await response.text();
+                    updateStatus('api-status', '❌ Failed', '#dc3545');
+                    addResult(`❌ <strong>API Login Failed:</strong> ${response.status} - ${errorText}`, 'error');
+                    return false;
+                }
+            } catch (error) {
+                updateStatus('api-status', '❌ Error', '#dc3545');
+                addResult(`❌ <strong>API Connection Error:</strong> ${error.message}`, 'error');
+                return false;
+            }
+        }
+        
+        async function runFullDiagnostic() {
+            addResult('<strong>🔍 Starting Full Diagnostic...</strong>', 'warning');
+            
+            const backendOk = await testBackend();
+            const frontendOk = await testFrontend();
+            const databaseOk = await testDatabase();
+            const apiOk = await testAPI();
+            
+            if (backendOk && frontendOk && databaseOk && apiOk) {
+                addResult('<strong>🎉 All Systems Working!</strong> The issue might be browser cache. Try clearing cache or using incognito mode.', 'success');
+            } else {
+                addResult('<strong>⚠️ Issues Detected:</strong> Check the error messages above and follow the fix steps.', 'warning');
+            }
+        }
+        
+        async function testLogin() {
+            addResult('<strong>🔐 Testing Login Endpoint...</strong>', 'warning');
+            await testAPI();
+        }
+        
+        function clearCache() {
+            addResult('<strong>🗑️ Browser Cache Clear Instructions:</strong><br>1. Press Ctrl+Shift+R for hard refresh<br>2. Or open in incognito/private mode<br>3. Or clear browser cache manually', 'warning');
+        }
+        
+        // Auto-run diagnostic on page load
+        window.onload = function() {
+            addResult('<strong>🚀 Auto-diagnostic started...</strong>', 'warning');
+            runFullDiagnostic();
+        };
+    </script>
+</body>
+</html>

@@ -1,4 +1,4 @@
-# Frontend Dockerfile - Optimized Production Build
+# Frontend Dockerfile - Optimized Production Build with Daily Reset UI
 FROM node:18-alpine AS builder
 
 # Set working directory
@@ -53,9 +53,9 @@ USER nextjs
 # Expose port 80
 EXPOSE 80
 
-# Health check
+# Enhanced health check for frontend with daily reset UI
 HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
-  CMD curl -f http://localhost/health || exit 1
+  CMD curl -f http://localhost/ || exit 1
 
-# Start nginx
+# Start nginx with daily reset functionality support
 CMD ["nginx", "-g", "daemon off;"]

@@ -376,6 +376,57 @@ router.get('/admin/high-attendance', async (req, res) => {
   }
 });
 
+// GET /api/employee/details/:employeeId - Get individual employee details by ID
+router.get('/details/:employeeId', async (req, res) => {
+  try {
+    console.log('=== EMPLOYEE DETAILS ROUTE CALLED ===');
+    console.log('Request params:', req.params);
+    console.log('Employee ID requested:', req.params.employeeId);
+    console.log('Request URL:', req.originalUrl);
+    
+    const employee = await Employee.findById(req.params.employeeId).select('-password');
+    
+    if (!employee) {
+      console.log('❌ Employee not found for ID:', req.params.employeeId);
+      return res.status(404).json({ 
+        error: 'Not found',
+        message: 'Employee not found' 
+      });
+    }
+
+    console.log('✅ Employee found:', employee.name);
+    console.log('Employee ID:', employee._id);
+    console.log('Raw attendance data:', employee.attendance);
+
+    // Format the attendance data properly
+    const formattedEmployee = {
+      ...employee.toObject(),
+      attendance: {
+        today: {
+          status: employee.attendance?.today?.status || 'Unknown',
+          checkIn: employee.attendance?.today?.checkIn || null,
+          checkOut: employee.attendance?.today?.checkOut || null,
+          isLate: employee.attendance?.today?.isLate || false
+        }
+      }
+    };
+
+    console.log('Formatted attendance data:', formattedEmployee.attendance);
+    console.log('=== SENDING RESPONSE ===');
+    console.log('Response status: 200');
+    console.log('Response data keys:', Object.keys(formattedEmployee));
+
+    res.status(200).json(formattedEmployee);
+  } catch (error) {
+    console.error('❌ Error fetching employee details:', error);
+    console.error('Error stack:', error.stack);
+    res.status(500).json({ 
+      error: 'Internal server error',
+      message: 'Failed to fetch employee details' 
+    });
+  }
+});
+
 // POST /api/employee - Add new employee
 router.post('/', async (req, res) => {
   try {
@@ -631,7 +682,150 @@ router.get('/:id/portal-data', async (req, res) => {
   }
 });
 
-// POST /api/employee/:id/check-in - Employee check-in
+// POST /api/employee/manual-daily-reset - Manual daily reset for testing
+router.post('/manual-daily-reset', async (req, res) => {
+  try {
+    console.log('🔄 Manual daily reset requested...');
+    const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD format
+    
+    // Get all employees
+    const employees = await Employee.find({});
+    let resetCount = 0;
+    let errorCount = 0;
+    
+    console.log(`📊 Processing ${employees.length} employees...`);
+    
+    for (const employee of employees) {
+      try {
+        // Reset today's attendance status
+        employee.attendance.today = {
+          checkIn: null,
+          checkOut: null,
+          status: 'Absent',
+          isLate: false
+        };
+        
+        // Save the updated employee
+        await employee.save();
+        resetCount++;
+        
+        console.log(`✅ Manual reset for employee: ${employee.name}`);
+      } catch (empError) {
+        console.error(`❌ Failed to reset employee ${employee.name}:`, empError.message);
+        errorCount++;
+      }
+    }
+    
+    console.log(`🎉 Manual daily reset completed! ${resetCount} employees reset, ${errorCount} errors`);
+    
+    res.status(200).json({
+      message: 'Manual daily reset completed successfully',
+      employeesReset: resetCount,
+      errors: errorCount,
+      totalEmployees: employees.length,
+      resetTime: new Date().toISOString(),
+      date: today
+    });
+    
+  } catch (error) {
+    console.error('❌ Error during manual daily reset:', error);
+    res.status(500).json({ 
+      error: 'Internal server error',
+      message: 'Failed to perform manual daily reset' 
+    });
+  }
+});
+
+// POST /api/employee/force-reset - Force reset all attendance (emergency use)
+router.post('/force-reset', async (req, res) => {
+  try {
+    console.log('🚨 FORCE RESET REQUESTED...');
+    const today = new Date().toLocaleDateString('en-CA');
+    
+    // Get all employees
+    const employees = await Employee.find({});
+    let resetCount = 0;
+    let errorCount = 0;
+    
+    console.log(`📊 Force reset processing ${employees.length} employees...`);
+    
+    for (const employee of employees) {
+      try {
+        // Reset today's attendance status
+        employee.attendance.today = {
+          checkIn: null,
+          checkOut: null,
+          status: 'Absent',
+          isLate: false
+        };
+        
+        // Also clear any existing records for today
+        const todayRecords = employee.attendance.records.filter(record => record.date !== today);
+        employee.attendance.records = todayRecords;
+        
+        // Save the updated employee
+        await employee.save();
+        resetCount++;
+        
+        console.log(`✅ Force reset for employee: ${employee.name}`);
+      } catch (empError) {
+        console.error(`❌ Failed to force reset employee ${employee.name}:`, empError.message);
+        errorCount++;
+      }
+    }
+    
+    console.log(`🎉 FORCE RESET COMPLETED! ${resetCount} employees reset, ${errorCount} errors`);
+    
+    res.status(200).json({
+      message: 'Force reset completed successfully',
+      employeesReset: resetCount,
+      errors: errorCount,
+      totalEmployees: employees.length,
+      resetTime: new Date().toISOString(),
+      date: today,
+      type: 'force'
+    });
+    
+  } catch (error) {
+    console.error('❌ Error during force reset:', error);
+    res.status(500).json({ 
+      error: 'Internal server error',
+      message: 'Failed to perform force reset' 
+    });
+  }
+});
+
+// GET /api/employee/reset-status - Check reset status
+router.get('/reset-status', async (req, res) => {
+  try {
+    const today = new Date().toLocaleDateString('en-CA');
+    const employees = await Employee.find({});
+    
+    // Count employees with different statuses
+    const checkedIn = employees.filter(emp => emp.attendance.today.checkIn).length;
+    const checkedOut = employees.filter(emp => emp.attendance.today.checkOut).length;
+    const absent = employees.filter(emp => !emp.attendance.today.checkIn && !emp.attendance.today.checkOut).length;
+    
+    res.status(200).json({
+      date: today,
+      totalEmployees: employees.length,
+      checkedIn: checkedIn,
+      checkedOut: checkedOut,
+      absent: absent,
+      lastReset: process.env.LAST_RESET_DATE || 'unknown',
+      nextReset: '12:00 AM tomorrow'
+    });
+    
+  } catch (error) {
+    console.error('Error getting reset status:', error);
+    res.status(500).json({ 
+      error: 'Internal server error',
+      message: 'Failed to get reset status' 
+    });
+  }
+});
+
+// POST /api/employee/:id/check-in - Employee check-in (Improved)
 router.post('/:id/check-in', async (req, res) => {
   try {
     console.log('Check-in request for employee ID:', req.params.id);
@@ -653,6 +847,15 @@ router.post('/:id/check-in', async (req, res) => {
       minute: '2-digit',
       hour12: true 
     });
+    
+    // Check if already checked in today
+    if (employee.attendance.today.checkIn) {
+      return res.status(400).json({
+        error: 'Already checked in',
+        message: 'You have already checked in today',
+        checkInTime: employee.attendance.today.checkIn
+      });
+    }
     
     const isLate = now.getHours() > 9 || (now.getHours() === 9 && now.getMinutes() > 30);
     const status = isLate ? 'Late' : 'Present';
@@ -750,7 +953,8 @@ router.post('/:id/check-in', async (req, res) => {
       message: 'Check-in successful',
       checkInTime: checkInTime,
       status: status,
-      isLate: isLate
+      isLate: isLate,
+      employeeName: employee.name
     });
   } catch (error) {
     console.error('Error during check-in:', error);
@@ -2196,6 +2400,122 @@ router.get('/admin/verify-data-integrity', async (req, res) => {
     res.status(500).json({ 
       error: 'Internal server error',
       message: 'Failed to verify data integrity' 
+    });
+  }
+});
+
+// POST /api/employee/upload-image - Upload employee profile image
+router.post('/upload-image', async (req, res) => {
+  try {
+    console.log('=== IMAGE UPLOAD ROUTE CALLED ===');
+    
+    // Note: This is a basic implementation
+    // In production, you'd want to use multer for file handling
+    // and store images in cloud storage (AWS S3, etc.)
+    
+    const { employeeId } = req.body;
+    console.log('Employee ID for image upload:', employeeId);
+    
+    if (!employeeId) {
+      return res.status(400).json({
+        error: 'Bad request',
+        message: 'Employee ID is required'
+      });
+    }
+
+    // For now, return a placeholder image URL
+    // In production, you'd process the actual file upload
+    const imageUrl = `https://via.placeholder.com/150x150/6366f1/ffffff?text=${encodeURIComponent('Profile')}`;
+    
+    // Update employee with new image URL
+    await Employee.findByIdAndUpdate(employeeId, {
+      profileImage: imageUrl
+    });
+
+    console.log('✅ Image URL updated for employee:', employeeId);
+    
+    res.status(200).json({
+      message: 'Profile image updated successfully',
+      imageUrl: imageUrl
+    });
+    
+  } catch (error) {
+    console.error('❌ Error uploading image:', error);
+    res.status(500).json({ 
+      error: 'Internal server error',
+      message: 'Failed to upload image' 
+    });
+  }
+});
+
+// PUT /api/employee/:employeeId - Update employee information
+router.put('/:employeeId', async (req, res) => {
+  try {
+    console.log('=== UPDATE EMPLOYEE ROUTE CALLED ===');
+    console.log('Employee ID:', req.params.employeeId);
+    console.log('Update data:', req.body);
+    
+    const { name, email, department, position, phone, joinDate, employeeId: empId, domain, address, salary, manager } = req.body;
+    
+    // Validate required fields
+    if (!name || !email || !department || !position || !phone) {
+      return res.status(400).json({
+        error: 'Bad request',
+        message: 'Name, email, department, position, and phone are required'
+      });
+    }
+
+    // Check if email already exists for another employee
+    const existingEmployee = await Employee.findOne({ 
+      email, 
+      _id: { $ne: req.params.employeeId } 
+    });
+    
+    if (existingEmployee) {
+      return res.status(409).json({
+        error: 'Conflict',
+        message: 'Email already exists for another employee'
+      });
+    }
+
+    // Update employee
+    const updatedEmployee = await Employee.findByIdAndUpdate(
+      req.params.employeeId,
+      {
+        name,
+        email,
+        department,
+        position,
+        phone,
+        joinDate,
+        employeeId: empId,
+        domain,
+        address,
+        salary,
+        manager
+      },
+      { new: true, runValidators: true }
+    ).select('-password');
+
+    if (!updatedEmployee) {
+      return res.status(404).json({
+        error: 'Not found',
+        message: 'Employee not found'
+      });
+    }
+
+    console.log('✅ Employee updated successfully:', updatedEmployee.name);
+    
+    res.status(200).json({
+      message: 'Employee updated successfully',
+      employee: updatedEmployee
+    });
+    
+  } catch (error) {
+    console.error('❌ Error updating employee:', error);
+    res.status(500).json({ 
+      error: 'Internal server error',
+      message: 'Failed to update employee' 
     });
   }
 });

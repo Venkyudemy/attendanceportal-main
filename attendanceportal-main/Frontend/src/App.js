@@ -8,6 +8,7 @@ import EmployeeManagement from './components/employee/EmployeeManagement';
 import AdminPortal from './components/admin/AdminPortal';
 import AdminLeaveManagement from './components/admin/AdminLeaveManagement';
 import EmployeeDetails from './components/employee/EmployeeDetails';
+import EditEmployee from './components/employee/EditEmployee';
 import LeaveManagement from './components/shared/LeaveManagement';
 import Settings from './components/shared/Settings';
 import EmployeePortal from './components/employee/EmployeePortal';
@@ -61,6 +62,7 @@ function App() {
                 <Route path="/admin/:filter" element={<AdminPortal />} />
                 <Route path="/admin/leave-management" element={<AdminLeaveManagement />} />
                 <Route path="/employee/:employeeId" element={<EmployeeDetails />} />
+                <Route path="/employee/:employeeId/edit" element={<EditEmployee />} />
                 <Route path="/leave" element={<LeaveManagement />} />
                 <Route path="/profile" element={<Profile currentUser={currentUser} />} />
                 <Route path="/settings" element={<Settings />} />

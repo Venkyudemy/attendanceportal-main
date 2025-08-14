@@ -69,15 +69,30 @@ const LeaveManagement = () => {
 
   const handleStatusChange = async (id, newStatus) => {
     try {
+      console.log('🔄 Starting status change for leave request:', { id, newStatus });
+      
       const updatedRequest = await updateLeaveRequestStatus(id, { status: newStatus });
+      console.log('✅ Status change successful:', updatedRequest);
+      
       setLeaveRequests(prev => 
         prev.map(request => 
           request._id === id ? updatedRequest : request
         )
       );
+      
+      console.log('✅ Leave requests state updated');
     } catch (error) {
-      console.error('Error updating leave request status:', error);
-      alert('Error updating leave request status. Please try again.');
+      console.error('❌ Error updating leave request status:', error);
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack,
+        id,
+        newStatus
+      });
+      
+      // Show more detailed error message
+      const errorMessage = error.message || 'Unknown error occurred';
+      alert(`Error updating leave request status: ${errorMessage}. Please try again.`);
     }
   };
 

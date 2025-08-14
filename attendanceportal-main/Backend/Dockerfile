@@ -1,4 +1,4 @@
-# Backend Dockerfile - Optimized Production Build
+# Backend Dockerfile - Optimized Production Build with Daily Reset
 FROM node:18-alpine AS builder
 
 # Set working directory
@@ -7,8 +7,8 @@ WORKDIR /app
 # Set environment variables
 ENV NODE_ENV=production
 
-# Install curl for health checks
-RUN apk add --no-cache curl
+# Install curl for health checks and timezone data
+RUN apk add --no-cache curl tzdata
 
 # Copy package files
 COPY package*.json ./
@@ -29,9 +29,10 @@ WORKDIR /app
 # Set environment variables
 ENV NODE_ENV=production
 ENV PORT=5000
+ENV TZ=UTC
 
-# Install curl for health checks and cleanup
-RUN apk add --no-cache curl && \
+# Install curl for health checks, timezone data, and cleanup
+RUN apk add --no-cache curl tzdata && \
     rm -rf /var/cache/apk/*
 
 # Copy package files
@@ -42,7 +43,7 @@ RUN npm ci --only=production --cache /tmp/.npm && \
     npm cache clean --force
 
 # Copy built application from builder stage
-COPY --from=builder /app .
+COPY --from=builder /app ./
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs && \
@@ -57,9 +58,10 @@ USER nodejs
 # Expose port
 EXPOSE 5000
 
-# Health check
+# Enhanced health check with daily reset status
 HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
-  CMD curl -f http://localhost:5000/api/health || exit 1
+  CMD curl -f http://localhost:5000/api/health && \
+      curl -f http://localhost:5000/api/employee/reset-status || exit 1
 
-# Start the application with optimizations
+# Start the application with optimizations and daily reset functionality
 CMD ["node", "--max-old-space-size=2048", "index.js"]

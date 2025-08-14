@@ -189,13 +189,8 @@ const EmployeeManagement = () => {
   };
 
   const handleViewEmployeePortal = (employee) => {
-    // Navigate to employee attendance view with employee data
-    navigate(`/employee-attendance/${employee.id}`, { 
-      state: { 
-        employeeData: employee,
-        isAdminView: true 
-      } 
-    });
+    // Navigate to employee details page
+    navigate(`/employee/${employee.id}`);
   };
 
   const getAttendanceStatusColor = (status) => {

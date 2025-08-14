@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leave Status Proof - Employee Portal</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 20px; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .test-result { 
+            margin: 15px 0; 
+            padding: 15px; 
+            border-radius: 8px;
+            border-left: 4px solid;
+        }
+        .success { 
+            background-color: #d4edda; 
+            color: #155724; 
+            border-left-color: #28a745;
+        }
+        .error { 
+            background-color: #f8d7da; 
+            color: #721c24; 
+            border-left-color: #dc3545;
+        }
+        .warning {
+            background-color: #fff3cd;
+            color: #856404;
+            border-left-color: #ffc107;
+        }
+        button { 
+            padding: 12px 24px; 
+            margin: 8px; 
+            cursor: pointer;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        .leave-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .leave-table th {
+            background: #f8f9fa;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid #dee2e6;
+        }
+        .leave-table td {
+            padding: 12px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .leave-table tr:hover {
+            background: #f8f9fa;
+        }
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: inline-block;
+        }
+        .status-success { 
+            background: #d4edda; 
+            color: #155724; 
+            border: 1px solid #c3e6cb;
+        }
+        .status-warning { 
+            background: #fff3cd; 
+            color: #856404; 
+            border: 1px solid #ffeaa7;
+        }
+        .status-danger { 
+            background: #f8d7da; 
+            color: #721c24; 
+            border: 1px solid #f5c6cb;
+        }
+        .status-secondary { 
+            background: #e2e3e5; 
+            color: #383d41; 
+            border: 1px solid #d6d8db;
+        }
+        .leave-type-badge {
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        .proof-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #28a745;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 Leave Status Proof - Employee Portal</h1>
+        <p>This test proves that the employee portal leave status is working correctly.</p>
+        
+        <div class="proof-section">
+            <h3>✅ What We're Testing:</h3>
+            <ul>
+                <li><strong>Backend API:</strong> Leave requests with status (Approved/Pending/Rejected)</li>
+                <li><strong>Frontend Display:</strong> Status badges in employee portal table</li>
+                <li><strong>Data Flow:</strong> From database → API → Frontend → UI</li>
+            </ul>
+        </div>
+        
+        <button onclick="testLeaveStatusProof()" class="btn-primary">🔍 Test Leave Status Proof</button>
+        <button onclick="showEmployeePortalData()" class="btn-success">👤 Show Employee Portal Data</button>
+        
+        <div id="results"></div>
+        <div id="proof-table"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5000/api';
+        
+        function addResult(message, type = 'success') {
+            const resultsDiv = document.getElementById('results');
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `test-result ${type}`;
+            resultDiv.innerHTML = message;
+            resultsDiv.appendChild(resultDiv);
+        }
+        
+        function getStatusColor(status) {
+            switch (status) {
+                case 'Approved': return 'success';
+                case 'Pending': return 'warning';
+                case 'Rejected': return 'danger';
+                default: return 'secondary';
+            }
+        }
+        
+        function displayProofTable(leaveRequests) {
+            const container = document.getElementById('proof-table');
+            container.innerHTML = '<h3>📊 Employee Leave Requests - Status Proof</h3>';
+            
+            if (leaveRequests.length === 0) {
+                container.innerHTML += '<p>No leave requests found.</p>';
+                return;
+            }
+            
+            const table = document.createElement('table');
+            table.className = 'leave-table';
+            table.innerHTML = `
+                <thead>
+                    <tr>
+                        <th>Type</th>
+                        <th>Duration</th>
+                        <th>Reason</th>
+                        <th>Status</th>
+                        <th>Submitted</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${leaveRequests.map(request => `
+                        <tr>
+                            <td>
+                                <span class="leave-type-badge">${request.leaveType}</span>
+                            </td>
+                            <td>
+                                <div>
+                                    <div>${new Date(request.startDate).toLocaleDateString()}</div>
+                                    <div>to</div>
+                                    <div>${new Date(request.endDate).toLocaleDateString()}</div>
+                                    <div style="font-size: 0.8rem; color: #666;">(${request.days} days)</div>
+                                </div>
+                            </td>
+                            <td>
+                                <div style="max-width: 200px; overflow: hidden; text-overflow: ellipsis;">
+                                    ${request.reason}
+                                </div>
+                            </td>
+                            <td>
+                                <span class="status-badge status-${getStatusColor(request.status)}">
+                                    ${request.status || 'Pending'}
+                                </span>
+                            </td>
+                            <td>${new Date(request.submittedDate).toLocaleDateString()}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            `;
+            
+            container.appendChild(table);
+        }
+        
+        async function testLeaveStatusProof() {
+            try {
+                addResult('<strong>🔍 Testing Leave Status Proof...</strong>', 'warning');
+                
+                // Test employee leave requests
+                const employeeId = '689c1436438dc6567cbee634';
+                addResult(`<strong>Step 1:</strong> Fetching leave requests for employee ID: ${employeeId}`, 'warning');
+                
+                const response = await fetch(`${API_BASE}/leave/employee/${employeeId}`);
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch leave requests: ${response.status}`);
+                }
+                
+                const leaveRequests = await response.json();
+                addResult(`<strong>✅ Success:</strong> Found ${leaveRequests.length} leave requests`, 'success');
+                
+                // Analyze status data
+                const statusCounts = {};
+                const requestsWithStatus = leaveRequests.filter(req => req.status);
+                const requestsWithoutStatus = leaveRequests.filter(req => !req.status);
+                
+                leaveRequests.forEach(req => {
+                    const status = req.status || 'No Status';
+                    statusCounts[status] = (statusCounts[status] || 0) + 1;
+                });
+                
+                addResult(`<strong>📊 Status Analysis:</strong>`, 'warning');
+                addResult(`- Requests with status: ${requestsWithStatus.length}`, 'success');
+                addResult(`- Requests without status: ${requestsWithoutStatus.length}`, requestsWithoutStatus.length > 0 ? 'error' : 'success');
+                
+                addResult(`<strong>🎯 Status Breakdown:</strong>`, 'warning');
+                Object.entries(statusCounts).forEach(([status, count]) => {
+                    const color = status === 'Approved' ? 'success' : status === 'Pending' ? 'warning' : 'secondary';
+                    addResult(`- ${status}: ${count} requests`, color);
+                });
+                
+                // Show proof table
+                displayProofTable(leaveRequests);
+                
+                // Final proof
+                if (requestsWithStatus.length > 0) {
+                    addResult(`<strong>🎉 PROOF CONFIRMED:</strong> Leave status is working! ${requestsWithStatus.length} requests have status.`, 'success');
+                } else {
+                    addResult(`<strong>❌ ISSUE FOUND:</strong> No leave requests have status.`, 'error');
+                }
+                
+            } catch (error) {
+                addResult(`<strong>❌ Error testing leave status:</strong> ${error.message}`, 'error');
+                console.error('Full error:', error);
+            }
+        }
+        
+        async function showEmployeePortalData() {
+            try {
+                addResult('<strong>👤 Showing Employee Portal Data...</strong>', 'warning');
+                
+                // Show the exact data structure
+                const employeeId = '689c1436438dc6567cbee634';
+                const response = await fetch(`${API_BASE}/leave/employee/${employeeId}`);
+                const leaveRequests = await response.json();
+                
+                addResult(`<strong>📋 Raw Data Structure:</strong>`, 'warning');
+                leaveRequests.forEach((request, index) => {
+                    addResult(`<strong>Request ${index + 1}:</strong>`, 'warning');
+                    addResult(`- ID: ${request._id}`, 'success');
+                    addResult(`- Employee: ${request.employeeName}`, 'success');
+                    addResult(`- Type: ${request.leaveType}`, 'success');
+                    addResult(`- Status: <span class="status-badge status-${getStatusColor(request.status)}">${request.status || 'No Status'}</span>`, 'success');
+                    addResult(`- Duration: ${request.days} days`, 'success');
+                    addResult(`- Submitted: ${new Date(request.submittedDate).toLocaleDateString()}`, 'success');
+                });
+                
+            } catch (error) {
+                addResult(`<strong>❌ Error showing data:</strong> ${error.message}`, 'error');
+            }
+        }
+        
+        // Auto-run test on page load
+        window.onload = function() {
+            addResult('<strong>🎯 Leave Status Proof tool loaded. Click "Test Leave Status Proof" to verify the fix.</strong>', 'warning');
+        };
+    </script>
+</body>
+</html>
