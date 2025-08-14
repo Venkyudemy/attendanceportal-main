@@ -360,14 +360,14 @@ const EmployeePortal = ({ currentUser }) => {
       
       if (response.ok) {
         const result = await response.json();
-        alert(`Manual reset completed! ${result.employeesReset} employees reset.`);
+        window.alert(`Manual reset completed! ${result.employeesReset} employees reset.`);
         window.location.reload();
       } else {
-        alert('Manual reset failed. Please try again.');
+        window.alert('Manual reset failed. Please try again.');
       }
     } catch (error) {
       console.error('Error during manual reset:', error);
-      alert('Manual reset failed. Please try again.');
+      window.alert('Manual reset failed. Please try again.');
     }
   };
 
@@ -375,7 +375,7 @@ const EmployeePortal = ({ currentUser }) => {
   const handleForceReset = async () => {
     if (!isAdminView) return;
     
-    if (!confirm('⚠️ FORCE RESET: This will clear ALL attendance data for today. Are you sure?')) {
+    if (!window.confirm('⚠️ FORCE RESET: This will clear ALL attendance data for today. Are you sure?')) {
       return;
     }
     
@@ -389,14 +389,14 @@ const EmployeePortal = ({ currentUser }) => {
       
       if (response.ok) {
         const result = await response.json();
-        alert(`Force reset completed! ${result.employeesReset} employees reset.`);
+        window.alert(`Force reset completed! ${result.employeesReset} employees reset.`);
         window.location.reload();
       } else {
-        alert('Force reset failed. Please try again.');
+        window.alert('Force reset failed. Please try again.');
       }
     } catch (error) {
       console.error('Error during force reset:', error);
-      alert('Force reset failed. Please try again.');
+      window.alert('Force reset failed. Please try again.');
     }
   };
 
@@ -449,7 +449,7 @@ const EmployeePortal = ({ currentUser }) => {
     setShowLeaveForm(false);
     } catch (error) {
       console.error('Error submitting leave request:', error);
-      alert('Error submitting leave request. Please try again.');
+      window.alert('Error submitting leave request. Please try again.');
     }
   };
 
