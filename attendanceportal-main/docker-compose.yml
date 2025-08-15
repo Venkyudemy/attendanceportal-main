@@ -1,3 +1,5 @@
+version: "3.9"
+
 services:
   frontend:
     build:
@@ -14,6 +16,12 @@ services:
     restart: unless-stopped
     networks:
       - attendance-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
   backend:
     build:
@@ -37,8 +45,10 @@ services:
       test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
       interval: 30s
       timeout: 10s
-      retries: 3
-      start_period: 60s
+      retries: 5
+      start_period: 120s
+    volumes:
+      - backend_logs:/app/logs
 
   mongo:
     image: mongo:6
@@ -58,6 +68,7 @@ services:
 
 volumes:
   mongo_data:
+  backend_logs:
 
 networks:
   attendance-network:
