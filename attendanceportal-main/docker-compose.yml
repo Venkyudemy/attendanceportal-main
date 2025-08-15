@@ -7,9 +7,13 @@ services:
     ports:
       - "3000:80"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     environment:
       - REACT_APP_API_URL=http://localhost:5000/api
+    restart: unless-stopped
+    networks:
+      - attendance-network
 
   backend:
     build:
@@ -26,6 +30,14 @@ services:
     depends_on:
       - mongo
     restart: unless-stopped
+    networks:
+      - attendance-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
   mongo:
     image: mongo:6
@@ -34,6 +46,18 @@ services:
     volumes:
       - mongo_data:/data/db
     restart: unless-stopped
+    networks:
+      - attendance-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
 volumes:
   mongo_data:
+
+networks:
+  attendance-network:
+    driver: bridge
