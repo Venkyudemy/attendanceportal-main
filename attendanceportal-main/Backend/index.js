@@ -174,7 +174,7 @@ app.use((err, req, res, next) => {
 });
 
 // MongoDB Connection
-const MONGO_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/attendanceportal';
+const MONGO_URI = process.env.MONGO_URL || 'mongodb://localhost:27017/attendanceportal';
 
 console.log('🔗 Attempting to connect to MongoDB...');
 console.log('📡 MongoDB URI:', MONGO_URI.replace(/\/\/.*@/, '//***:***@')); // Hide credentials in logs

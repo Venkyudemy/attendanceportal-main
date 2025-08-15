@@ -3,7 +3,7 @@ FROM node:18-alpine AS production
 WORKDIR /app
 
 # Install curl and netcat for health checks and connectivity testing
-# Note: We'll use netcat to test MongoDB connectivity instead of mongosh
+# Note: We'll use netcat for MongoDB connectivity testing (more reliable on Alpine)
 RUN apk add --no-cache curl netcat-openbsd
 
 # Copy package files
