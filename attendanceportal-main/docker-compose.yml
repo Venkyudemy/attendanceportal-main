@@ -25,6 +25,7 @@ services:
       - JWT_SECRET=your-super-secret-jwt-key-change-in-production
     depends_on:
       - mongo
+    restart: unless-stopped
 
   mongo:
     image: mongo:6
@@ -32,6 +33,7 @@ services:
       - "27017:27017"
     volumes:
       - mongo_data:/data/db
+    restart: unless-stopped
 
 volumes:
   mongo_data:
