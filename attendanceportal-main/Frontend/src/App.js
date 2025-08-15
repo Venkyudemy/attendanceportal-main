@@ -60,10 +60,10 @@ function App() {
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/employees" element={<EmployeeManagement />} />
                 <Route path="/admin/:filter" element={<AdminPortal />} />
-                <Route path="/admin/leave-management" element={<AdminLeaveManagement />} />
+                <Route path="/admin/leave-management" element={<AdminLeaveManagement currentUser={currentUser} />} />
                 <Route path="/employee/:employeeId" element={<EmployeeDetails />} />
                 <Route path="/employee/:employeeId/edit" element={<EditEmployee />} />
-                <Route path="/leave" element={<LeaveManagement />} />
+                <Route path="/leave" element={<AdminLeaveManagement currentUser={currentUser} />} />
                 <Route path="/profile" element={<Profile currentUser={currentUser} />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/employee-portal" element={<Navigate to="/dashboard" replace />} />
@@ -78,7 +78,7 @@ function App() {
                 <Route path="/profile" element={<Profile currentUser={currentUser} />} />
                 <Route path="/dashboard" element={<Navigate to="/employee-portal" replace />} />
                 <Route path="/employees" element={<Navigate to="/employee-portal" replace />} />
-                <Route path="/leave" element={<Navigate to="/employee-portal" replace />} />
+                <Route path="/leave" element={<AdminLeaveManagement currentUser={currentUser} />} />
                 <Route path="/settings" element={<Navigate to="/employee-portal" replace />} />
               </>
             )}

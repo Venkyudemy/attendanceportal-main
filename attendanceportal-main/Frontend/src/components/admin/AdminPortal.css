@@ -356,6 +356,39 @@
   font-weight: 500;
 }
 
+.error-message-container {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.error-message {
+  color: #dc2626;
+  font-weight: 500;
+  flex: 1;
+}
+
+.retry-btn {
+  margin-left: 1rem;
+  padding: 0.5rem 1rem;
+  background: #dc2626;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: background-color 0.2s;
+}
+
+.retry-btn:hover {
+  background: #b91c1c;
+}
+
 /* Payroll Module Styles */
 .payroll-controls {
   background: white;

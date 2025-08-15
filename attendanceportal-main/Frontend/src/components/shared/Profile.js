@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getProfileData, updateProfileData, findEmployeeByEmail } from '../../services/api';
+import { getProfileData, updateProfileData, findEmployeeByEmail, getGeneralSettings } from '../../services/api';
 import './Profile.css';
 
 const Profile = ({ currentUser }) => {
@@ -23,6 +23,12 @@ const Profile = ({ currentUser }) => {
       relationship: '',
       phone: '',
       address: ''
+    },
+    // General Settings
+    generalSettings: {
+      companyName: 'TechCorp Solutions',
+      workingHoursStart: '09:00 AM',
+      workingHoursEnd: '05:00 PM'
     }
   });
   const [loading, setLoading] = useState(true);
@@ -35,22 +41,26 @@ const Profile = ({ currentUser }) => {
       try {
         setLoading(true);
         
+        // Fetch general settings first
+        const generalSettingsData = await getGeneralSettings();
+        console.log('📊 Fetched general settings:', generalSettingsData);
+        
         // Try to find employee by email if ID doesn't work
         let employeeId = currentUser.id;
         if (!employeeId && currentUser.email) {
           const employeeData = await findEmployeeByEmail(currentUser.email);
           if (employeeData && employeeData._id) {
             employeeId = employeeData._id;
-            console.log('Found employee by email for profile:', employeeId);
+            console.log('✅ Found employee by email for profile:', employeeId);
           } else {
-            console.error('Employee not found by email:', currentUser.email);
+            console.error('❌ Employee not found by email:', currentUser.email);
             setError('Employee not found. Please contact administrator.');
             return;
           }
         }
         
         if (!employeeId) {
-          console.error('No employee ID found');
+          console.error('❌ No employee ID found');
           setError('Employee ID not found. Please contact administrator.');
           return;
         }
@@ -62,7 +72,7 @@ const Profile = ({ currentUser }) => {
           throw new Error('Failed to fetch employee data');
         }
         
-        // Map backend data to profile format
+        // Map backend data to profile format with global general settings
         setProfileData({
           fullName: employeeData.name || '',
           email: employeeData.email || '',
@@ -80,12 +90,17 @@ const Profile = ({ currentUser }) => {
             relationship: employeeData.emergencyContact?.relationship || '',
             phone: employeeData.emergencyContact?.phone || '',
             address: employeeData.emergencyContact?.address || ''
+          },
+          generalSettings: {
+            companyName: generalSettingsData?.companyName || 'TechCorp Solutions',
+            workingHoursStart: generalSettingsData?.workingHoursStart || '09:00 AM',
+            workingHoursEnd: generalSettingsData?.workingHoursEnd || '05:00 PM'
           }
         });
         
         setError(null);
       } catch (err) {
-        console.error('Error fetching employee data:', err);
+        console.error('❌ Error fetching employee data:', err);
         setError('Failed to load employee data. Please try again.');
       } finally {
         setLoading(false);
@@ -151,6 +166,7 @@ const Profile = ({ currentUser }) => {
         salary: profileData.salary,
         manager: profileData.manager,
         emergencyContact: profileData.emergencyContact
+        // Note: generalSettings are not included as they are managed globally
       };
 
       // Update employee data in backend
@@ -181,6 +197,35 @@ const Profile = ({ currentUser }) => {
     // Employee can only edit these fields
     const employeeEditableFields = ['address', 'emergencyContact.name', 'emergencyContact.relationship', 'emergencyContact.phone', 'emergencyContact.address'];
     return employeeEditableFields.includes(fieldName);
+  };
+
+  // Helper function to convert 12-hour time to 24-hour format for HTML time input
+  const convertTo24Hour = (time12h) => {
+    if (!time12h) return '';
+    const [time, modifier] = time12h.split(' ');
+    let [hours, minutes] = time.split(':');
+    
+    if (hours === '12') {
+      hours = '00';
+    }
+    
+    if (modifier === 'PM') {
+      hours = parseInt(hours, 10) + 12;
+    }
+    
+    // Manual padding without using padStart
+    const paddedHours = hours < 10 ? `0${hours}` : `${hours}`;
+    return `${paddedHours}:${minutes}`;
+  };
+
+  // Helper function to convert 24-hour time to 12-hour format for display
+  const convertTo12Hour = (time24h) => {
+    if (!time24h) return '';
+    const [hours, minutes] = time24h.split(':');
+    const hour = parseInt(hours, 10);
+    const modifier = hour >= 12 ? 'PM' : 'AM';
+    const hour12 = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+    return `${hour12}:${minutes} ${modifier}`;
   };
 
   if (loading) {
@@ -241,6 +286,67 @@ const Profile = ({ currentUser }) => {
         </div>
 
         <div className="profile-sections">
+        {/* General Settings */}
+        <div className="profile-section">
+          <h2 className="section-title">General Settings</h2>
+          <div className="section-content">
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label">Company Name</label>
+                <input
+                  type="text"
+                  className={`form-input ${!isAdmin ? 'disabled' : ''}`}
+                  value={profileData.generalSettings.companyName}
+                  onChange={(e) => handleInputChange('generalSettings.companyName', e.target.value)}
+                  disabled={!isAdmin}
+                  placeholder="Enter company name"
+                />
+                {!isAdmin && (
+                  <small className="field-note">Only admin can edit this field</small>
+                )}
+              </div>
+            </div>
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label">Working Hours Start</label>
+                <div className="input-with-icon">
+                  <input
+                    type="time"
+                    className={`form-input ${!isAdmin ? 'disabled' : ''}`}
+                    value={convertTo24Hour(profileData.generalSettings.workingHoursStart)}
+                    onChange={(e) => handleInputChange('generalSettings.workingHoursStart', convertTo12Hour(e.target.value))}
+                    disabled={!isAdmin}
+                    placeholder="Enter start time"
+                  />
+                  <span className="input-icon">🕐</span>
+                </div>
+                <small className="field-note">Current: {profileData.generalSettings.workingHoursStart}</small>
+                {!isAdmin && (
+                  <small className="field-note">Only admin can edit this field</small>
+                )}
+              </div>
+              <div className="form-group">
+                <label className="form-label">Working Hours End</label>
+                <div className="input-with-icon">
+                  <input
+                    type="time"
+                    className={`form-input ${!isAdmin ? 'disabled' : ''}`}
+                    value={convertTo24Hour(profileData.generalSettings.workingHoursEnd)}
+                    onChange={(e) => handleInputChange('generalSettings.workingHoursEnd', convertTo12Hour(e.target.value))}
+                    disabled={!isAdmin}
+                    placeholder="Enter end time"
+                  />
+                  <span className="input-icon">🕐</span>
+                </div>
+                <small className="field-note">Current: {profileData.generalSettings.workingHoursEnd}</small>
+                {!isAdmin && (
+                  <small className="field-note">Only admin can edit this field</small>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Personal Information */}
           <div className="profile-section">
           <h2 className="section-title">Personal Information</h2>

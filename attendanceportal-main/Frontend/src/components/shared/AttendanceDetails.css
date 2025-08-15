@@ -203,8 +203,15 @@
 }
 
 .status-badge.danger {
-  background: #f8d7da;
-  color: #721c24;
+  background: #dc3545;
+  color: white;
+}
+
+.status-badge.holiday {
+  background: linear-gradient(135deg, #6f42c1 0%, #e83e8c 100%);
+  color: white;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(111, 66, 193, 0.3);
 }
 
 .status-badge.secondary {

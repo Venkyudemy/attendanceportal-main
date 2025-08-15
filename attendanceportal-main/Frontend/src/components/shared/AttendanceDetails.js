@@ -7,7 +7,36 @@ const AttendanceDetails = ({ currentUser }) => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [loading, setLoading] = useState(true);
   const [monthStats, setMonthStats] = useState({ present: 0, late: 0, absent: 0, totalHours: 0 });
+  const [holidays, setHolidays] = useState([]);
   // const location = useLocation(); // Removed unused variable
+
+  // Helper: normalize to YYYY-MM-DD or null
+  const getDateString = (date) => {
+    if (!date) return null;
+    if (date instanceof Date) {
+      return date.toISOString().split('T')[0];
+    }
+    if (typeof date === 'string') {
+      if (/^\d{4}-\d{2}-\d{2}/.test(date)) return date.slice(0, 10);
+      const parsed = new Date(date);
+      return isNaN(parsed.getTime()) ? null : parsed.toISOString().split('T')[0];
+    }
+    const parsed = new Date(date);
+    return isNaN(parsed.getTime()) ? null : parsed.toISOString().split('T')[0];
+  };
+
+  const findHolidayForDate = (date) => {
+    const dateString = getDateString(date);
+    if (!dateString) return null;
+    return holidays.find((h) => h.date === dateString) || null;
+  };
+
+  const formatDisplayDate = (date) => {
+    if (!date) return '-';
+    if (date instanceof Date) return date.toLocaleDateString();
+    const parsed = new Date(date);
+    return isNaN(parsed.getTime()) ? '-' : parsed.toLocaleDateString();
+  };
 
   // Fetch real attendance data from backend
   useEffect(() => {
@@ -41,9 +70,12 @@ const AttendanceDetails = ({ currentUser }) => {
         console.log('📊 Received attendance data:', data);
         console.log('📅 Calendar data length:', data.calendarData?.length);
         console.log('📊 Month stats:', data.monthStats);
+        console.log('🎉 Month holidays:', data.monthHolidays);
         
         setAttendanceData(data.calendarData || []);
         setMonthStats(data.monthStats || { present: 0, late: 0, absent: 0, totalHours: 0 });
+        setHolidays(data.monthHolidays || []);
+        
         setLoading(false);
       } catch (error) {
         console.error('❌ Error fetching attendance data:', error);
@@ -54,8 +86,12 @@ const AttendanceDetails = ({ currentUser }) => {
     fetchAttendanceData();
   }, [currentMonth, currentUser]);
 
-  const getStatusColor = (status) => {
+  const getStatusColor = (status, date) => {
     if (!status) return 'secondary';
+    
+    const holiday = findHolidayForDate(date);
+    if (holiday) return 'holiday';
+    
     switch (status) {
       case 'Present': return 'success';
       case 'Late': return 'warning';
@@ -104,24 +140,9 @@ const AttendanceDetails = ({ currentUser }) => {
       </div>
 
       <div className="month-navigation">
-        <button 
-          className="nav-btn"
-          onClick={() => changeMonth('prev')}
-        >
-          ← Previous Month
-        </button>
-        <h2 className="current-month">
-          {currentMonth.toLocaleDateString('en-US', { 
-            month: 'long', 
-            year: 'numeric' 
-          })}
-        </h2>
-        <button 
-          className="nav-btn"
-          onClick={() => changeMonth('next')}
-        >
-          Next Month →
-        </button>
+        <button className="nav-btn" onClick={() => changeMonth('prev')}>← Previous Month</button>
+        <h2 className="current-month">{currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</h2>
+        <button className="nav-btn" onClick={() => changeMonth('next')}>Next Month →</button>
       </div>
 
       <div className="monthly-stats">
@@ -159,6 +180,7 @@ const AttendanceDetails = ({ currentUser }) => {
           {attendanceData && attendanceData.length > 0 ? (
             attendanceData.map((day, index) => {
               console.log(`📅 Day ${index}:`, day);
+              const holiday = findHolidayForDate(day.date);
               return (
                 <div 
                   key={index} 
@@ -168,8 +190,8 @@ const AttendanceDetails = ({ currentUser }) => {
                   {day.status && day.status !== 'empty' && (
                     <>
                       <div className="day-status">
-                        <span className={`status-badge ${getStatusColor(day.status)}`}>
-                          {day.status}
+                        <span className={`status-badge ${getStatusColor(day.status, day.date)}`}>
+                          {holiday ? holiday.name : day.status}
                         </span>
                       </div>
                       {day.checkIn && (
@@ -206,29 +228,28 @@ const AttendanceDetails = ({ currentUser }) => {
                 <th>Hours</th>
               </tr>
             </thead>
-                         <tbody>
-               {attendanceData
-                 .filter(day => day.status !== 'Weekend' && day.status !== 'empty' && day.date)
-                 .map((day, index) => (
-                 <tr key={index} className={day.isToday ? 'today-row' : ''}>
-                   <td>{day.date && day.date instanceof Date ? day.date.toLocaleDateString() : '-'}</td>
-                   <td>{day.dayName}</td>
-                   <td>
-                     <span className={`status-badge ${getStatusColor(day.status)}`}>
-                       {day.status}
-                     </span>
-                   </td>
-                   <td>{day.checkIn || '-'}</td>
-                   <td>{day.checkOut || '-'}</td>
-                   <td>{day.hours > 0 ? `${day.hours}h` : '-'}</td>
-                 </tr>
-               ))}
-             </tbody>
+            <tbody>
+              {attendanceData
+                .filter(day => day.status !== 'Weekend' && day.status !== 'empty' && day.date)
+                .map((day, index) => (
+                <tr key={index} className={day.isToday ? 'today-row' : ''}>
+                  <td>{formatDisplayDate(day.date)}</td>
+                  <td>{day.dayName}</td>
+                  <td>
+                    <span className={`status-badge ${getStatusColor(day.status, day.date)}`}>
+                      {day.status}
+                    </span>
+                  </td>
+                  <td>{day.checkIn || '-'}</td>
+                  <td>{day.checkOut || '-'}</td>
+                  <td>{day.hours > 0 ? `${day.hours}h` : '-'}</td>
+                </tr>
+              ))}
+            </tbody>
           </table>
         </div>
       </div>
     </div>
   );
 };
-
 export default AttendanceDetails; 

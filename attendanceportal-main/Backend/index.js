@@ -10,6 +10,8 @@ const authRoutes = require('./routes/auth');
 const leaveRoutes = require('./routes/leave');
 const employeeRoutes = require('./routes/employee');
 const healthRoutes = require('./routes/health');
+const settingsRoutes = require('./routes/settings');
+const leaveRequestsRoutes = require('./routes/leaveRequests');
 
 // Import Employee model for daily reset
 const Employee = require('./models/Employee');
@@ -33,6 +35,8 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/leave', leaveRoutes);
 app.use('/api/employee', employeeRoutes);
+app.use('/api/settings', settingsRoutes);
+app.use('/api/leave-requests', leaveRequestsRoutes);
 app.use('/api', healthRoutes);
 
 // Root route
@@ -170,15 +174,26 @@ app.use((err, req, res, next) => {
 });
 
 // MongoDB Connection
-const MONGO_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/attendance_portal';
+const MONGO_URI = process.env.MONGODB_URI || 'mongodb://admin:password123@localhost:27017/attendanceportal?authSource=admin';
+
+console.log('🔗 Attempting to connect to MongoDB...');
+console.log('📡 MongoDB URI:', MONGO_URI.replace(/\/\/.*@/, '//***:***@')); // Hide credentials in logs
 
 mongoose.connect(MONGO_URI, { 
   useNewUrlParser: true, 
-  useUnifiedTopology: true 
+  useUnifiedTopology: true,
+  serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
+  socketTimeoutMS: 45000, // Close sockets after 45s of inactivity
+  bufferMaxEntries: 0, // Disable mongoose buffering
+  bufferCommands: false // Disable mongoose buffering
 })
 .then(() => {
-  console.log('Connected to MongoDB successfully');
-  console.log('Starting HTTP server...');
+  console.log('✅ Connected to MongoDB successfully');
+  console.log('📊 Database:', mongoose.connection.db.databaseName);
+  console.log('🌐 Host:', mongoose.connection.host);
+  console.log('🔌 Port:', mongoose.connection.port);
+  
+  console.log('🚀 Starting HTTP server...');
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`✅ Server running on http://0.0.0.0:${PORT}`);
     console.log('✅ MongoDB connection established');
@@ -192,10 +207,55 @@ mongoose.connect(MONGO_URI, {
   });
 })
 .catch((err) => {
-  console.error('MongoDB connection error:', err);
-  console.log('Starting server without database connection...');
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-    console.log('Using mock data - MongoDB connection failed');
+  console.error('❌ MongoDB connection error:', err.message);
+  console.error('🔍 Connection details:', {
+    host: mongoose.connection.host,
+    port: mongoose.connection.port,
+    database: mongoose.connection.name
   });
+  
+  // Try alternative connection for local development
+  if (!process.env.MONGODB_URI) {
+    console.log('🔄 Trying alternative local connection...');
+    const localMongoURI = 'mongodb://localhost:27017/attendanceportal';
+    
+    mongoose.connect(localMongoURI, { 
+      useNewUrlParser: true, 
+      useUnifiedTopology: true,
+      serverSelectionTimeoutMS: 5000
+    })
+    .then(() => {
+      console.log('✅ Connected to local MongoDB successfully');
+      console.log('🚀 Starting HTTP server...');
+      app.listen(PORT, '0.0.0.0', () => {
+        console.log(`✅ Server running on http://0.0.0.0:${PORT}`);
+        console.log('✅ Local MongoDB connection established');
+        console.log('✅ Auth routes: /api/auth/login, /api/auth/register');
+        console.log('✅ Employee routes: /api/employee/stats, /api/employee/attendance');
+        console.log('✅ Leave routes: /api/leave');
+        console.log('✅ Health check: /api/health');
+        
+        // Schedule daily reset after server starts
+        scheduleDailyReset();
+      });
+    })
+    .catch((localErr) => {
+      console.error('❌ Local MongoDB connection also failed:', localErr.message);
+      console.log('🚀 Starting server without database connection...');
+      app.listen(PORT, '0.0.0.0', () => {
+        console.log(`✅ Server running on http://0.0.0.0:${PORT}`);
+        console.log('⚠️  Using mock data - MongoDB connection failed');
+        console.log('💡 Please ensure MongoDB is running:');
+        console.log('   - Docker: docker-compose up mongodb');
+        console.log('   - Local: mongod --dbpath /path/to/data');
+      });
+    });
+  } else {
+    console.log('🚀 Starting server without database connection...');
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`✅ Server running on http://0.0.0.0:${PORT}`);
+      console.log('⚠️  Using mock data - MongoDB connection failed');
+      console.log('💡 Please check your MONGODB_URI environment variable');
+    });
+  }
 });

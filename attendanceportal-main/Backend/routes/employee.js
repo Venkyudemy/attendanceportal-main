@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Employee = require('../models/Employee');
+const Settings = require('../models/Settings');
 const bcrypt = require('bcryptjs');
 const mongoose = require('mongoose');
 
@@ -16,6 +17,60 @@ const checkDatabaseConnection = () => {
   console.log(`📊 Database connection state: ${states[connectionState]} (${connectionState})`);
   return connectionState === 1; // 1 = connected
 };
+
+// Helper function to check if today is a holiday
+const isTodayHoliday = async () => {
+  try {
+    const settings = await Settings.findOne();
+    if (!settings || !settings.companyHolidays) {
+      return null;
+    }
+    
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }); // YYYY-MM-DD format
+    const holiday = settings.companyHolidays.find(h => h.date === today);
+    
+    return holiday || null;
+  } catch (error) {
+    console.error('Error checking holiday status:', error);
+    return null;
+  }
+};
+
+// GET /api/employee - Get all employees (root route)
+router.get('/', async (req, res) => {
+  try {
+    if (!checkDatabaseConnection()) {
+      return res.status(503).json({
+        error: 'Service unavailable',
+        message: 'Database connection not available'
+      });
+    }
+
+    const employees = await Employee.find({}).select('-password');
+    
+    const employeeList = employees.map(emp => ({
+      id: emp._id,
+      name: emp.name,
+      email: emp.email,
+      department: emp.department,
+      position: emp.position,
+      status: emp.status,
+      phone: emp.phone,
+      employeeId: emp.employeeId,
+      domain: emp.domain,
+      joinDate: emp.joinDate,
+      attendance: emp.attendance.today
+    }));
+
+    res.status(200).json(employeeList);
+  } catch (error) {
+    console.error('Error fetching all employees:', error);
+    res.status(500).json({ 
+      error: 'Internal server error',
+      message: 'Failed to fetch employees' 
+    });
+  }
+});
 
 // GET /api/employee/stats - Employee statistics for admin dashboard
 router.get('/stats', async (req, res) => {
@@ -908,6 +963,16 @@ router.post('/:id/check-in', async (req, res) => {
     }
     
     console.log('Employee found:', employee.name);
+
+    // Check if today is a holiday
+    const todayHoliday = await isTodayHoliday();
+    if (todayHoliday) {
+      return res.status(400).json({
+        error: 'Holiday today',
+        message: `Today is ${todayHoliday.name} - No check-in required`,
+        holiday: todayHoliday
+      });
+    }
 
     // Use server local time to match frontend display
     const now = new Date();
@@ -2228,6 +2293,20 @@ router.get('/:id/attendance-details', async (req, res) => {
       return recordDate.getMonth() === targetMonth && recordDate.getFullYear() === targetYear;
     });
 
+    // Get holidays for this month
+    let monthHolidays = [];
+    try {
+      const settings = await Settings.findOne();
+      if (settings && settings.companyHolidays) {
+        monthHolidays = settings.companyHolidays.filter(holiday => {
+          const holidayDate = new Date(holiday.date);
+          return holidayDate.getMonth() === targetMonth && holidayDate.getFullYear() === targetYear;
+        });
+      }
+    } catch (holidayError) {
+      console.error('Error fetching holidays:', holidayError);
+    }
+
     // Include today's attendance if it's the current month
     let monthStats = {
       present: monthRecords.filter(r => r.status === 'Present').length,
@@ -2250,6 +2329,7 @@ router.get('/:id/attendance-details', async (req, res) => {
     res.status(200).json({
       calendarData,
       monthStats,
+      monthHolidays,
       month: targetMonth + 1,
       year: targetYear
     });
@@ -2596,7 +2676,7 @@ router.put('/:employeeId', async (req, res) => {
     console.log('Employee ID:', req.params.employeeId);
     console.log('Update data:', req.body);
     
-    const { name, email, department, position, phone, joinDate, employeeId: empId, domain, address, salary, manager } = req.body;
+    const { name, email, department, position, phone, joinDate, employeeId: empId, domain, address, salary, manager, emergencyContact, generalSettings } = req.body;
     
     // Validate required fields
     if (!name || !email || !department || !position || !phone) {
@@ -2619,22 +2699,35 @@ router.put('/:employeeId', async (req, res) => {
       });
     }
 
+    // Prepare update data
+    const updateData = {
+      name,
+      email,
+      department,
+      position,
+      phone,
+      joinDate,
+      employeeId: empId,
+      domain,
+      address,
+      salary,
+      manager
+    };
+
+    // Add emergency contact if provided
+    if (emergencyContact) {
+      updateData.emergencyContact = emergencyContact;
+    }
+
+    // Add general settings if provided
+    if (generalSettings) {
+      updateData.generalSettings = generalSettings;
+    }
+
     // Update employee
     const updatedEmployee = await Employee.findByIdAndUpdate(
       req.params.employeeId,
-      {
-        name,
-        email,
-        department,
-        position,
-        phone,
-        joinDate,
-        employeeId: empId,
-        domain,
-        address,
-        salary,
-        manager
-      },
+      updateData,
       { new: true, runValidators: true }
     ).select('-password');
 
@@ -2657,6 +2750,31 @@ router.put('/:employeeId', async (req, res) => {
     res.status(500).json({ 
       error: 'Internal server error',
       message: 'Failed to update employee' 
+    });
+  }
+});
+
+// GET /api/employee/today-holiday - Check if today is a holiday
+router.get('/today-holiday', async (req, res) => {
+  try {
+    const holiday = await isTodayHoliday();
+    
+    if (holiday) {
+      res.status(200).json({
+        isHoliday: true,
+        holiday: holiday
+      });
+    } else {
+      res.status(200).json({
+        isHoliday: false,
+        holiday: null
+      });
+    }
+  } catch (error) {
+    console.error('Error checking holiday status:', error);
+    res.status(500).json({
+      error: 'Internal server error',
+      message: 'Failed to check holiday status'
     });
   }
 });

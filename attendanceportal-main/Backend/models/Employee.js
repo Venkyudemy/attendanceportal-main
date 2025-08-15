@@ -196,6 +196,24 @@ const employeeSchema = new mongoose.Schema({
       default: ''
     }
   },
+  // General Settings
+  generalSettings: {
+    companyName: {
+      type: String,
+      trim: true,
+      default: 'TechCorp Solutions'
+    },
+    workingHoursStart: {
+      type: String,
+      trim: true,
+      default: '09:00 AM'
+    },
+    workingHoursEnd: {
+      type: String,
+      trim: true,
+      default: '05:00 PM'
+    }
+  },
   // Enhanced attendance data
   attendance: {
     type: attendanceSchema,

@@ -155,6 +155,10 @@ export const getEmployeePortalData = async (employeeId) => {
   return apiCall(`/employee/${employeeId}/portal-data`);
 };
 
+export const getTodayHoliday = async () => {
+  return apiCall('/employee/today-holiday');
+};
+
 export const checkInEmployee = async (employeeId, checkInData) => {
   return apiCall(`/employee/${employeeId}/check-in`, {
     method: 'POST',
@@ -215,23 +219,38 @@ export const calculatePayroll = async (queryParams) => {
 };
 
 export const exportPayroll = async (queryParams) => {
-  return apiCall(`/employee/payroll/export?${queryParams}`);
+  const url = `${getApiBaseUrl()}/employee/payroll/export?${queryParams}`;
+  
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`HTTP ${response.status}: ${errorText}`);
+  }
+
+  // For CSV export, return the text content directly
+  return await response.text();
 };
 
 // Leave API calls
 export const createLeaveRequest = async (leaveData) => {
-  return apiCall('/leave', {
+  return apiCall('/leave-requests', {
     method: 'POST',
     body: JSON.stringify(leaveData),
   });
 };
 
 export const getEmployeeLeaveRequests = async (employeeId) => {
-  return apiCall(`/leave/employee/${employeeId}`);
+  return apiCall(`/leave-requests/employee/${employeeId}`);
 };
 
 export const getAllLeaveRequests = async () => {
-  return apiCall('/leave/admin');
+  return apiCall('/leave-requests');
 };
 
 export const getAdminLeaveEmployees = async () => {
@@ -239,11 +258,11 @@ export const getAdminLeaveEmployees = async () => {
 };
 
 export const getAdminLeaveStats = async () => {
-  return apiCall('/leave/admin/stats');
+  return apiCall('/leave-requests/stats');
 };
 
 export const createAdminLeaveRequest = async (leaveData) => {
-  return apiCall('/leave/admin/create', {
+  return apiCall('/leave-requests', {
     method: 'POST',
     body: JSON.stringify(leaveData),
   });
@@ -253,24 +272,22 @@ export const updateLeaveRequestStatus = async (requestId, statusData) => {
   console.log('🔄 Updating leave request status:', { requestId, statusData });
   
   try {
-    // Use direct fetch instead of apiCall for PATCH requests
-    const url = `http://localhost:5000/api/leave/${requestId}/status`;
-    console.log('🔄 Making PATCH request to:', url);
+    const url = `${getApiBaseUrl()}/leave-requests/${requestId}/status`;
+    console.log('🔄 Making PUT request to:', url);
     
     const response = await fetch(url, {
-      method: 'PATCH',
+      method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(statusData),
     });
     
-    console.log('🔄 PATCH response status:', response.status);
-    console.log('🔄 PATCH response headers:', response.headers);
+    console.log('🔄 PUT response status:', response.status);
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ PATCH request failed:', errorText);
+      console.error('❌ PUT request failed:', errorText);
       throw new Error(`HTTP ${response.status}: ${errorText}`);
     }
     
@@ -279,15 +296,18 @@ export const updateLeaveRequestStatus = async (requestId, statusData) => {
     return data;
   } catch (error) {
     console.error('❌ Leave status update failed:', error);
-    console.error('Request details:', { requestId, statusData });
     throw error;
   }
 };
 
 export const deleteLeaveRequest = async (requestId) => {
-  return apiCall(`/leave/${requestId}`, {
+  return apiCall(`/leave-requests/${requestId}`, {
     method: 'DELETE',
   });
+};
+
+export const getLeaveRequestStats = async () => {
+  return apiCall('/leave-requests/stats');
 };
 
 // Health check
@@ -339,4 +359,39 @@ export const getAttendanceDetailsByEmail = async (email) => {
 
 export const getAttendanceDetailsById = async (employeeId, month, year) => {
   return apiCall(`/employee/${employeeId}/attendance-details?month=${month}&year=${year}`);
+};
+
+// Settings API calls
+export const getSettings = async () => {
+  return apiCall('/settings');
+};
+
+export const updateSettings = async (settingsData) => {
+  return apiCall('/settings', {
+    method: 'PUT',
+    body: JSON.stringify(settingsData),
+  });
+};
+
+export const getGeneralSettings = async () => {
+  return apiCall('/settings/general');
+};
+
+export const updateGeneralSettings = async (generalSettings) => {
+  return apiCall('/settings/general', {
+    method: 'PUT',
+    body: JSON.stringify(generalSettings),
+  });
+};
+
+// Leave Types API calls
+export const getLeaveTypes = async () => {
+  return apiCall('/settings/leave-types');
+};
+
+export const updateLeaveTypes = async (leaveTypes) => {
+  return apiCall('/settings/leave-types', {
+    method: 'PUT',
+    body: JSON.stringify({ leaveTypes }),
+  });
 }; 

@@ -2,50 +2,78 @@ const mongoose = require('mongoose');
 
 const leaveRequestSchema = new mongoose.Schema({
   employeeId: {
-    type: String,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Employee',
     required: true
   },
   employeeName: {
     type: String,
-    required: true
+    required: true,
+    trim: true
+  },
+  employeeEmail: {
+    type: String,
+    required: true,
+    trim: true
   },
   leaveType: {
     type: String,
     required: true,
-    enum: ['Annual Leave', 'Sick Leave', 'Personal Leave']
+    trim: true
   },
   startDate: {
-    type: Date,
+    type: String,
     required: true
   },
   endDate: {
-    type: Date,
+    type: String,
     required: true
+  },
+  totalDays: {
+    type: Number,
+    required: true,
+    min: 1
   },
   reason: {
     type: String,
-    required: true
+    required: true,
+    trim: true
   },
   status: {
     type: String,
-    required: true,
     enum: ['Pending', 'Approved', 'Rejected'],
     default: 'Pending'
   },
-  submittedDate: {
+  adminResponse: {
+    type: String,
+    trim: true,
+    default: ''
+  },
+  adminId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Employee',
+    default: null
+  },
+  adminName: {
+    type: String,
+    trim: true,
+    default: ''
+  },
+  requestedAt: {
     type: Date,
     default: Date.now
   },
-  days: {
-    type: Number,
-    required: true
-  },
-  adminNotes: {
-    type: String,
-    default: ''
+  respondedAt: {
+    type: Date,
+    default: null
   }
 }, {
   timestamps: true
 });
+
+// Index for better query performance
+leaveRequestSchema.index({ employeeId: 1, status: 1 });
+leaveRequestSchema.index({ status: 1 });
+leaveRequestSchema.index({ requestedAt: -1 });
 
 module.exports = mongoose.model('LeaveRequest', leaveRequestSchema); 

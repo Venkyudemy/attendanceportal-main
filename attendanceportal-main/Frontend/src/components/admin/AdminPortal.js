@@ -127,15 +127,27 @@ const AdminPortal = () => {
 
   const exportPayrollData = async (format = 'csv') => {
     try {
+      setError(null); // Clear any previous errors
+      
+      // If we have payroll data, use it directly for export
+      if (payrollData && payrollData.payrollData) {
+        console.log('📊 Using existing payroll data for export');
+        exportPayrollToCSV(payrollData.payrollData);
+        return;
+      }
+      
       const queryParams = new URLSearchParams();
       if (payrollPeriod.startDate) queryParams.append('startDate', payrollPeriod.startDate);
       if (payrollPeriod.endDate) queryParams.append('endDate', payrollPeriod.endDate);
       queryParams.append('format', format);
       
-      const response = await exportPayroll(queryParams.toString());
+      console.log('🔄 Exporting payroll data with params:', queryParams.toString());
       
-      if (format === 'csv') {
-        const blob = new Blob([response], { type: 'text/csv' });
+      const csvContent = await exportPayroll(queryParams.toString());
+      
+      if (format === 'csv' && csvContent) {
+        // Create and download CSV file
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -144,10 +156,65 @@ const AdminPortal = () => {
         a.click();
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
+        
+        console.log('✅ Payroll CSV exported successfully');
+      } else {
+        throw new Error('No CSV content received');
       }
     } catch (err) {
-      console.error('Error exporting payroll data:', err);
-      setError('Failed to export payroll data');
+      console.error('❌ Error exporting payroll data:', err);
+      setError('Failed to export payroll data. Please try again.');
+    }
+  };
+
+  // Fallback function to export payroll data to CSV
+  const exportPayrollToCSV = (payrollData) => {
+    try {
+      // CSV headers
+      const headers = [
+        'Employee Name',
+        'Email', 
+        'Department',
+        'Monthly Salary',
+        'Full Days',
+        'Late Days',
+        'Absents',
+        'Leave Days',
+        'LOP Amount',
+        'Final Pay'
+      ].join(',');
+
+      // CSV rows
+      const rows = payrollData.map(emp => [
+        `"${emp.name || ''}"`,
+        `"${emp.email || ''}"`,
+        `"${emp.department || ''}"`,
+        emp.monthlySalary || 0,
+        emp.fullDays || 0,
+        emp.lateDays || 0,
+        emp.absents || 0,
+        emp.leaveDays || 0,
+        emp.lopAmount || 0,
+        emp.finalPay || 0
+      ].join(','));
+
+      const csvContent = headers + '\n' + rows.join('\n');
+      
+      // Create and download file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `payroll_export_${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      console.log('✅ Payroll CSV exported successfully using fallback method');
+    } catch (err) {
+      console.error('❌ Error in fallback CSV export:', err);
+      setError('Failed to export payroll data. Please try again.');
     }
   };
 
@@ -282,6 +349,20 @@ const AdminPortal = () => {
             </div>
           )}
         </div>
+
+        {error && (
+          <div className="error-message-container">
+            <div className="error-message">
+              {error}
+            </div>
+            <button 
+              className="btn btn-primary retry-btn"
+              onClick={() => setError(null)}
+            >
+              Retry
+            </button>
+          </div>
+        )}
 
         <div className="search-container">
           <div className="search-box">

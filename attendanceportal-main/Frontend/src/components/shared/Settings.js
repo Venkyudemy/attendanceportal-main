@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { getSettings, updateSettings, getGeneralSettings, updateGeneralSettings, getLeaveTypes, updateLeaveTypes } from '../../services/api';
 import './Settings.css';
 
 const Settings = () => {
@@ -32,15 +33,81 @@ const Settings = () => {
   });
 
   const [activeTab, setActiveTab] = useState('general');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  // Fetch settings on component mount
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        setLoading(true);
+        const data = await getSettings();
+        if (data) {
+          setSettings({
+            companyName: data.companyName || 'TechCorp Solutions',
+            workingHours: {
+              start: data.workingHoursStart ? data.workingHoursStart.replace(' AM', '').replace(' PM', '') : '09:00',
+              end: data.workingHoursEnd ? data.workingHoursEnd.replace(' AM', '').replace(' PM', '') : '17:00'
+            },
+            lateThreshold: data.lateThreshold || 15,
+            overtimeThreshold: data.overtimeThreshold || 8,
+            leaveTypes: data.leaveTypes || settings.leaveTypes,
+            companyHolidays: data.companyHolidays || settings.companyHolidays,
+            notifications: data.notifications || settings.notifications,
+            theme: data.theme || 'light'
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching settings:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSettings();
+  }, []);
 
   const handleSettingChange = (category, key, value) => {
-    setSettings(prev => ({
-      ...prev,
-      [category]: {
-        ...prev[category],
+    if (category === 'general') {
+      setSettings(prev => ({
+        ...prev,
         [key]: value
-      }
-    }));
+      }));
+    } else if (category === 'workingHours') {
+      setSettings(prev => ({
+        ...prev,
+        workingHours: {
+          ...prev.workingHours,
+          [key]: value
+        }
+      }));
+    } else if (category === 'attendance') {
+      setSettings(prev => ({
+        ...prev,
+        [key]: value
+      }));
+    } else if (category === 'notifications') {
+      setSettings(prev => ({
+        ...prev,
+        notifications: {
+          ...prev.notifications,
+          [key]: value
+        }
+      }));
+    } else if (category === 'appearance') {
+      setSettings(prev => ({
+        ...prev,
+        [key]: value
+      }));
+    } else {
+      setSettings(prev => ({
+        ...prev,
+        [category]: {
+          ...prev[category],
+          [key]: value
+        }
+      }));
+    }
   };
 
   const handleLeaveTypeChange = (index, field, value) => {
@@ -112,10 +179,36 @@ const Settings = () => {
     alert('Holidays have been replicated to all employee calendars!');
   };
 
-  const handleSave = () => {
-    // In a real app, this would save to backend
-    alert('Settings saved successfully!');
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      
+      // Format data for backend
+      const settingsData = {
+        companyName: settings.companyName,
+        workingHoursStart: `${settings.workingHours.start} AM`,
+        workingHoursEnd: `${settings.workingHours.end} PM`,
+        lateThreshold: settings.lateThreshold,
+        overtimeThreshold: settings.overtimeThreshold,
+        leaveTypes: settings.leaveTypes,
+        companyHolidays: settings.companyHolidays,
+        notifications: settings.notifications,
+        theme: settings.theme
+      };
+      
+      await updateSettings(settingsData);
+      alert('Settings saved successfully!');
+    } catch (error) {
+      console.error('Error saving settings:', error);
+      alert('Failed to save settings.');
+    } finally {
+      setSaving(false);
+    }
   };
+
+  if (loading) {
+    return <div className="loading-spinner">Loading Settings...</div>;
+  }
 
   return (
     <div className="settings">
@@ -173,7 +266,8 @@ const Settings = () => {
                 <input
                   type="text"
                   value={settings.companyName}
-                  onChange={(e) => setSettings(prev => ({ ...prev, companyName: e.target.value }))}
+                  onChange={(e) => handleSettingChange('general', 'companyName', e.target.value)}
+                  disabled={saving}
                 />
               </div>
               <div className="form-row">
@@ -183,6 +277,7 @@ const Settings = () => {
                     type="time"
                     value={settings.workingHours.start}
                     onChange={(e) => handleSettingChange('workingHours', 'start', e.target.value)}
+                    disabled={saving}
                   />
                 </div>
                 <div className="form-group">
@@ -191,6 +286,7 @@ const Settings = () => {
                     type="time"
                     value={settings.workingHours.end}
                     onChange={(e) => handleSettingChange('workingHours', 'end', e.target.value)}
+                    disabled={saving}
                   />
                 </div>
               </div>
@@ -206,9 +302,10 @@ const Settings = () => {
                   <input
                     type="number"
                     value={settings.lateThreshold}
-                    onChange={(e) => setSettings(prev => ({ ...prev, lateThreshold: parseInt(e.target.value) }))}
+                    onChange={(e) => handleSettingChange('attendance', 'lateThreshold', parseInt(e.target.value))}
                     min="0"
                     max="60"
+                    disabled={saving}
                   />
                 </div>
                 <div className="form-group">
@@ -216,9 +313,10 @@ const Settings = () => {
                   <input
                     type="number"
                     value={settings.overtimeThreshold}
-                    onChange={(e) => setSettings(prev => ({ ...prev, overtimeThreshold: parseInt(e.target.value) }))}
+                    onChange={(e) => handleSettingChange('attendance', 'overtimeThreshold', parseInt(e.target.value))}
                     min="1"
                     max="12"
+                    disabled={saving}
                   />
                 </div>
               </div>
@@ -238,6 +336,7 @@ const Settings = () => {
                           type="text"
                           value={leaveType.name}
                           onChange={(e) => handleLeaveTypeChange(index, 'name', e.target.value)}
+                          disabled={saving}
                         />
                       </div>
                       <div className="form-group">
@@ -247,6 +346,7 @@ const Settings = () => {
                           value={leaveType.days}
                           onChange={(e) => handleLeaveTypeChange(index, 'days', parseInt(e.target.value))}
                           min="0"
+                          disabled={saving}
                         />
                       </div>
                       <div className="form-group">
@@ -255,11 +355,13 @@ const Settings = () => {
                           type="color"
                           value={leaveType.color}
                           onChange={(e) => handleLeaveTypeChange(index, 'color', e.target.value)}
+                          disabled={saving}
                         />
                       </div>
                       <button 
                         className="btn btn-danger btn-sm"
                         onClick={() => removeLeaveType(index)}
+                        disabled={saving}
                       >
                         Remove
                       </button>
@@ -269,6 +371,7 @@ const Settings = () => {
                 <button 
                   className="btn btn-primary"
                   onClick={addLeaveType}
+                  disabled={saving}
                 >
                   Add Leave Type
                 </button>
@@ -284,6 +387,7 @@ const Settings = () => {
                 <button 
                   className="btn btn-success"
                   onClick={replicateHolidaysToAllEmployees}
+                  disabled={saving}
                 >
                   🔄 Sync to All Employee Calendars
                 </button>
@@ -299,6 +403,7 @@ const Settings = () => {
                       <button 
                         className="btn btn-danger btn-sm"
                         onClick={() => removeHoliday(index)}
+                        disabled={saving}
                       >
                         Remove
                       </button>
@@ -310,6 +415,7 @@ const Settings = () => {
                           type="text"
                           value={holiday.name}
                           onChange={(e) => handleHolidayChange(index, 'name', e.target.value)}
+                          disabled={saving}
                         />
                       </div>
                       <div className="form-group">
@@ -318,6 +424,7 @@ const Settings = () => {
                           type="date"
                           value={holiday.date}
                           onChange={(e) => handleHolidayChange(index, 'date', e.target.value)}
+                          disabled={saving}
                         />
                       </div>
                       <div className="form-group">
@@ -325,6 +432,7 @@ const Settings = () => {
                         <select
                           value={holiday.type}
                           onChange={(e) => handleHolidayChange(index, 'type', e.target.value)}
+                          disabled={saving}
                         >
                           <option value="public">Public Holiday</option>
                           <option value="company">Company Holiday</option>
@@ -338,6 +446,7 @@ const Settings = () => {
                         value={holiday.description}
                         onChange={(e) => handleHolidayChange(index, 'description', e.target.value)}
                         placeholder="Brief description of the holiday"
+                        disabled={saving}
                       />
                     </div>
                   </div>
@@ -345,6 +454,7 @@ const Settings = () => {
                 <button 
                   className="btn btn-primary"
                   onClick={addHoliday}
+                  disabled={saving}
                 >
                   ➕ Add New Holiday
                 </button>
@@ -362,6 +472,7 @@ const Settings = () => {
                       type="checkbox"
                       checked={settings.notifications.email}
                       onChange={(e) => handleSettingChange('notifications', 'email', e.target.checked)}
+                      disabled={saving}
                     />
                     Email Notifications
                   </label>
@@ -373,6 +484,7 @@ const Settings = () => {
                       type="checkbox"
                       checked={settings.notifications.sms}
                       onChange={(e) => handleSettingChange('notifications', 'sms', e.target.checked)}
+                      disabled={saving}
                     />
                     SMS Notifications
                   </label>
@@ -384,6 +496,7 @@ const Settings = () => {
                       type="checkbox"
                       checked={settings.notifications.push}
                       onChange={(e) => handleSettingChange('notifications', 'push', e.target.checked)}
+                      disabled={saving}
                     />
                     Push Notifications
                   </label>
@@ -400,7 +513,8 @@ const Settings = () => {
                 <label>Theme</label>
                 <select
                   value={settings.theme}
-                  onChange={(e) => setSettings(prev => ({ ...prev, theme: e.target.value }))}
+                  onChange={(e) => handleSettingChange('appearance', 'theme', e.target.value)}
+                  disabled={saving}
                 >
                   <option value="light">Light Theme</option>
                   <option value="dark">Dark Theme</option>
@@ -411,10 +525,10 @@ const Settings = () => {
           )}
 
           <div className="settings-actions">
-            <button className="btn btn-primary" onClick={handleSave}>
-              Save Settings
+            <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
+              {saving ? 'Saving...' : 'Save Settings'}
             </button>
-            <button className="btn" onClick={() => window.location.reload()}>
+            <button className="btn" onClick={() => window.location.reload()} disabled={saving}>
               Reset to Default
             </button>
           </div>
