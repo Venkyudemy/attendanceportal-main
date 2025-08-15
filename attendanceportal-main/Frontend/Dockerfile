@@ -1,4 +1,5 @@
-# Frontend Dockerfile - Optimized React Build with Enhanced Security
+# Frontend Dockerfile - Multi-stage Build for Jenkins Pipeline
+# Stage 1: Build stage - Install dependencies and build the React app
 FROM node:18-alpine AS builder
 
 # Set working directory
@@ -14,19 +15,17 @@ ENV REACT_APP_VERSION=1.0.0
 # Copy package files first for better layer caching
 COPY package*.json ./
 
-# Install dependencies with clean npm cache and security audit
-RUN npm ci --only=production=false --cache /tmp/.npm && \
-    npm audit fix --audit-level=moderate || true && \
+# Install all dependencies (including dev dependencies for build)
+RUN npm ci --cache /tmp/.npm && \
     npm cache clean --force
 
 # Copy source code
 COPY . .
 
 # Build the React app with production optimizations
-RUN npm run build && \
-    npm prune --production
+RUN npm run build
 
-# Production stage with nginx
+# Stage 2: Production stage - Serve the built app with nginx
 FROM nginx:alpine AS production
 
 # Install curl for health checks and security updates
