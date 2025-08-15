@@ -28,7 +28,8 @@ services:
       - MONGODB_URI=mongodb://mongo:27017/attendanceportal
       - JWT_SECRET=your-super-secret-jwt-key-change-in-production
     depends_on:
-      - mongo
+      mongo:
+        condition: service_healthy
     restart: unless-stopped
     networks:
       - attendance-network
@@ -37,7 +38,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 30s
+      start_period: 60s
 
   mongo:
     image: mongo:6
