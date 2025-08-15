@@ -1,30 +1,20 @@
 # Multi-stage Dockerfile for React Frontend
+
 # Stage 1: Build stage - Install dependencies and build the React app
-FROM node:18-alpine AS builder
-
-# Set working directory
+FROM node:18-alpine AS build
 WORKDIR /app
-
-# Copy package files for dependency installation
 COPY package*.json ./
-
-# Install all dependencies
 RUN npm ci --only=production=false
-
-# Copy source code
 COPY . .
-
-# Build the React app
 RUN npm run build
 
 # Stage 2: Production stage - Serve with nginx
 FROM nginx:alpine AS production
-
 # Install curl for health checks
 RUN apk add --no-cache curl
 
-# Copy built app from builder stage
-COPY --from=builder /app/build /usr/share/nginx/html
+# Copy built app from build stage
+COPY --from=build /app/build /usr/share/nginx/html
 
 # Copy nginx configuration
 COPY nginx.conf /etc/nginx/nginx.conf
@@ -40,7 +30,7 @@ USER nginx
 # Expose port 80
 EXPOSE 80
 
-# Health check
+# Health check endpoint
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
   CMD curl -f http://localhost/health || exit 1
 
