@@ -1,8 +1,6 @@
-# Enhanced Docker Compose Configuration for Attendance Portal
-# Optimized for production deployment with security and performance
-
+# Docker Compose v2 Configuration for Attendance Portal
 services:
-  # MongoDB Database with Enhanced Security
+  # MongoDB Database
   mongodb:
     image: mongo:6.0
     container_name: attendance-mongodb
@@ -11,13 +9,11 @@ services:
       MONGO_INITDB_ROOT_USERNAME: admin
       MONGO_INITDB_ROOT_PASSWORD: password123
       MONGO_INITDB_DATABASE: attendanceportal
-      MONGO_INITDB_ROOT_PASSWORD_FILE: /run/secrets/mongo_root_password
     ports:
       - "27017:27017"
     volumes:
       - mongodb_data:/data/db
       - ./Backend/scripts:/docker-entrypoint-initdb.d:ro
-      - mongodb_config:/data/configdb
     networks:
       - attendance-network
     healthcheck:
@@ -39,22 +35,12 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-    security_opt:
-      - no-new-privileges:true
-    read_only: false
-    tmpfs:
-      - /tmp
-      - /var/tmp
-    secrets:
-      - mongo_root_password
 
-  # Backend API Service with Enhanced Security
+  # Backend API Service
   backend:
     build:
       context: ./Backend
       dockerfile: Dockerfile
-      args:
-        NODE_ENV: production
     container_name: attendance-backend
     restart: unless-stopped
     environment:
@@ -63,7 +49,6 @@ services:
       PORT: 5000
       JWT_SECRET: your-super-secret-jwt-key-change-in-production
       TZ: Asia/Kolkata
-      NODE_OPTIONS: "--max-old-space-size=2048"
     ports:
       - "5000:5000"
     depends_on:
@@ -90,36 +75,21 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-    security_opt:
-      - no-new-privileges:true
-    read_only: false
-    tmpfs:
-      - /tmp
-      - /var/tmp
-      - /app/logs
-    volumes:
-      - backend_logs:/app/logs
-      - backend_uploads:/app/uploads
 
-  # Frontend Service with Enhanced Security
+  # Frontend Service
   frontend:
     build:
       context: ./Frontend
       dockerfile: Dockerfile
       target: production
-      args:
-        NODE_ENV: production
-        REACT_APP_API_URL: /api
     container_name: attendance-frontend
     restart: unless-stopped
     environment:
       - NODE_ENV=production
       - REACT_APP_API_URL=/api
       - TZ=Asia/Kolkata
-      - REACT_APP_VERSION=1.0.0
     ports:
       - "80:80"
-      - "443:443"
     depends_on:
       backend:
         condition: service_healthy
@@ -144,50 +114,20 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-    security_opt:
-      - no-new-privileges:true
     volumes:
       - nginx_cache:/var/cache/nginx
       - nginx_logs:/var/log/nginx
-      - ssl_certs:/etc/nginx/ssl:ro
-    tmpfs:
-      - /tmp
-      - /var/tmp
-      - /tmp/nginx
 
-# Persistent volumes for data storage
+# Volumes
 volumes:
   mongodb_data:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: ./data/mongodb
-  mongodb_config:
     driver: local
   nginx_cache:
     driver: local
   nginx_logs:
     driver: local
-  backend_logs:
-    driver: local
-  backend_uploads:
-    driver: local
-  ssl_certs:
-    driver: local
 
-# Custom network for service communication
+# Networks
 networks:
   attendance-network:
     driver: bridge
-    ipam:
-      config:
-        - subnet: 172.20.0.0/16
-          gateway: 172.20.0.1
-    driver_opts:
-      com.docker.network.bridge.name: attendance-bridge
-
-# Secrets for sensitive data
-secrets:
-  mongo_root_password:
-    file: ./secrets/mongo_root_password.txt

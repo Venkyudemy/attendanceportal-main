@@ -1,37 +1,27 @@
-# Frontend Dockerfile - Multi-stage Build for Jenkins Pipeline
+# Multi-stage Dockerfile for React Frontend
 # Stage 1: Build stage - Install dependencies and build the React app
 FROM node:18-alpine AS builder
 
 # Set working directory
 WORKDIR /app
 
-# Set environment variables for build optimization
-ENV NODE_ENV=production
-ENV CI=false
-ENV GENERATE_SOURCEMAP=false
-ENV REACT_APP_API_URL=/api
-ENV REACT_APP_VERSION=1.0.0
-
-# Copy package files first for better layer caching
+# Copy package files for dependency installation
 COPY package*.json ./
 
-# Install all dependencies (including dev dependencies for build)
-RUN npm ci --cache /tmp/.npm && \
-    npm cache clean --force
+# Install all dependencies
+RUN npm ci --only=production=false
 
 # Copy source code
 COPY . .
 
-# Build the React app with production optimizations
+# Build the React app
 RUN npm run build
 
-# Stage 2: Production stage - Serve the built app with nginx
+# Stage 2: Production stage - Serve with nginx
 FROM nginx:alpine AS production
 
-# Install curl for health checks and security updates
-RUN apk add --no-cache curl && \
-    apk upgrade --no-cache && \
-    rm -rf /var/cache/apk/*
+# Install curl for health checks
+RUN apk add --no-cache curl
 
 # Copy built app from builder stage
 COPY --from=builder /app/build /usr/share/nginx/html
@@ -39,37 +29,20 @@ COPY --from=builder /app/build /usr/share/nginx/html
 # Copy nginx configuration
 COPY nginx.conf /etc/nginx/nginx.conf
 
-# Create necessary directories and set proper permissions for nginx
-RUN mkdir -p /var/cache/nginx/client_temp \
-    /var/cache/nginx/fastcgi_temp \
-    /var/cache/nginx/proxy_temp \
-    /var/cache/nginx/scgi_temp \
-    /var/cache/nginx/uwsgi_temp \
-    /var/log/nginx \
-    /tmp/nginx && \
-    touch /tmp/nginx.pid && \
-    chown -R nginx:nginx /var/cache/nginx \
-    /var/log/nginx \
-    /usr/share/nginx/html \
-    /etc/nginx/conf.d \
-    /tmp/nginx.pid \
-    /tmp/nginx && \
-    chmod -R 755 /var/cache/nginx \
-    /var/log/nginx \
-    /usr/share/nginx/html && \
-    chmod 644 /etc/nginx/conf.d/default.conf \
-    /tmp/nginx.pid && \
-    chmod 755 /tmp/nginx
+# Create nginx directories and set permissions
+RUN mkdir -p /var/cache/nginx /var/log/nginx /tmp && \
+    chown -R nginx:nginx /var/cache/nginx /var/log/nginx /usr/share/nginx/html /tmp && \
+    chmod -R 755 /var/cache/nginx /var/log/nginx /usr/share/nginx/html
 
-# Switch to nginx user for security
+# Switch to nginx user
 USER nginx
 
 # Expose port 80
 EXPOSE 80
 
-# Health check for frontend with enhanced monitoring
-HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
   CMD curl -f http://localhost/health || exit 1
 
-# Start nginx with optimized settings
+# Start nginx
 CMD ["nginx", "-g", "daemon off;"]
