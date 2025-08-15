@@ -215,7 +215,7 @@ mongoose.connect(MONGO_URI, {
   });
   
   // Try alternative connection for local development
-  if (!process.env.MONGODB_URI) {
+  if (!process.env.MONGO_URL) {
     console.log('🔄 Trying alternative local connection...');
     const localMongoURI = 'mongodb://localhost:27017/attendanceportal';
     
@@ -255,7 +255,7 @@ mongoose.connect(MONGO_URI, {
     app.listen(PORT, '0.0.0.0', () => {
       console.log(`✅ Server running on http://0.0.0.0:${PORT}`);
       console.log('⚠️  Using mock data - MongoDB connection failed');
-      console.log('💡 Please check your MONGODB_URI environment variable');
+      console.log('💡 Please check your MONGO_URL environment variable');
     });
   }
 });
