@@ -14,9 +14,9 @@ echo "✅ MongoDB is ready!"
 echo "⏳ Ensuring MongoDB is fully initialized..."
 sleep 5
 
-# Test MongoDB connection
+# Test MongoDB connection using netcat (port connectivity)
 echo "🔍 Testing MongoDB connection..."
-until mongosh --host mongo --port 27017 --eval "db.adminCommand('ping')" > /dev/null 2>&1; do
+until nc -z mongo 27017; do
     echo "Testing MongoDB connection..."
     sleep 2
 done
