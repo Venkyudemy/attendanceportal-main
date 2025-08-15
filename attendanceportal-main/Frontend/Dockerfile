@@ -1,6 +1,4 @@
-# Multi-stage Dockerfile for React Frontend
-
-# Stage 1 - Build
+# Stage 1 - Build React app
 FROM node:18-alpine AS build
 WORKDIR /app
 COPY package*.json ./
