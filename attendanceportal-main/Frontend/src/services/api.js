@@ -2,12 +2,14 @@
 const getApiBaseUrl = () => {
   // Check for REACT_APP_API_URL environment variable first
   if (process.env.REACT_APP_API_URL) {
+    console.log('Using environment API URL:', process.env.REACT_APP_API_URL);
     return process.env.REACT_APP_API_URL;
   }
   
   // Fallback based on environment
   if (process.env.NODE_ENV === 'production') {
     // In production, use relative path for Nginx proxy
+    console.log('Using production API URL: /api');
     return '/api';
   }
   
@@ -18,51 +20,42 @@ const getApiBaseUrl = () => {
 
 const API_BASE_URL = getApiBaseUrl();
 
-// Helper function for API calls with error handling and retry logic
+// Helper function for API calls with error handling
 const apiCall = async (endpoint, options = {}) => {
-  const urls = [
-    `${API_BASE_URL}${endpoint}`,
-    `http://localhost:5000/api${endpoint}`,  // Fallback for local testing
-    `http://127.0.0.1:5000/api${endpoint}`   // Another fallback
-  ];
-
+  const url = `${API_BASE_URL}${endpoint}`;
+  
   console.log('API_BASE_URL:', API_BASE_URL);
   console.log('Endpoint:', endpoint);
-  console.log('Full URLs to try:', urls);
+  console.log('Full URL:', url);
 
-  for (const url of urls) {
-    try {
-      console.log(`Trying API call to: ${url}`);
-      const response = await fetch(url, {
-        headers: {
-          'Content-Type': 'application/json',
-          ...options.headers,
-        },
-        ...options,
-      });
-      
-      console.log(`Response status: ${response.status}`);
-      console.log(`Response headers:`, response.headers);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      console.log('API call successful:', data);
-      return data;
-    } catch (error) {
-      console.error(`API call failed for ${url}:`, error);
-      console.error('Error details:', error.message);
-      // Continue to next URL if this one fails
-      continue;
+  try {
+    console.log(`Making API call to: ${url}`);
+    const response = await fetch(url, {
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+      ...options,
+    });
+    
+    console.log(`Response status: ${response.status}`);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
+    
+    const data = await response.json();
+    console.log('API call successful:', data);
+    return data;
+  } catch (error) {
+    console.error(`API call failed for ${url}:`, error);
+    console.error('Error details:', error.message);
+    
+    // Throw error with clear message
+    const errorMsg = 'Failed to fetch. Please check if the backend server is running.';
+    console.error(errorMsg);
+    throw new Error(errorMsg);
   }
-  
-  // If all URLs fail, throw error
-  const errorMsg = 'Failed to fetch. Please check if the backend server is running.';
-  console.error(errorMsg);
-  throw new Error(errorMsg);
 };
 
 // Auth API calls
