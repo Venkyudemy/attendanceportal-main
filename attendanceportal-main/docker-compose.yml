@@ -5,13 +5,13 @@ services:
     build:
       context: ./Frontend
       dockerfile: Dockerfile
+    environment:
+      NODE_ENV: production
     ports:
       - "3000:80"
     depends_on:
       backend:
         condition: service_healthy
-    environment:
-      - REACT_APP_API_URL=http://backend:5000/api  # Changed to use service name
     restart: unless-stopped
     networks:
       - attendance-network
