@@ -1,14 +1,13 @@
-# Stage 1: Install dependencies
-FROM node:18-alpine AS base
-WORKDIR /app
-COPY package.json package-lock.json ./
-RUN npm install --only=production --legacy-peer-deps
+# Use Node.js 18 Alpine for backend
+FROM node:18-alpine
 
-# Stage 2: Copy source
+WORKDIR /app
+COPY package*.json ./
+RUN npm install --production
 COPY . .
 
-# Use production environment
-ENV NODE_ENV=production
+# Expose port
 EXPOSE 5000
 
+# Start the app
 CMD ["node", "index.js"]
