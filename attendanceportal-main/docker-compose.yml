@@ -2,7 +2,7 @@ services:
   frontend:
     build:
       context: ./Frontend
-      dockerfile: Dockerfile   # ✅ remove target
+      dockerfile: Dockerfile
     ports:
       - "3000:80"
     depends_on:
@@ -23,7 +23,7 @@ services:
   backend:
     build:
       context: ./Backend
-      dockerfile: Dockerfile   # ✅ remove target
+      dockerfile: Dockerfile
     ports:
       - "5000:5000"
     environment:
@@ -45,3 +45,27 @@ services:
       start_period: 120s
     volumes:
       - backend_logs:/app/logs
+
+  mongo:
+    image: mongo:6
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    restart: unless-stopped
+    networks:
+      - attendance-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  mongo_data:
+  backend_logs:
+
+networks:
+  attendance-network:
+    driver: bridge
