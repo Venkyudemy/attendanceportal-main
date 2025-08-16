@@ -8,6 +8,10 @@ RUN npm run build
 
 # Stage 2: Serve with Nginx
 FROM nginx:1.25-alpine AS production
+
+# Install curl for health checks
+RUN apk add --no-cache curl
+
 WORKDIR /usr/share/nginx/html
 RUN rm -rf ./*
 COPY --from=build /app/build .

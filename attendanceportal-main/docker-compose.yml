@@ -6,10 +6,9 @@ services:
     ports:
       - "3000:80"
     depends_on:
-      backend:
-        condition: service_healthy
+      - backend   # remove condition: service_healthy temporarily
     environment:
-      - REACT_APP_API_URL=http://localhost:5000/api
+      - REACT_APP_API_URL=http://localhost:5000/api  # Use localhost for server deployment
     restart: unless-stopped
     networks:
       - attendance-network
@@ -38,18 +37,18 @@ services:
     networks:
       - attendance-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1:5000/api/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 120s
+      start_period: 30s
     volumes:
       - backend_logs:/app/logs
 
   mongo:
     image: mongo:6
     ports:
-      - "27017:27017"
+      - "27017:27017"   # Exposed to outside world
     volumes:
       - mongo_data:/data/db
     restart: unless-stopped
