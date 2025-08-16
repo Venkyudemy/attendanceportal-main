@@ -2,67 +2,79 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const Employee = require('../models/Employee');
 
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/attendance_portal';
+const MONGO_URI = process.env.MONGO_URL || 'mongodb://localhost:27017/attendanceportal';
 
-async function createAdmin() {
+async function createAdminUser() {
   try {
-    // Connect to MongoDB
+    console.log('🔗 Connecting to MongoDB...');
     await mongoose.connect(MONGO_URI, {
       useNewUrlParser: true,
-      useUnifiedTopology: true
+      useUnifiedTopology: true,
+      serverSelectionTimeoutMS: 10000
     });
-    console.log('Connected to MongoDB');
-
-    // Check if admin already exists
+    
+    console.log('✅ Connected to MongoDB successfully');
+    
+    // Check if admin user already exists
     const existingAdmin = await Employee.findOne({ email: 'admin@company.com' });
+    
     if (existingAdmin) {
-      console.log('Admin user already exists');
-      console.log('Email: admin@company.com');
-      console.log('Password: admin123');
-      await mongoose.connection.close();
-      return;
-    }
-
-    // Hash password
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash('admin123', saltRounds);
-
-    // Create admin user
-    const adminUser = new Employee({
-      name: 'Admin User',
-      email: 'admin@company.com',
-      department: 'HR',
-      position: 'System Administrator',
-      status: 'Active',
-      joinDate: '2023-01-01',
-      phone: '+1 (555) 000-0000',
-      password: hashedPassword,
-      attendance: {
-        today: {
-          checkIn: null,
-          checkOut: null,
-          status: 'Absent',
-          isLate: false
+      console.log('👤 Admin user already exists, updating password...');
+      // Update password
+      const hashedPassword = await bcrypt.hash('admin123', 12);
+      existingAdmin.password = hashedPassword;
+      await existingAdmin.save();
+      console.log('✅ Admin password updated successfully');
+    } else {
+      console.log('👤 Creating new admin user...');
+      
+      // Hash the password
+      const hashedPassword = await bcrypt.hash('admin123', 12);
+      
+      // Create admin user
+      const adminUser = new Employee({
+        name: 'Admin User',
+        email: 'admin@company.com',
+        password: hashedPassword,
+        role: 'admin',
+        position: 'System Administrator',
+        department: 'IT',
+        employeeId: 'ADMIN001',
+        phone: '+91-9876543210',
+        address: '123 Admin Street, Tech City',
+        emergencyContact: {
+          name: 'Emergency Contact',
+          relationship: 'Spouse',
+          phone: '+91-9876543211',
+          email: 'emergency@example.com'
+        },
+        attendance: {
+          today: {
+            checkIn: null,
+            checkOut: null,
+            status: 'Absent',
+            isLate: false
+          },
+          history: []
         }
-      }
-    });
-
-    await adminUser.save();
-    console.log('Admin user created successfully!');
-    console.log('================================');
-    console.log('🔐 ADMIN LOGIN CREDENTIALS:');
-    console.log('================================');
+      });
+      
+      await adminUser.save();
+      console.log('✅ Admin user created successfully');
+    }
+    
+    console.log('🔑 Admin Login Credentials:');
     console.log('📧 Email: admin@company.com');
-    console.log('🔑 Password: admin123');
-    console.log('================================');
-    console.log('Role: Admin (Full Access)');
-    console.log('================================');
-
-    await mongoose.connection.close();
+    console.log('🔐 Password: admin123');
+    console.log('🎯 Role: admin');
+    
+    mongoose.connection.close();
+    console.log('✅ Database connection closed');
+    
   } catch (error) {
-    console.error('Error creating admin:', error);
+    console.error('❌ Error creating admin user:', error.message);
     process.exit(1);
   }
 }
 
-createAdmin(); 
+createAdminUser(); 
