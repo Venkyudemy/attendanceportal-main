@@ -23,8 +23,7 @@ const productionConfig = {
       // Production optimizations
       maxPoolSize: 10,
       serverSelectionTimeoutMS: 5000,
-      socketTimeoutMS: 45000,
-      bufferMaxEntries: 0
+      socketTimeoutMS: 45000
     }
   },
 
