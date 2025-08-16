@@ -86,6 +86,11 @@ const EmployeePortal = ({ currentUser }) => {
     });
   };
 
+  // Get current time in correct timezone
+  const getCurrentTime = () => {
+    return formatTime(currentTime);
+  };
+
   // Load employee portal data from database
     const loadEmployeePortalData = async () => {
     if (currentUser?.id || currentUser?._id || currentUser?.email) {
@@ -107,80 +112,68 @@ const EmployeePortal = ({ currentUser }) => {
             console.error('No employee ID found');
             return;
           }
-          
-        // Fetch leave types from global settings
-        const leaveTypesData = await getLeaveTypes();
-        if (leaveTypesData && leaveTypesData.leaveTypes) {
-          setLeaveTypes(leaveTypesData.leaveTypes);
-          
-          // Update leave balance based on global settings
-          const updatedLeaveBalance = {};
-          leaveTypesData.leaveTypes.forEach(type => {
-            const typeKey = type.name.toLowerCase().replace(/\s+/g, '');
-            updatedLeaveBalance[typeKey] = {
-              total: type.days,
-              used: 0, // This will be calculated from leave requests
-              remaining: type.days
-            };
-          });
-          setLeaveBalance(updatedLeaveBalance);
-        }
 
-        // Fetch employee portal data
-        const portalData = await getEmployeePortalData(employeeId);
-        if (portalData) {
-          setAttendanceData(prev => ({
-            ...prev,
-            ...portalData.attendance,
-            today: {
-              checkIns: portalData.attendance?.today?.checkIns || [],
-              checkOuts: portalData.attendance?.today?.checkOuts || [],
-              status: portalData.attendance?.today?.status || 'Absent',
-              totalHours: portalData.attendance?.today?.totalHours || 0
-            },
-            thisWeek: {
-              present: portalData.attendance?.thisWeek?.present || 0,
-              absent: portalData.attendance?.thisWeek?.absent || 0,
-              late: portalData.attendance?.thisWeek?.late || 0,
-              totalHours: portalData.attendance?.thisWeek?.totalHours || 0
-            },
-            thisMonth: {
-              present: portalData.attendance?.thisMonth?.present || 0,
-              absent: portalData.attendance?.thisMonth?.absent || 0,
-              late: portalData.attendance?.thisMonth?.late || 0,
-              totalHours: portalData.attendance?.thisMonth?.totalHours || 0
-            }
-          }));
-          setRecentAttendance(portalData.recentAttendance || []);
-        }
+          console.log('🔍 Loading portal data for employee:', employeeId);
+          const portalData = await getEmployeePortalData(employeeId);
+          console.log('📊 Portal data received:', portalData);
 
-        // Fetch employee's leave requests
-        const requests = await getEmployeeLeaveRequests(employeeId);
-        console.log('📋 Fetched leave requests for employee:', employeeId);
-        console.log('📋 Leave requests data:', requests);
-        
-        if (requests && Array.isArray(requests)) {
-          // Ensure each request has a status
-          const processedRequests = requests.map(request => ({
-            ...request,
-            status: request.status || 'Pending'
-          }));
-          setMyLeaveRequests(processedRequests);
-          console.log('✅ Processed leave requests:', processedRequests);
-        } else {
-          setMyLeaveRequests([]);
-          console.log('⚠️ No leave requests found or invalid data');
-        }
-        
-        // Check if today is a holiday
-        const holidayData = await getTodayHoliday();
-        setTodayHoliday(holidayData?.isHoliday ? holidayData.holiday : null);
-        
-        } catch (error) {
-          console.error('Error loading employee portal data:', error);
-        } finally {
-          setDataLoaded(true);
-        }
+          if (portalData) {
+            // Map database structure to frontend structure
+            const todayData = portalData.attendance?.today || {};
+            const checkInTime = todayData.checkIn;
+            const checkOutTime = todayData.checkOut;
+            
+            setAttendanceData(prev => ({
+              ...prev,
+              today: {
+                checkIns: checkInTime ? [checkInTime] : [],
+                checkOuts: checkOutTime ? [checkOutTime] : [],
+                status: todayData.status || 'Absent',
+                totalHours: todayData.hours || 0
+              },
+              thisWeek: {
+                present: portalData.attendance?.thisWeek?.present || 0,
+                absent: portalData.attendance?.thisWeek?.absent || 0,
+                late: portalData.attendance?.thisWeek?.late || 0,
+                totalHours: portalData.attendance?.thisWeek?.totalHours || 0
+              },
+              thisMonth: {
+                present: portalData.attendance?.thisMonth?.present || 0,
+                absent: portalData.attendance?.thisMonth?.absent || 0,
+                late: portalData.attendance?.thisMonth?.late || 0,
+                totalHours: portalData.attendance?.thisMonth?.totalHours || 0
+              }
+            }));
+            setRecentAttendance(portalData.recentAttendance || []);
+          }
+
+          // Fetch employee's leave requests
+          const requests = await getEmployeeLeaveRequests(employeeId);
+          console.log('📋 Fetched leave requests for employee:', employeeId);
+          console.log('📋 Leave requests data:', requests);
+          
+          if (requests && Array.isArray(requests)) {
+            // Ensure each request has a status
+            const processedRequests = requests.map(request => ({
+              ...request,
+              status: request.status || 'Pending'
+            }));
+            setMyLeaveRequests(processedRequests);
+            console.log('✅ Processed leave requests:', processedRequests);
+          } else {
+            setMyLeaveRequests([]);
+            console.log('⚠️ No leave requests found or invalid data');
+          }
+          
+          // Check if today is a holiday
+          const holidayData = await getTodayHoliday();
+          setTodayHoliday(holidayData?.isHoliday ? holidayData.holiday : null);
+          
+          } catch (error) {
+            console.error('Error loading employee portal data:', error);
+          } finally {
+            setDataLoaded(true);
+          }
     }
   };
 
@@ -236,7 +229,7 @@ const EmployeePortal = ({ currentUser }) => {
           today: {
             ...prev.today,
             checkIns: [result.checkInTime],
-            checkOuts: [],
+            checkOuts: prev.today.checkOuts || [],
             status: result.status || 'Present',
             totalHours: 0
           }
@@ -248,7 +241,7 @@ const EmployeePortal = ({ currentUser }) => {
         // Refresh portal data to get updated statistics without page reload
         setTimeout(() => {
           loadEmployeePortalData();
-        }, 2000);
+        }, 1000);
       } else {
         throw new Error('Invalid response from server');
       }
@@ -318,7 +311,9 @@ const EmployeePortal = ({ currentUser }) => {
           ...prev,
           today: {
             ...prev.today,
+            checkIns: prev.today.checkIns || [], // Preserve existing check-ins
             checkOuts: [result.checkOutTime],
+            status: prev.today.status || 'Present',
             totalHours: result.hoursWorked || 0
           }
         }));
@@ -329,7 +324,7 @@ const EmployeePortal = ({ currentUser }) => {
         // Refresh portal data to get updated statistics without page reload
         setTimeout(() => {
           loadEmployeePortalData();
-        }, 2000);
+        }, 1000);
       } else {
         throw new Error('Invalid response from server');
       }
@@ -595,7 +590,7 @@ const EmployeePortal = ({ currentUser }) => {
           <div className="status-content">
             <div className="status-item">
               <span className="label">Current Time</span>
-              <span className="current-time-display">{formatTime(currentTime)}</span>
+              <span className="current-time-display">{getCurrentTime()}</span>
             </div>
             {todayHoliday && (
               <div className="status-item">
