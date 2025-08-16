@@ -8,7 +8,7 @@ const getApiBaseUrl = () => {
   
   // Fallback based on environment
   if (process.env.NODE_ENV === 'production') {
-    // In production, use relative path for Nginx proxy
+    // In production, use relative path since NGINX will proxy to backend
     console.log('Using production API URL: /api');
     return '/api';
   }

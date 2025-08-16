@@ -18,9 +18,7 @@ const Employee = require('./models/Employee');
 
 // CORS configuration - More flexible for production
 const corsOptions = {
-  origin: process.env.NODE_ENV === 'production' 
-    ? ['http://172.31.42.54:3000', 'http://172.31.42.54', 'http://localhost:3000', 'http://localhost:80', 'http://localhost', 'http://127.0.0.1:3000', 'http://127.0.0.1:80', 'http://127.0.0.1']  // Allow server IP and localhost
-    : ['http://localhost:3000', 'http://localhost:80', 'http://localhost', 'http://127.0.0.1:3000', 'http://127.0.0.1:80', 'http://127.0.0.1'],
+  origin: true, // Allow all origins temporarily for debugging
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
