@@ -1,0 +1,35 @@
+pipeline {
+    agent any
+
+    environment {
+        GIT_REPO = 'https://github.com/Venkyudemy/attendanceportal-main.git'
+        GIT_BRANCH = 'main'
+        DOCKER_DIR = 'attendanceportal-main' // folder where docker-compose.yml exists
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: "${GIT_BRANCH}", url: "${GIT_REPO}"
+            }
+        }
+
+        stage('Build & Run Services') {
+            steps {
+                script {
+                    dir("${DOCKER_DIR}") {
+                        sh 'docker compose down || true'
+                        sh 'docker compose build'
+                        sh 'docker compose up -d'
+                    }
+                }
+            }
+        }
+
+        stage('Verify Containers') {
+            steps {
+                sh 'docker ps'
+            }
+        }
+    }
+}
