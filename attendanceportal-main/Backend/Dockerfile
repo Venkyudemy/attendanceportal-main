@@ -1,46 +1,33 @@
-# Multi-stage build for production-ready Node.js application
+# Stage 1: Install dependencies
 FROM node:18-alpine AS base
-
-# Install system dependencies
-RUN apk add --no-cache \
-    curl \
-    dumb-init \
-    && rm -rf /var/cache/apk/*
-
-# Create app user for security (using different name to avoid conflicts)
-RUN addgroup -g 1001 -S appuser && \
-    adduser -S appuser -u 1001
-
-# Set working directory
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+# Install curl for health checks, netcat for MongoDB checks, and set timezone
+RUN apk add --no-cache curl tzdata netcat-openbsd && \
+    cp /usr/share/zoneinfo/Asia/Kolkata /etc/localtime && \
+    echo "Asia/Kolkata" > /etc/timezone
 
-# Install dependencies with security audit
-RUN npm ci --only=production --audit=false --fund=false && \
-    npm audit fix --audit-level=moderate || true && \
-    npm cache clean --force
+# Set environment variables
+ENV NODE_ENV=production
+ENV TZ=Asia/Kolkata
+ENV PORT=5000
 
-# Copy source code
+COPY package.json package-lock.json ./
+RUN npm ci --only=production --legacy-peer-deps
+
+# Stage 2: Copy source
 COPY . .
 
-# Create logs directory
+# Create logs directory and set permissions
 RUN mkdir -p /app/logs && \
-    chown -R appuser:appuser /app
-
-# Switch to non-root user
-USER appuser
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD curl -f http://localhost:5000/api/health || exit 1
+    chmod +x /app/docker-start.sh
 
 # Expose port
 EXPOSE 5000
 
-# Use dumb-init for proper signal handling
-ENTRYPOINT ["dumb-init", "--"]
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD curl -f http://localhost:5000/api/health || exit 1
 
-# Start the application
-CMD ["node", "index.js"]
+# Start the application using the startup script
+CMD ["/app/docker-start.sh"]
