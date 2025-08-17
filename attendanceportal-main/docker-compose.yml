@@ -15,12 +15,6 @@ services:
     restart: unless-stopped
     networks:
       - attendance-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
 
   backend:
     build:
@@ -36,21 +30,12 @@ services:
       - TZ=Asia/Kolkata
       - MONGODB_URI=mongodb://mongo:27017/attendanceportal
     depends_on:
-      mongo:
-        condition: service_healthy
+      - mongo
     restart: unless-stopped
     networks:
       - attendance-network
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://127.0.0.1:5000/api/health || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 30s
     volumes:
-      - backend_logs:/app/logs
       - ./Backend/scripts:/app/scripts:ro
-    command: ["node", "index.js"]
 
   mongo:
     image: mongo:6
@@ -64,18 +49,9 @@ services:
     restart: unless-stopped
     networks:
       - attendance-network
-    healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
-    command: ["mongod", "--bind_ip_all", "--timezone", "Asia/Kolkata"]
 
 volumes:
   mongo_data:
-    driver: local
-  backend_logs:
     driver: local
 
 networks:
