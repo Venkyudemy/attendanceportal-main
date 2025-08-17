@@ -1,15 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getEmployeeById } from '../../services/api';
+import { getEmployeeById, getEmployeeLeaveBalance, recalculateEmployeeLeaveBalance } from '../../services/api';
 import './EmployeeDetails.css';
 
 const EmployeeDetails = () => {
   const { employeeId } = useParams();
   const navigate = useNavigate();
   const [employee, setEmployee] = useState(null);
+  const [leaveBalance, setLeaveBalance] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [leaveBalanceLoading, setLeaveBalanceLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showAttendanceHistory, setShowAttendanceHistory] = useState(false);
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [attendanceData, setAttendanceData] = useState([]);
+  const [companyHolidays, setCompanyHolidays] = useState([]);
 
   useEffect(() => {
     const fetchEmployeeDetails = async () => {
@@ -17,15 +22,44 @@ const EmployeeDetails = () => {
         setLoading(true);
         console.log('🔍 Fetching employee details for ID:', employeeId);
         
-        const data = await getEmployeeById(employeeId);
-        console.log('✅ Employee details received:', data);
-        console.log('📊 Attendance data:', data.attendance);
-        console.log('🆔 Employee ID in data:', data._id);
-        setEmployee(data);
+        // Fetch employee details and leave balance in parallel
+        const [employeeData, leaveBalanceData] = await Promise.all([
+          getEmployeeById(employeeId),
+          getEmployeeLeaveBalance(employeeId)
+        ]);
+        
+        console.log('✅ Employee details received:', employeeData);
+        console.log('✅ Leave balance received:', leaveBalanceData);
+        console.log('📊 Attendance data:', employeeData.attendance);
+        console.log('🆔 Employee ID in data:', employeeData._id);
+        
+        setEmployee(employeeData);
+        setLeaveBalance(leaveBalanceData);
         setError(null);
+        setLeaveBalanceLoading(false);
+        
+        // Debug logging for leave balance
+        console.log('🔍 Leave Balance Debug:');
+        console.log('Raw leave balance data:', leaveBalanceData);
+        console.log('Annual leave:', leaveBalanceData?.annual);
+        console.log('Sick leave:', leaveBalanceData?.sick);
+        console.log('Personal leave:', leaveBalanceData?.personal);
       } catch (err) {
         console.error('❌ Error fetching employee details:', err);
-        setError(`Failed to load employee details: ${err.message}`);
+        
+        // Try to fetch just employee details if leave balance fails
+        try {
+          const employeeData = await getEmployeeById(employeeId);
+          setEmployee(employeeData);
+          setLeaveBalance(null); // Set leave balance to null if it failed
+          setError(null);
+          setLeaveBalanceLoading(false);
+          console.log('⚠️ Leave balance fetch failed, but employee details loaded');
+        } catch (fallbackErr) {
+          console.error('❌ Fallback employee fetch also failed:', fallbackErr);
+          setError(`Failed to load employee details: ${fallbackErr.message}`);
+          setLeaveBalanceLoading(false);
+        }
       } finally {
         setLoading(false);
       }
@@ -33,6 +67,130 @@ const EmployeeDetails = () => {
 
     fetchEmployeeDetails();
   }, [employeeId]);
+
+  // Fetch company holidays
+  useEffect(() => {
+    const fetchCompanyHolidays = async () => {
+      try {
+        // In a real app, this would fetch from your backend API
+        // For now, we'll use the same structure as defined in Settings
+        const holidays = [
+          { name: 'New Year\'s Day', date: '2024-01-01', type: 'public', description: 'New Year Celebration' },
+          { name: 'Republic Day', date: '2024-01-26', type: 'public', description: 'Indian Republic Day' },
+          { name: 'Independence Day', date: '2024-08-15', type: 'public', description: 'Indian Independence Day' },
+          { name: 'Company Foundation Day', date: '2024-06-15', type: 'company', description: 'Company\'s foundation anniversary' },
+          { name: 'Diwali', date: '2024-11-12', type: 'public', description: 'Festival of Lights' }
+        ];
+        setCompanyHolidays(holidays);
+      } catch (err) {
+        console.error('Error fetching company holidays:', err);
+      }
+    };
+
+    fetchCompanyHolidays();
+  }, []);
+
+  // Generate monthly attendance calendar data
+  useEffect(() => {
+    if (showAttendanceHistory && employee) {
+      generateMonthlyCalendar();
+    }
+  }, [showAttendanceHistory, currentMonth, employee, companyHolidays]);
+
+  const generateMonthlyCalendar = () => {
+    if (!employee) return;
+
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    
+    console.log('📅 Generating calendar for:', year, month + 1, 'Days in month:', daysInMonth);
+    
+    // Get the first day of the month and its day of week (0 = Sunday, 1 = Monday, etc.)
+    const firstDayOfMonth = new Date(year, month, 1);
+    const startingDayOfWeek = firstDayOfMonth.getDay();
+    
+    console.log('📅 First day of month:', firstDayOfMonth, 'Starting day of week:', startingDayOfWeek);
+    
+    const monthlyData = [];
+    
+    // Add empty cells for days before the first day of the month
+    for (let i = 0; i < startingDayOfWeek; i++) {
+      monthlyData.push({
+        date: null,
+        day: null,
+        isWeekend: false,
+        isToday: false,
+        isHoliday: false,
+        holidayName: null,
+        status: 'empty',
+        checkIn: null,
+        checkOut: null,
+        hours: 0,
+        isEmpty: true
+      });
+    }
+    
+    // Add days of the month
+    for (let day = 1; day <= daysInMonth; day++) {
+      const currentDate = new Date(year, month, day);
+      const isWeekend = currentDate.getDay() === 0 || currentDate.getDay() === 6;
+      const isToday = currentDate.toDateString() === new Date().toDateString();
+      const isHoliday = isCompanyHoliday(currentDate);
+      const holidayName = isHoliday ? getHolidayName(currentDate) : null;
+      
+      // Get attendance data for this day from employee records
+      const dayAttendance = employee.attendance?.records?.find(record => {
+        const recordDate = new Date(record.date);
+        return recordDate.toDateString() === currentDate.toDateString();
+      });
+      
+      monthlyData.push({
+        date: currentDate,
+        day: day,
+        isWeekend,
+        isToday,
+        isHoliday,
+        holidayName,
+        status: dayAttendance ? dayAttendance.status : (isWeekend ? 'Weekend' : 'Absent'),
+        checkIn: dayAttendance?.checkIn || null,
+        checkOut: dayAttendance?.checkOut || null,
+        hours: dayAttendance?.hours || 0,
+        isEmpty: false
+      });
+    }
+    
+    console.log('✅ Calendar data generated:', monthlyData.length, 'days');
+    setAttendanceData(monthlyData);
+  };
+
+  // Check if a date is a company holiday
+  const isCompanyHoliday = (date) => {
+    if (!date) return false;
+    const dateString = date.toISOString().split('T')[0];
+    return companyHolidays.find(holiday => holiday.date === dateString);
+  };
+
+  // Get holiday name for a date
+  const getHolidayName = (date) => {
+    if (!date) return null;
+    const dateString = date.toISOString().split('T')[0];
+    const holiday = companyHolidays.find(holiday => holiday.date === dateString);
+    return holiday ? holiday.name : null;
+  };
+
+  // Change month for calendar navigation
+  const changeMonth = (direction) => {
+    setCurrentMonth(prevMonth => {
+      const newMonth = new Date(prevMonth);
+      if (direction === 'prev') {
+        newMonth.setMonth(newMonth.getMonth() - 1);
+      } else {
+        newMonth.setMonth(newMonth.getMonth() + 1);
+      }
+      return newMonth;
+    });
+  };
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -70,6 +228,28 @@ const EmployeeDetails = () => {
 
   const handleViewAttendanceHistory = () => {
     setShowAttendanceHistory(!showAttendanceHistory);
+  };
+
+  const handleRecalculateLeaveBalance = async () => {
+    try {
+      setLeaveBalanceLoading(true);
+      console.log('🔄 Recalculating leave balance for employee:', employeeId);
+      
+      const result = await recalculateEmployeeLeaveBalance(employeeId);
+      console.log('✅ Leave balance recalculated:', result);
+      
+      // Refresh the leave balance data
+      const updatedLeaveBalance = await getEmployeeLeaveBalance(employeeId);
+      setLeaveBalance(updatedLeaveBalance);
+      
+      // Show success message
+      alert('Leave balance recalculated successfully!');
+    } catch (error) {
+      console.error('❌ Error recalculating leave balance:', error);
+      alert('Failed to recalculate leave balance. Please try again.');
+    } finally {
+      setLeaveBalanceLoading(false);
+    }
   };
 
   if (loading) {
@@ -223,26 +403,43 @@ const EmployeeDetails = () => {
 
               <div className="detail-section">
                 <h3 className="section-title">Leave Balance</h3>
-                <div className="leave-balance-grid">
-                  <div className="leave-type">
-                    <span className="leave-label">Annual Leave:</span>
-                    <span className="leave-value">
-                      {employee.leaveBalance?.annual?.remaining || 0} / {employee.leaveBalance?.annual?.total || 0}
-                    </span>
+                {leaveBalanceLoading ? (
+                  <div className="leave-balance-loading">
+                    <p>Loading leave balance...</p>
                   </div>
-                  <div className="leave-type">
-                    <span className="leave-label">Sick Leave:</span>
-                    <span className="leave-value">
-                      {employee.leaveBalance?.sick?.remaining || 0} / {employee.leaveBalance?.sick?.total || 0}
-                    </span>
+                ) : leaveBalance ? (
+                  <div className="leave-balance-grid">
+                    <div className="leave-type">
+                      <span className="leave-label">Annual Leave:</span>
+                      <span className="leave-value">
+                        {leaveBalance.annual?.remaining || 0} / {leaveBalance.annual?.total || 0}
+                      </span>
+                    </div>
+                    <div className="leave-type">
+                      <span className="leave-label">Sick Leave:</span>
+                      <span className="leave-value">
+                        {leaveBalance.sick?.remaining || 0} / {leaveBalance.sick?.total || 0}
+                      </span>
+                    </div>
+                    <div className="leave-type">
+                      <span className="leave-label">Personal Leave:</span>
+                      <span className="leave-value">
+                        {leaveBalance.personal?.remaining || 0} / {leaveBalance.personal?.total || 0}
+                      </span>
+                    </div>
                   </div>
-                  <div className="leave-type">
-                    <span className="leave-label">Personal Leave:</span>
-                    <span className="leave-value">
-                      {employee.leaveBalance?.personal?.remaining || 0} / {employee.leaveBalance?.personal?.total || 0}
-                    </span>
+                ) : (
+                  <div className="leave-balance-loading">
+                    <p>Leave balance data not available</p>
                   </div>
-                </div>
+                )}
+                <button 
+                  className="btn btn-primary recalculate-btn"
+                  onClick={handleRecalculateLeaveBalance}
+                  disabled={leaveBalanceLoading}
+                >
+                  {leaveBalanceLoading ? 'Recalculating...' : 'Recalculate Leave Balance'}
+                </button>
               </div>
 
               <div className="detail-section">
@@ -359,6 +556,85 @@ const EmployeeDetails = () => {
                     <p><strong>Late Arrival:</strong> {employee.attendance?.today?.isLate ? 'Yes' : 'No'}</p>
                   </div>
                 </div>
+              </div>
+            </div>
+
+            {/* Monthly Attendance Calendar */}
+            <div className="attendance-calendar-section">
+              <div className="calendar-header">
+                <h3 className="section-title">Monthly Attendance Calendar</h3>
+                <div className="month-navigation">
+                  <button onClick={() => changeMonth('prev')} className="nav-btn">‹ Previous Month</button>
+                  <span className="current-month">
+                    {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                  </span>
+                  <button onClick={() => changeMonth('next')} className="nav-btn">Next Month ›</button>
+                </div>
+              </div>
+
+              {/* Attendance Summary Statistics */}
+              <div className="attendance-summary-stats">
+                <div className="stat-card present">
+                  <div className="stat-number">
+                    {attendanceData.filter(day => !day.isEmpty && day.status === 'Present').length}
+                  </div>
+                  <div className="stat-label">PRESENT DAYS</div>
+                </div>
+                <div className="stat-card late">
+                  <div className="stat-number">
+                    {attendanceData.filter(day => !day.isEmpty && day.status === 'Late').length}
+                  </div>
+                  <div className="stat-label">LATE DAYS</div>
+                </div>
+                <div className="stat-card absent">
+                  <div className="stat-number">
+                    {attendanceData.filter(day => !day.isEmpty && day.status === 'Absent').length}
+                  </div>
+                  <div className="stat-label">ABSENT DAYS</div>
+                </div>
+                <div className="stat-card hours">
+                  <div className="stat-number">
+                    {attendanceData.reduce((total, day) => total + (day.hours || 0), 0).toFixed(1)}
+                  </div>
+                  <div className="stat-label">TOTAL HOURS</div>
+                </div>
+              </div>
+
+              <div className="calendar-grid">
+                <div className="calendar-header-row">
+                  <div>Sun</div>
+                  <div>Mon</div>
+                  <div>Tue</div>
+                  <div>Wed</div>
+                  <div>Thu</div>
+                  <div>Fri</div>
+                  <div>Sat</div>
+                </div>
+                
+                {attendanceData.map((day, index) => (
+                  <div 
+                    key={index} 
+                    className={`calendar-day ${day.isWeekend ? 'weekend' : ''} ${day.isToday ? 'today' : ''} ${day.isEmpty ? 'empty' : ''} ${day.isHoliday ? 'holiday' : ''}`}
+                  >
+                    {!day.isEmpty ? (
+                      <>
+                        <div className="day-number">{day.day}</div>
+                        {day.isHoliday ? (
+                          <div className="holiday-indicator">
+                            <span className="holiday-text">H</span>
+                            <div className="holiday-tooltip">{day.holidayName}</div>
+                          </div>
+                        ) : !day.isWeekend ? (
+                          <div className={`status-indicator ${day.status?.toLowerCase() || 'absent'}`}>
+                            {day.status?.charAt(0) || 'A'}
+                          </div>
+                        ) : null}
+                      </>
+                    ) : (
+                      <div className="empty-day"></div>
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
           </div>

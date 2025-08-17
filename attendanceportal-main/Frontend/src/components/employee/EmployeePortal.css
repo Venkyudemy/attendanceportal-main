@@ -522,10 +522,46 @@
 }
 
 .leave-balance h3 {
-  margin-bottom: 20px;
+  margin: 0 0 20px 0;
   color: #333;
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 600;
+}
+
+.leave-balance-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.leave-balance-header h3 {
+  margin: 0;
+  color: #333;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.refresh-btn {
+  padding: 6px 10px;
+  font-size: 14px;
+  border: 1px solid #dee2e6;
+  background: white;
+  color: #6c757d;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.refresh-btn:hover:not(:disabled) {
+  background: #f8f9fa;
+  border-color: #adb5bd;
+  transform: scale(1.05);
+}
+
+.refresh-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .leave-cards {

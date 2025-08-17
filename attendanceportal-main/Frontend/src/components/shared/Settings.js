@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getSettings, updateSettings, getGeneralSettings, updateGeneralSettings, getLeaveTypes, updateLeaveTypes } from '../../services/api';
+import { getSettings, updateSettings, getGeneralSettings, updateGeneralSettings, getLeaveTypes, updateLeaveTypes, syncAllEmployeesLeaveBalanceStructure } from '../../services/api';
 import './Settings.css';
 
 const Settings = () => {
@@ -177,6 +177,19 @@ const Settings = () => {
   const replicateHolidaysToAllEmployees = () => {
     // This function would sync holidays to all employee calendars
     alert('Holidays have been replicated to all employee calendars!');
+  };
+
+  const handleSyncLeaveBalanceStructure = async () => {
+    try {
+      setSaving(true);
+      await syncAllEmployeesLeaveBalanceStructure();
+      alert('Leave balance structure synced successfully!');
+    } catch (error) {
+      console.error('Error syncing leave balance structure:', error);
+      alert('Failed to sync leave balance structure.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleSave = async () => {
@@ -375,6 +388,19 @@ const Settings = () => {
                 >
                   Add Leave Type
                 </button>
+                
+                <div className="sync-section">
+                  <p className="sync-info">
+                    After updating leave types, sync the new structure to all employees' leave balance.
+                  </p>
+                  <button 
+                    className="btn btn-success"
+                    onClick={handleSyncLeaveBalanceStructure}
+                    disabled={saving}
+                  >
+                    🔄 Sync Leave Balance Structure to All Employees
+                  </button>
+                </div>
               </div>
             </div>
           )}

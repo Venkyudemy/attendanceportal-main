@@ -110,7 +110,14 @@
 }
 
 .leave-type-item .form-row {
-  align-items: end;
+  display: flex;
+  gap: 1rem;
+  align-items: flex-end;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
 }
 
 /* Company Holidays Styles */
@@ -223,6 +230,21 @@
   margin-top: 30px;
   padding-top: 20px;
   border-top: 1px solid #eee;
+}
+
+.sync-section {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: #e8f5e8;
+  border-radius: 8px;
+  border: 1px solid #c3e6c3;
+}
+
+.sync-info {
+  margin-bottom: 1rem;
+  color: #155724;
+  font-size: 0.9rem;
+  line-height: 1.4;
 }
 
 @media (max-width: 768px) {

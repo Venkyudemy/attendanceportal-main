@@ -106,6 +106,13 @@ export const getEmployeeStats = async () => {
   }
 };
 
+// Delete employee
+export const deleteEmployee = async (employeeId) => {
+  return apiCall(`/employee/${employeeId}`, {
+    method: 'DELETE',
+  });
+};
+
 export const getEmployeeAttendance = async () => {
   try {
     const data = await apiCall('/employee/attendance');
@@ -124,6 +131,22 @@ export const getEmployeeAttendance = async () => {
 
 export const getEmployeeById = async (employeeId) => {
   return apiCall(`/employee/details/${employeeId}`);
+};
+
+export const getEmployeeLeaveBalance = async (employeeId) => {
+  return apiCall(`/employee/${employeeId}/leave-balance`);
+};
+
+export const recalculateEmployeeLeaveBalance = async (employeeId) => {
+  return apiCall(`/employee/${employeeId}/recalculate-leave-balance`, {
+    method: 'POST',
+  });
+};
+
+export const syncAllEmployeesLeaveBalanceStructure = async () => {
+  return apiCall('/employee/admin/sync-leave-balance-structure', {
+    method: 'POST',
+  });
 };
 
 export const updateEmployee = async (employeeId, employeeData) => {

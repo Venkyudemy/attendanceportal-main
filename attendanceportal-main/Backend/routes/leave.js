@@ -193,27 +193,25 @@ router.get('/admin/stats', async (req, res) => {
 // Update leave request status (admin)
 router.patch('/:id/status', async (req, res) => {
   try {
-    console.log('=== LEAVE STATUS UPDATE ROUTE CALLED ===');
-    console.log('Request ID:', req.params.id);
+    console.log('=== UPDATE LEAVE REQUEST STATUS ===');
+    console.log('Request params:', req.params);
     console.log('Request body:', req.body);
-    console.log('Request headers:', req.headers);
-    console.log('Request method:', req.method);
-    console.log('Request URL:', req.url);
     
     const { status, adminNotes } = req.body;
     
-    if (!status) {
-      console.log('❌ No status provided in request body');
-      return res.status(400).json({ message: 'Status is required' });
+    if (!status || !['Pending', 'Approved', 'Rejected'].includes(status)) {
+      return res.status(400).json({ message: 'Invalid status. Must be Pending, Approved, or Rejected' });
     }
-    
-    console.log('Updating leave request with status:', status);
-    
-    // Validate the request ID format
-    if (!req.params.id || req.params.id.length !== 24) {
-      console.log('❌ Invalid request ID format:', req.params.id);
-      return res.status(400).json({ message: 'Invalid request ID format' });
+
+    // Find the leave request first to get the previous status
+    const existingLeaveRequest = await LeaveRequest.findById(req.params.id);
+    if (!existingLeaveRequest) {
+      console.log('❌ Leave request not found with ID:', req.params.id);
+      return res.status(404).json({ message: 'Leave request not found' });
     }
+
+    const previousStatus = existingLeaveRequest.status;
+    console.log('Previous status:', previousStatus, 'New status:', status);
     
     const leaveRequest = await LeaveRequest.findByIdAndUpdate(
       req.params.id,
@@ -242,13 +240,13 @@ router.patch('/:id/status', async (req, res) => {
           // Check if this request was previously approved to avoid double counting
           const previousStatus = leaveRequest.status;
           if (previousStatus !== 'Approved') {
-            employee.leaveBalance[leaveTypeKey].used += leaveRequest.days;
+            employee.leaveBalance[leaveTypeKey].used += leaveRequest.totalDays || leaveRequest.days || 0;
             employee.leaveBalance[leaveTypeKey].remaining = 
               employee.leaveBalance[leaveTypeKey].total - employee.leaveBalance[leaveTypeKey].used;
             await employee.save();
             console.log('Employee leave balance updated in MongoDB for:', employee.name, {
               leaveType: leaveRequest.leaveType,
-              daysUsed: leaveRequest.days,
+              daysUsed: leaveRequest.totalDays || leaveRequest.days || 0,
               newBalance: employee.leaveBalance[leaveTypeKey]
             });
           }
@@ -257,18 +255,18 @@ router.patch('/:id/status', async (req, res) => {
     }
 
     // If status changed from approved to rejected/pending, restore leave balance
-    if (leaveRequest.status === 'Approved' && status !== 'Approved') {
+    if (previousStatus === 'Approved' && status !== 'Approved') {
       const employee = await Employee.findOne({ employeeId: leaveRequest.employeeId });
       if (employee) {
         const leaveTypeKey = leaveRequest.leaveType.toLowerCase().replace(' ', '');
         if (employee.leaveBalance[leaveTypeKey]) {
-          employee.leaveBalance[leaveTypeKey].used -= leaveRequest.days;
+          employee.leaveBalance[leaveTypeKey].used -= leaveRequest.totalDays || leaveRequest.days || 0;
           employee.leaveBalance[leaveTypeKey].remaining = 
             employee.leaveBalance[leaveTypeKey].total - employee.leaveBalance[leaveTypeKey].used;
           await employee.save();
           console.log('Employee leave balance restored in MongoDB for:', employee.name, {
             leaveType: leaveRequest.leaveType,
-            daysRestored: leaveRequest.days,
+            daysRestored: leaveRequest.totalDays || leaveRequest.days || 0,
             newBalance: employee.leaveBalance[leaveTypeKey]
           });
         }

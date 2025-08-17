@@ -97,6 +97,7 @@ const AttendanceDetails = ({ currentUser }) => {
       case 'Late': return 'warning';
       case 'Absent': return 'danger';
       case 'Weekend': return 'secondary';
+      case 'Leave': return 'info';
       default: return 'secondary';
     }
   };
@@ -158,6 +159,10 @@ const AttendanceDetails = ({ currentUser }) => {
           <div className="stat-number">{stats.absent}</div>
           <div className="stat-label">Absent Days</div>
         </div>
+        <div className="stat-card leave">
+          <div className="stat-number">{stats.leave || 0}</div>
+          <div className="stat-label">Leave Days</div>
+        </div>
         <div className="stat-card">
           <div className="stat-number">{stats.totalHours.toFixed(1)}</div>
           <div className="stat-label">Total Hours</div>
@@ -184,21 +189,25 @@ const AttendanceDetails = ({ currentUser }) => {
               return (
                 <div 
                   key={index} 
-                  className={`calendar-day ${day.isToday ? 'today' : ''} ${day.status && day.status !== 'empty' ? day.status.toLowerCase() : 'empty'}`}
+                  className={`calendar-day ${day.isToday ? 'today' : ''} ${day.status && day.status !== 'empty' ? day.status.toLowerCase() : 'empty'} ${day.isLeave ? 'leave' : ''}`}
                 >
                   <div className="day-number">{day.day || ''}</div>
                   {day.status && day.status !== 'empty' && (
                     <>
                       <div className="day-status">
                         <span className={`status-badge ${getStatusColor(day.status, day.date)}`}>
-                          {holiday ? holiday.name : day.status}
+                          {holiday ? holiday.name : day.isLeave ? `Leave (${day.leaveType})` : day.status}
                         </span>
                       </div>
-                      {day.checkIn && (
+                      {day.checkIn && !day.isLeave && (
                         <div className="day-time">
                           <div className="time-in">In: {day.checkIn}</div>
                           <div className="time-out">Out: {day.checkOut}</div>
-                          <div className="time-hours">{day.hours}h</div>
+                        </div>
+                      )}
+                      {day.isLeave && (
+                        <div className="leave-info">
+                          <div className="leave-type-badge">{day.leaveType}</div>
                         </div>
                       )}
                     </>

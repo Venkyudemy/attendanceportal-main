@@ -1,7 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getEmployeeAttendance, createEmployee, updateEmployee } from '../../services/api';
 import './EmployeeManagement.css';
+import { 
+  getEmployeeStats, 
+  getEmployeePortalData, 
+  deleteEmployee,
+  getEmployeeAttendance,
+  createEmployee,
+  updateEmployee
+} from '../../services/api';
 
 const EmployeeManagement = () => {
   const navigate = useNavigate();
@@ -32,11 +39,20 @@ const EmployeeManagement = () => {
         setLoading(true);
         const data = await getEmployeeAttendance();
         console.log('Fetched employees:', data);
-        setEmployees(data);
-        setError(null);
+        
+        // Ensure data is an array and has the expected structure
+        if (Array.isArray(data)) {
+          setEmployees(data);
+          setError(null);
+        } else {
+          console.error('Invalid data format received:', data);
+          setError('Invalid data format received from server');
+          setEmployees([]);
+        }
       } catch (err) {
         console.error('Error fetching employees:', err);
         setError('Failed to load employee data');
+        setEmployees([]);
       } finally {
         setLoading(false);
       }
@@ -150,9 +166,22 @@ const EmployeeManagement = () => {
     setShowAddForm(true);
   };
 
-  const handleDelete = (id) => {
-    if (window.confirm('Are you sure you want to delete this employee?')) {
-      setEmployees(employees.filter(emp => emp.id !== id));
+  const handleDelete = async (id) => {
+    if (window.confirm('Are you sure you want to delete this employee? This action cannot be undone.')) {
+      try {
+        // Call backend API to delete employee using the API service
+        await deleteEmployee(id);
+        
+        // Remove from local state only after successful backend deletion
+        setEmployees(employees.filter(emp => emp.id !== id));
+        console.log('Employee deleted successfully from backend');
+        // Show success message
+        alert('Employee deleted successfully!');
+        
+      } catch (error) {
+        console.error('Error deleting employee:', error);
+        alert(`Failed to delete employee: ${error.message}. Please try again.`);
+      }
     }
   };
 
@@ -404,72 +433,78 @@ const EmployeeManagement = () => {
       )}
 
       <div className="employee-table">
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Email</th>
-              <th>Department</th>
-              <th>Position</th>
-              <th>Attendance Status</th>
-              <th>Check In</th>
-              <th>Check Out</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredEmployees.map((employee) => (
-              <tr key={employee.id}>
-                <td>
-                  <div className="employee-info">
-                    <div className="employee-avatar">
-                      {employee.name.charAt(0)}
-                    </div>
-                    <div>
-                      <div className="employee-name">{employee.name}</div>
-                      <div className="employee-phone">{employee.phone}</div>
-                    </div>
-                  </div>
-                </td>
-                <td>{employee.email}</td>
-                <td>
-                  <span className="department-badge">{employee.department}</span>
-                </td>
-                <td>{employee.position}</td>
-                <td>
-                  <span className={`status-badge ${getAttendanceStatusColor(employee.attendance?.status)}`}>
-                    {employee.attendance?.status || 'Unknown'}
-                  </span>
-                </td>
-                <td>{employee.attendance?.checkIn || 'Not checked in'}</td>
-                <td>{employee.attendance?.checkOut || 'Not checked out'}</td>
-                <td>
-                  <div className="action-buttons">
-                    <button 
-                      className="btn btn-success btn-sm"
-                      onClick={() => handleViewEmployeePortal(employee)}
-                      title="View Employee Portal"
-                    >
-                      👤 Portal
-                    </button>
-                    <button 
-                      className="btn btn-primary btn-sm"
-                      onClick={() => handleEdit(employee)}
-                    >
-                      Edit
-                    </button>
-                    <button 
-                      className="btn btn-danger btn-sm"
-                      onClick={() => handleDelete(employee.id)}
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </td>
+        {filteredEmployees.length === 0 ? (
+          <div className="no-employees">
+            <p>No employees found. {searchTerm ? 'Try adjusting your search.' : 'Add your first employee to get started.'}</p>
+          </div>
+        ) : (
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Department</th>
+                <th>Position</th>
+                <th>Attendance Status</th>
+                <th>Check In</th>
+                <th>Check Out</th>
+                <th>Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {filteredEmployees.map((employee) => (
+                <tr key={employee.id}>
+                  <td>
+                    <div className="employee-info">
+                      <div className="employee-avatar">
+                        {employee.name?.charAt(0) || '?'}
+                      </div>
+                      <div>
+                        <div className="employee-name">{employee.name || 'Unknown'}</div>
+                        <div className="employee-phone">{employee.phone || 'No phone'}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td>{employee.email || 'No email'}</td>
+                  <td>
+                    <span className="department-badge">{employee.department || 'Unknown'}</span>
+                  </td>
+                  <td>{employee.position || 'Unknown'}</td>
+                  <td>
+                    <span className={`status-badge ${getAttendanceStatusColor(employee.attendance?.status || 'Unknown')}`}>
+                      {employee.attendance?.status || 'Unknown'}
+                    </span>
+                  </td>
+                  <td>{employee.attendance?.checkIn || 'Not checked in'}</td>
+                  <td>{employee.attendance?.checkOut || 'Not checked out'}</td>
+                  <td>
+                    <div className="action-buttons">
+                      <button 
+                        className="btn btn-success btn-sm"
+                        onClick={() => handleViewEmployeePortal(employee)}
+                        title="View Employee Portal"
+                      >
+                        👤 Portal
+                      </button>
+                      <button 
+                        className="btn btn-primary btn-sm"
+                        onClick={() => handleEdit(employee)}
+                      >
+                        Edit
+                      </button>
+                      <button 
+                        className="btn btn-danger btn-sm"
+                        onClick={() => handleDelete(employee.id)}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   );

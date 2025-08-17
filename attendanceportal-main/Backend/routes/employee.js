@@ -119,7 +119,11 @@ router.get('/attendance', async (req, res) => {
       employeeId: emp.employeeId,
       domain: emp.domain,
       joinDate: emp.joinDate,
-      attendance: emp.attendance.today
+      attendance: {
+        status: emp.attendance?.today?.status || 'Absent',
+        checkIn: emp.attendance?.today?.checkIn || null,
+        checkOut: emp.attendance?.today?.checkOut || null
+      }
     }));
 
     res.status(200).json(attendanceData);
@@ -511,6 +515,86 @@ router.get('/details/:employeeId', async (req, res) => {
     console.log('✅ Employee found:', employee.name);
     console.log('Employee ID:', employee._id);
     console.log('Raw attendance data:', employee.attendance);
+    console.log('Raw leave balance data:', employee.leaveBalance);
+
+    // Get the latest leave balance data
+    let latestLeaveBalance = employee.leaveBalance;
+    try {
+      const LeaveRequest = require('../models/LeaveRequest');
+      const Settings = require('../models/Settings');
+      
+      // Get configured leave types from settings
+      const settings = await Settings.getSettings();
+      const configuredLeaveTypes = settings.leaveTypes || [];
+      
+      console.log('📋 Configured leave types for details:', configuredLeaveTypes);
+      
+      const approvedRequests = await LeaveRequest.find({
+        employeeId: employee.employeeId || employee._id.toString(),
+        status: 'Approved'
+      });
+      
+      console.log('📊 Found approved leave requests for details:', approvedRequests.length);
+      
+      // Create leave balance structure based on configured types
+      const recalculatedBalance = {};
+      
+      // Initialize balance for each configured leave type
+      configuredLeaveTypes.forEach(leaveType => {
+        const typeKey = leaveType.name.toLowerCase().replace(/\s+/g, '');
+        recalculatedBalance[typeKey] = {
+          total: leaveType.days || 0,
+          used: 0,
+          remaining: leaveType.days || 0
+        };
+      });
+      
+      // If no configured types, use defaults
+      if (configuredLeaveTypes.length === 0) {
+        recalculatedBalance.annual = { total: 20, used: 0, remaining: 20 };
+        recalculatedBalance.sick = { total: 10, used: 0, remaining: 10 };
+        recalculatedBalance.personal = { total: 5, used: 0, remaining: 5 };
+        console.log('⚠️ No configured leave types found for details, using defaults');
+      }
+      
+      console.log('🔄 Initial leave balance structure for details:', recalculatedBalance);
+      
+      // Calculate used days from approved requests
+      approvedRequests.forEach(request => {
+        const leaveType = request.leaveType.toLowerCase().trim();
+        const daysUsed = request.totalDays || request.days || 0;
+        
+        console.log(`📋 Processing leave request for details:`, {
+          leaveType: request.leaveType,
+          normalizedType: leaveType,
+          daysUsed: daysUsed,
+          requestId: request._id
+        });
+        
+        // Find matching configured leave type
+        let matchedTypeKey = null;
+        for (const [key, balance] of Object.entries(recalculatedBalance)) {
+          if (leaveType.includes(key) || key.includes(leaveType)) {
+            matchedTypeKey = key;
+            break;
+          }
+        }
+        
+        if (matchedTypeKey && recalculatedBalance[matchedTypeKey]) {
+          recalculatedBalance[matchedTypeKey].used += daysUsed;
+          recalculatedBalance[matchedTypeKey].remaining = 
+            recalculatedBalance[matchedTypeKey].total - recalculatedBalance[matchedTypeKey].used;
+          console.log(`✅ Updated ${matchedTypeKey} leave for details: used=${recalculatedBalance[matchedTypeKey].used}, remaining=${recalculatedBalance[matchedTypeKey].remaining}`);
+        } else {
+          console.log(`⚠️ No matching leave type found for details: "${leaveType}"`);
+        }
+      });
+      
+      latestLeaveBalance = recalculatedBalance;
+      console.log('🔄 Using recalculated leave balance for details:', latestLeaveBalance);
+    } catch (recalcError) {
+      console.error('⚠️ Error recalculating leave balance for details, using stored data:', recalcError);
+    }
 
     // Format the attendance data properly
     const formattedEmployee = {
@@ -521,6 +605,23 @@ router.get('/details/:employeeId', async (req, res) => {
           checkIn: employee.attendance?.today?.checkIn || null,
           checkOut: employee.attendance?.today?.checkOut || null,
           isLate: employee.attendance?.today?.isLate || false
+        }
+      },
+      leaveBalance: {
+        annual: {
+          total: latestLeaveBalance?.annual?.total || 20,
+          used: latestLeaveBalance?.annual?.used || 0,
+          remaining: latestLeaveBalance?.annual?.remaining || 20
+        },
+        sick: {
+          total: latestLeaveBalance?.sick?.total || 10,
+          used: latestLeaveBalance?.sick?.used || 0,
+          remaining: latestLeaveBalance?.sick?.remaining || 10
+        },
+        personal: {
+          total: latestLeaveBalance?.personal?.total || 5,
+          used: latestLeaveBalance?.personal?.used || 0,
+          remaining: latestLeaveBalance?.personal?.remaining || 5
         }
       }
     };
@@ -675,6 +776,12 @@ router.get('/:id/portal-data', async (req, res) => {
       });
     }
 
+    // Get admin-configured leave types from Settings
+    const settings = await Settings.getSettings();
+    const configuredLeaveTypes = settings.leaveTypes || [];
+    
+    console.log('📋 Admin configured leave types:', configuredLeaveTypes);
+
     // Calculate weekly and monthly summaries
     const today = new Date();
     const currentWeek = getWeekStart(today);
@@ -767,6 +874,33 @@ router.get('/:id/portal-data', async (req, res) => {
     // Save the updated summaries to database
     await employee.save();
 
+    // Dynamically calculate leave balance based on admin-configured leave types
+    let dynamicLeaveBalance = {};
+    
+    if (configuredLeaveTypes.length > 0) {
+      // Use admin-configured leave types
+      configuredLeaveTypes.forEach(leaveType => {
+        const typeKey = leaveType.name.toLowerCase().replace(/\s+/g, '');
+        const totalDays = leaveType.days || 0;
+        
+        // Get used days from existing employee leave balance if available
+        const existingBalance = employee.leaveBalance[typeKey];
+        const usedDays = existingBalance ? existingBalance.used || 0 : 0;
+        
+        dynamicLeaveBalance[typeKey] = {
+          total: totalDays,
+          used: usedDays,
+          remaining: Math.max(0, totalDays - usedDays)
+        };
+      });
+      
+      console.log('✅ Dynamic leave balance calculated:', dynamicLeaveBalance);
+    } else {
+      // Fallback to existing employee leave balance if no admin configuration
+      dynamicLeaveBalance = employee.leaveBalance;
+      console.log('⚠️ No admin leave types configured, using existing balance');
+    }
+
     const portalData = {
       employee: {
         id: employee._id,
@@ -783,7 +917,7 @@ router.get('/:id/portal-data', async (req, res) => {
         thisMonth: monthlySummary,
         recentRecords: recentRecords
       },
-      leaveBalance: employee.leaveBalance
+      leaveBalance: dynamicLeaveBalance
     };
 
     res.status(200).json(portalData);
@@ -1348,21 +1482,112 @@ router.post('/daily-status-update', async (req, res) => {
   }
 });
 
-// GET /api/employee/:id/leave-balance - Get employee leave balance
+// GET /api/employee/:id - Get specific employee details
 router.get('/:id/leave-balance', async (req, res) => {
   try {
+    console.log('=== LEAVE BALANCE ROUTE CALLED ===');
+    console.log('Employee ID requested:', req.params.id);
+    
     const employee = await Employee.findById(req.params.id).select('leaveBalance');
     
     if (!employee) {
+      console.log('❌ Employee not found for ID:', req.params.id);
       return res.status(404).json({ 
         error: 'Not found',
         message: 'Employee not found' 
       });
     }
 
-    res.status(200).json(employee.leaveBalance);
+    console.log('✅ Employee found for leave balance:', employee.name);
+    console.log('Raw leave balance data:', employee.leaveBalance);
+    
+    // Recalculate leave balance based on approved leave requests
+    try {
+      const LeaveRequest = require('../models/LeaveRequest');
+      const Settings = require('../models/Settings');
+      
+      // Get configured leave types from settings
+      const settings = await Settings.getSettings();
+      const configuredLeaveTypes = settings.leaveTypes || [];
+      
+      console.log('📋 Configured leave types from settings:', configuredLeaveTypes);
+      
+      const approvedRequests = await LeaveRequest.find({
+        employeeId: employee.employeeId || employee._id.toString(),
+        status: 'Approved'
+      });
+      
+      console.log('📊 Found approved leave requests:', approvedRequests.length);
+      
+      // Create leave balance structure based on configured types
+      const recalculatedBalance = {};
+      
+      // Initialize balance for each configured leave type
+      configuredLeaveTypes.forEach(leaveType => {
+        const typeKey = leaveType.name.toLowerCase().replace(/\s+/g, '');
+        recalculatedBalance[typeKey] = {
+          total: leaveType.days || 0,
+          used: 0,
+          remaining: leaveType.days || 0
+        };
+      });
+      
+      // If no configured types, use defaults
+      if (configuredLeaveTypes.length === 0) {
+        recalculatedBalance.annual = { total: 20, used: 0, remaining: 20 };
+        recalculatedBalance.sick = { total: 10, used: 0, remaining: 10 };
+        recalculatedBalance.personal = { total: 5, used: 0, remaining: 5 };
+        console.log('⚠️ No configured leave types found, using defaults');
+      }
+      
+      console.log('🔄 Initial leave balance structure:', recalculatedBalance);
+      
+      // Calculate used days from approved requests
+      approvedRequests.forEach(request => {
+        const leaveType = request.leaveType.toLowerCase().trim();
+        const daysUsed = request.totalDays || request.days || 0;
+        
+        console.log(`📋 Processing leave request:`, {
+          leaveType: request.leaveType,
+          normalizedType: leaveType,
+          daysUsed: daysUsed,
+          requestId: request._id
+        });
+        
+        // Find matching configured leave type
+        let matchedTypeKey = null;
+        for (const [key, balance] of Object.entries(recalculatedBalance)) {
+          if (leaveType.includes(key) || key.includes(leaveType)) {
+            matchedTypeKey = key;
+            break;
+          }
+        }
+        
+        if (matchedTypeKey && recalculatedBalance[matchedTypeKey]) {
+          recalculatedBalance[matchedTypeKey].used += daysUsed;
+          recalculatedBalance[matchedTypeKey].remaining = 
+            recalculatedBalance[matchedTypeKey].total - recalculatedBalance[matchedTypeKey].used;
+          console.log(`✅ Updated ${matchedTypeKey} leave: used=${recalculatedBalance[matchedTypeKey].used}, remaining=${recalculatedBalance[matchedTypeKey].remaining}`);
+        } else {
+          console.log(`⚠️ No matching leave type found for: "${leaveType}"`);
+        }
+      });
+      
+      console.log('🔄 Recalculated leave balance:', recalculatedBalance);
+      
+      // Update the employee's leave balance in the database
+      employee.leaveBalance = recalculatedBalance;
+      await employee.save();
+      
+      console.log('✅ Updated employee leave balance in database');
+      
+      res.status(200).json(recalculatedBalance);
+    } catch (recalcError) {
+      console.error('⚠️ Error recalculating leave balance, using stored data:', recalcError);
+      res.status(200).json(employee.leaveBalance);
+    }
   } catch (error) {
-    console.error('Error fetching leave balance:', error);
+    console.error('❌ Error fetching leave balance:', error);
     res.status(500).json({ 
       error: 'Internal server error',
       message: 'Failed to fetch leave balance' 
@@ -2206,6 +2431,13 @@ router.get('/:id/attendance-details', async (req, res) => {
         message: 'Employee not found' 
       });
     }
+    
+    console.log('👤 Employee data for attendance details:', {
+      id: employee._id,
+      employeeId: employee.employeeId,
+      name: employee.name,
+      email: employee.email
+    });
 
     // Default to current month and year if not specified
     const currentDate = new Date();
@@ -2213,9 +2445,60 @@ router.get('/:id/attendance-details', async (req, res) => {
     const targetMonth = month ? parseInt(month) - 1 : currentDate.getMonth();
     const targetYear = year ? parseInt(year) : currentDate.getFullYear();
     
+    console.log('📅 Calendar request details:', {
+      requestedMonth: month,
+      requestedYear: year,
+      targetMonth: targetMonth,
+      targetYear: targetYear,
+      currentMonth: currentDate.getMonth(),
+      currentYear: currentDate.getFullYear()
+    });
+    
     const daysInMonth = new Date(targetYear, targetMonth + 1, 0).getDate();
     const firstDayOfMonth = new Date(targetYear, targetMonth, 1);
     const startingDayOfWeek = firstDayOfMonth.getDay();
+    
+    // Get approved leave requests for this month
+    const LeaveRequest = require('../models/LeaveRequest');
+    
+    // Try to find leave requests by both employeeId (string) and _id (ObjectId)
+    let approvedLeaveRequests = [];
+    
+    // First try with employeeId (string)
+    if (employee.employeeId) {
+      approvedLeaveRequests = await LeaveRequest.find({
+        employeeId: employee.employeeId,
+        status: 'Approved'
+      });
+      console.log(`🔍 Searching leave requests with employeeId: ${employee.employeeId}`);
+    }
+    
+    // If no results, try with _id (ObjectId)
+    if (approvedLeaveRequests.length === 0 && employee._id) {
+      approvedLeaveRequests = await LeaveRequest.find({
+        employeeId: employee._id,
+        status: 'Approved'
+      });
+      console.log(`🔍 Searching leave requests with _id: ${employee._id}`);
+    }
+    
+    // If still no results, try with _id as string
+    if (approvedLeaveRequests.length === 0 && employee._id) {
+      approvedLeaveRequests = await LeaveRequest.find({
+        employeeId: employee._id.toString(),
+        status: 'Approved'
+      });
+      console.log(`🔍 Searching leave requests with _id as string: ${employee._id.toString()}`);
+    }
+    
+    console.log('📋 Found approved leave requests for calendar:', approvedLeaveRequests.length);
+    console.log('📋 Leave request details:', approvedLeaveRequests.map(req => ({
+      id: req._id,
+      startDate: req.startDate,
+      endDate: req.endDate,
+      leaveType: req.leaveType,
+      status: req.status
+    })));
     
     const calendarData = [];
 
@@ -2229,7 +2512,9 @@ router.get('/:id/attendance-details', async (req, res) => {
         checkIn: null,
         checkOut: null,
         hours: 0,
-        isToday: false
+        isToday: false,
+        isLeave: false,
+        leaveType: null
       });
     }
 
@@ -2241,32 +2526,95 @@ router.get('/:id/attendance-details', async (req, res) => {
       const isWeekend = date.getDay() === 0 || date.getDay() === 6;
       const isToday = date.toDateString() === currentDate.toDateString();
       
+      console.log(`📅 Processing day ${day}:`, {
+        date: date.toISOString(),
+        dateString: dateString,
+        isWeekend: isWeekend,
+        isToday: isToday
+      });
+      
+      // Check if this day has approved leave
+      const leaveRequest = approvedLeaveRequests.find(request => {
+        // Debug the date formats
+        console.log(`🔍 Checking leave request: ${request.leaveType}`);
+        console.log(`   Start date: ${request.startDate} (type: ${typeof request.startDate})`);
+        console.log(`   End date: ${request.endDate} (type: ${typeof request.endDate})`);
+        
+        // Convert leave request dates to Date objects and normalize to start of day
+        let startDate, endDate;
+        
+        if (request.startDate instanceof Date) {
+          startDate = new Date(request.startDate);
+        } else {
+          startDate = new Date(request.startDate + 'T00:00:00');
+        }
+        
+        if (request.endDate instanceof Date) {
+          endDate = new Date(request.endDate);
+        } else {
+          endDate = new Date(request.endDate + 'T23:59:59');
+        }
+        
+        // Create a date object for the current day being processed
+        const currentDayDate = new Date(targetYear, targetMonth, day);
+        
+        console.log(`   Parsed start date: ${startDate.toISOString()}`);
+        console.log(`   Parsed end date: ${endDate.toISOString()}`);
+        console.log(`   Current day date: ${currentDayDate.toISOString()}`);
+        
+        // Check if current day falls within leave period
+        const isLeaveDay = currentDayDate >= startDate && currentDayDate <= endDate;
+        
+        if (isLeaveDay) {
+          console.log(`📅 Day ${day}: Found leave request - ${request.leaveType} (${request.startDate} to ${request.endDate})`);
+        }
+        
+        return isLeaveDay;
+      });
+      
       // Find attendance record for this date
       const attendanceRecord = employee.attendance.records.find(record => record.date === dateString);
       
-      let status, checkIn, checkOut, hours;
+      let status, checkIn, checkOut, hours, isLeave, leaveType;
       
-      if (isWeekend) {
+      if (leaveRequest) {
+        // This day has approved leave
+        status = 'Leave';
+        checkIn = null;
+        checkOut = null;
+        hours = 0;
+        isLeave = true;
+        leaveType = leaveRequest.leaveType;
+        console.log(`📅 Day ${day}: Approved leave - ${leaveRequest.leaveType}`);
+      } else if (isWeekend) {
         status = 'Weekend';
         checkIn = null;
         checkOut = null;
         hours = 0;
+        isLeave = false;
+        leaveType = null;
       } else if (isToday && employee.attendance.today && employee.attendance.today.checkIn) {
         // Today's current attendance from the 'today' field
         status = employee.attendance.today.status;
         checkIn = employee.attendance.today.checkIn;
         checkOut = employee.attendance.today.checkOut;
         hours = employee.attendance.today.hours || 0;
+        isLeave = false;
+        leaveType = null;
       } else if (attendanceRecord) {
         status = attendanceRecord.status;
         checkIn = attendanceRecord.checkIn;
         checkOut = attendanceRecord.checkOut;
         hours = attendanceRecord.hours || 0;
+        isLeave = false;
+        leaveType = null;
       } else {
         status = 'Absent';
         checkIn = null;
         checkOut = null;
         hours = 0;
+        isLeave = false;
+        leaveType = null;
       }
 
       calendarData.push({
@@ -2280,7 +2628,9 @@ router.get('/:id/attendance-details', async (req, res) => {
         checkIn,
         checkOut,
         hours,
-        isToday
+        isToday,
+        isLeave,
+        leaveType
       });
     }
 
@@ -2292,6 +2642,34 @@ router.get('/:id/attendance-details', async (req, res) => {
       const recordDate = new Date(year, month - 1, day); // month is 0-based in Date constructor
       return recordDate.getMonth() === targetMonth && recordDate.getFullYear() === targetYear;
     });
+
+    // Count leave days for this month from calendar data
+    const monthLeaveDays = calendarData.filter(day => day.isLeave).length;
+    
+    // Count other statuses from calendar data to ensure accuracy
+    const monthPresentDays = calendarData.filter(day => day.status === 'Present').length;
+    const monthLateDays = calendarData.filter(day => day.status === 'Late').length;
+    const monthAbsentDays = calendarData.filter(day => day.status === 'Absent').length;
+
+    // Include today's attendance if it's the current month
+    let monthStats = {
+      present: monthPresentDays,
+      late: monthLateDays,
+      absent: monthAbsentDays,
+      leave: monthLeaveDays,
+      totalHours: monthRecords.reduce((sum, r) => sum + (r.hours || 0), 0)
+    };
+
+    // Add today's attendance to stats if it's the current month
+    if (targetMonth === currentDate.getMonth() && targetYear === currentDate.getFullYear() && 
+        employee.attendance.today && employee.attendance.today.checkIn) {
+      if (employee.attendance.today.status === 'Present') {
+        monthStats.present++;
+      } else if (employee.attendance.today.status === 'Late') {
+        monthStats.late++;
+      }
+      monthStats.totalHours += employee.attendance.today.hours || 0;
+    }
 
     // Get holidays for this month
     let monthHolidays = [];
@@ -2305,25 +2683,6 @@ router.get('/:id/attendance-details', async (req, res) => {
       }
     } catch (holidayError) {
       console.error('Error fetching holidays:', holidayError);
-    }
-
-    // Include today's attendance if it's the current month
-    let monthStats = {
-      present: monthRecords.filter(r => r.status === 'Present').length,
-      late: monthRecords.filter(r => r.status === 'Late').length,
-      absent: monthRecords.filter(r => r.status === 'Absent').length,
-      totalHours: monthRecords.reduce((sum, r) => sum + (r.hours || 0), 0)
-    };
-
-    // Add today's attendance to stats if it's the current month
-    if (targetMonth === currentDate.getMonth() && targetYear === currentDate.getFullYear() && 
-        employee.attendance.today && employee.attendance.today.checkIn) {
-      if (employee.attendance.today.status === 'Present') {
-        monthStats.present++;
-      } else if (employee.attendance.today.status === 'Late') {
-        monthStats.late++;
-      }
-      monthStats.totalHours += employee.attendance.today.hours || 0;
     }
 
     res.status(200).json({
@@ -2775,6 +3134,367 @@ router.get('/today-holiday', async (req, res) => {
     res.status(500).json({
       error: 'Internal server error',
       message: 'Failed to check holiday status'
+    });
+  }
+});
+
+// DELETE /api/employee/:id - Delete employee
+router.delete('/:id', async (req, res) => {
+  try {
+    if (!checkDatabaseConnection()) {
+      return res.status(503).json({
+        error: 'Service unavailable',
+        message: 'Database connection not available'
+      });
+    }
+
+    const employeeId = req.params.id;
+    
+    // Validate employee ID
+    if (!mongoose.Types.ObjectId.isValid(employeeId)) {
+      return res.status(400).json({
+        error: 'Bad request',
+        message: 'Invalid employee ID format'
+      });
+    }
+
+    // Find and delete employee
+    const deletedEmployee = await Employee.findByIdAndDelete(employeeId);
+    
+    if (!deletedEmployee) {
+      return res.status(404).json({
+        error: 'Not found',
+        message: 'Employee not found'
+      });
+    }
+
+    console.log('✅ Employee deleted successfully:', deletedEmployee.name);
+    
+    res.status(200).json({
+      message: 'Employee deleted successfully',
+      deletedEmployee: {
+        id: deletedEmployee._id,
+        name: deletedEmployee.name,
+        email: deletedEmployee.email
+      }
+    });
+    
+  } catch (error) {
+    console.error('❌ Error deleting employee:', error);
+    res.status(500).json({ 
+      error: 'Internal server error',
+      message: 'Failed to delete employee' 
+    });
+  }
+});
+
+// POST /api/employee/admin/recalculate-all-leave-balances - Recalculate leave balance for all employees
+router.post('/admin/recalculate-all-leave-balances', async (req, res) => {
+  try {
+    const employees = await Employee.find({});
+    let updatedCount = 0;
+    let errorCount = 0;
+
+    for (const employee of employees) {
+      try {
+        // Recalculate leave balance based on approved leave requests
+        const LeaveRequest = require('../models/LeaveRequest');
+        const Settings = require('../models/Settings');
+        
+        // Get configured leave types from settings
+        const settings = await Settings.getSettings();
+        const configuredLeaveTypes = settings.leaveTypes || [];
+        
+        console.log(`📋 Configured leave types for ${employee.name}:`, configuredLeaveTypes);
+        
+        const approvedRequests = await LeaveRequest.find({
+          employeeId: employee.employeeId || employee._id.toString(),
+          status: 'Approved'
+        });
+        
+        // Create leave balance structure based on configured types
+        const recalculatedBalance = {};
+        
+        // Initialize balance for each configured leave type
+        configuredLeaveTypes.forEach(leaveType => {
+          const typeKey = leaveType.name.toLowerCase().replace(/\s+/g, '');
+          recalculatedBalance[typeKey] = {
+            total: leaveType.days || 0,
+            used: 0,
+            remaining: leaveType.days || 0
+          };
+        });
+        
+        // If no configured types, use defaults
+        if (configuredLeaveTypes.length === 0) {
+          recalculatedBalance.annual = { total: 20, used: 0, remaining: 20 };
+          recalculatedBalance.sick = { total: 10, used: 0, remaining: 10 };
+          recalculatedBalance.personal = { total: 5, used: 0, remaining: 5 };
+          console.log(`⚠️ No configured leave types found for ${employee.name}, using defaults`);
+        }
+        
+        // Calculate used days from approved requests
+        approvedRequests.forEach(request => {
+          const leaveType = request.leaveType.toLowerCase().trim();
+          const daysUsed = request.totalDays || request.days || 0;
+          
+          // Find matching configured leave type
+          let matchedTypeKey = null;
+          for (const [key, balance] of Object.entries(recalculatedBalance)) {
+            if (leaveType.includes(key) || key.includes(leaveType)) {
+              matchedTypeKey = key;
+              break;
+            }
+          }
+          
+          if (matchedTypeKey && recalculatedBalance[matchedTypeKey]) {
+            recalculatedBalance[matchedTypeKey].used += daysUsed;
+            recalculatedBalance[matchedTypeKey].remaining = 
+              recalculatedBalance[matchedTypeKey].total - recalculatedBalance[matchedTypeKey].used;
+            console.log(`✅ Updated ${matchedTypeKey} leave: used=${recalculatedBalance[matchedTypeKey].used}, remaining=${recalculatedBalance[matchedTypeKey].remaining}`);
+          } else {
+            console.log(`⚠️ No matching leave type found for: "${leaveType}"`);
+          }
+        });
+        
+        // Update employee's leave balance
+        employee.leaveBalance = recalculatedBalance;
+        await employee.save();
+        
+        updatedCount++;
+        console.log(`Leave balance recalculated for employee: ${employee.name}`, recalculatedBalance);
+      } catch (error) {
+        console.error(`Error recalculating leave balance for employee ${employee.name}:`, error);
+        errorCount++;
+      }
+    }
+
+    res.status(200).json({
+      message: 'Leave balance recalculated for all employees',
+      totalEmployees: employees.length,
+      updatedCount,
+      errorCount
+    });
+
+  } catch (error) {
+    console.error('Error recalculating all leave balances:', error);
+    res.status(500).json({ 
+      error: 'Internal server error',
+      message: 'Failed to recalculate all leave balances' 
+    });
+  }
+});
+
+// POST /api/employee/:id/leave-balance - Update employee leave balance
+router.post('/:id/leave-balance', async (req, res) => {
+  try {
+    const { leaveType, daysUsed } = req.body;
+    const employee = await Employee.findById(req.params.id);
+    
+    if (!employee) {
+      return res.status(404).json({ 
+        error: 'Not found',
+        message: 'Employee not found' 
+      });
+    }
+
+    if (employee.leaveBalance[leaveType]) {
+      employee.leaveBalance[leaveType].used += daysUsed;
+      employee.leaveBalance[leaveType].remaining = 
+        employee.leaveBalance[leaveType].total - employee.leaveBalance[leaveType].used;
+    }
+
+    await employee.save();
+
+    res.status(200).json({
+      message: 'Leave balance updated successfully',
+      leaveBalance: employee.leaveBalance
+    });
+  } catch (error) {
+    console.error('Error updating leave balance:', error);
+    res.status(500).json({ 
+      error: 'Internal server error',
+      message: 'Failed to update leave balance' 
+    });
+  }
+});
+
+// POST /api/employee/:id/recalculate-leave-balance - Manually recalculate leave balance for specific employee
+router.post('/:id/recalculate-leave-balance', async (req, res) => {
+  try {
+    const employee = await Employee.findById(req.params.id);
+    
+    if (!employee) {
+      return res.status(404).json({ 
+        error: 'Not found',
+        message: 'Employee not found' 
+      });
+    }
+
+    console.log(`🔄 Manually recalculating leave balance for employee: ${employee.name}`);
+
+    // Recalculate leave balance based on approved leave requests
+    const LeaveRequest = require('../models/LeaveRequest');
+    const Settings = require('../models/Settings');
+    
+    // Get configured leave types from settings
+    const settings = await Settings.getSettings();
+    const configuredLeaveTypes = settings.leaveTypes || [];
+    
+    console.log('📋 Admin configured leave types for recalculation:', configuredLeaveTypes);
+    
+    const approvedRequests = await LeaveRequest.find({
+      employeeId: employee.employeeId || employee._id.toString(),
+      status: 'Approved'
+    });
+    
+    console.log(`📊 Found ${approvedRequests.length} approved leave requests for ${employee.name}`);
+    
+    // Create leave balance structure based on configured types
+    const recalculatedBalance = {};
+    
+    if (configuredLeaveTypes.length > 0) {
+      // Use admin-configured leave types
+      configuredLeaveTypes.forEach(leaveType => {
+        const typeKey = leaveType.name.toLowerCase().replace(/\s+/g, '');
+        recalculatedBalance[typeKey] = {
+          total: leaveType.days || 0,
+          used: 0,
+          remaining: leaveType.days || 0
+        };
+      });
+    } else {
+      // Fallback to existing structure if no admin configuration
+      recalculatedBalance.annual = { ...employee.leaveBalance.annual, used: 0, remaining: employee.leaveBalance.annual.total };
+      recalculatedBalance.sick = { ...employee.leaveBalance.sick, used: 0, remaining: employee.leaveBalance.sick.total };
+      recalculatedBalance.personal = { ...employee.leaveBalance.personal, used: 0, remaining: employee.leaveBalance.personal.total };
+    }
+    
+    // Calculate used days from approved requests
+    approvedRequests.forEach(request => {
+      const leaveType = request.leaveType.toLowerCase().trim();
+      const daysUsed = request.totalDays || request.days || 0;
+      
+      console.log(`📋 Processing leave request:`, {
+        leaveType: request.leaveType,
+        normalizedType: leaveType,
+        daysUsed: daysUsed,
+        requestId: request._id
+      });
+      
+      // Find matching configured leave type
+      let matchedTypeKey = null;
+      for (const [key, balance] of Object.entries(recalculatedBalance)) {
+        if (leaveType.includes(key) || key.includes(leaveType)) {
+          matchedTypeKey = key;
+          break;
+        }
+      }
+      
+      if (matchedTypeKey && recalculatedBalance[matchedTypeKey]) {
+        recalculatedBalance[matchedTypeKey].used += daysUsed;
+        recalculatedBalance[matchedTypeKey].remaining = 
+          recalculatedBalance[matchedTypeKey].total - recalculatedBalance[matchedTypeKey].used;
+        console.log(`✅ Updated ${matchedTypeKey} leave: used=${recalculatedBalance[matchedTypeKey].used}, remaining=${recalculatedBalance[matchedTypeKey].remaining}`);
+      } else {
+        console.log(`⚠️ Unknown leave type: "${leaveType}" for request:`, request._id);
+      }
+    });
+    
+    console.log('🔄 Recalculated leave balance:', recalculatedBalance);
+    
+    // Update the employee's leave balance in the database
+    employee.leaveBalance = recalculatedBalance;
+    await employee.save();
+    
+    console.log('✅ Updated employee leave balance in database');
+    
+    res.status(200).json({
+      message: 'Leave balance recalculated successfully',
+      previousBalance: employee.leaveBalance,
+      newBalance: recalculatedBalance,
+      approvedRequests: approvedRequests.length
+    });
+  } catch (error) {
+    console.error('❌ Error recalculating leave balance:', error);
+    res.status(500).json({ 
+      error: 'Internal server error',
+      message: 'Failed to recalculate leave balance' 
+    });
+  }
+});
+
+// POST /api/employee/admin/sync-leave-balance-structure - Sync all employees' leave balance structure with current settings
+router.post('/admin/sync-leave-balance-structure', async (req, res) => {
+  try {
+    const Settings = require('../models/Settings');
+    
+    // Get configured leave types from settings
+    const settings = await Settings.getSettings();
+    const configuredLeaveTypes = settings.leaveTypes || [];
+    
+    if (configuredLeaveTypes.length === 0) {
+      return res.status(400).json({
+        error: 'No leave types configured',
+        message: 'Please configure leave types in admin settings first'
+      });
+    }
+    
+    console.log('🔄 Syncing leave balance structure for all employees with:', configuredLeaveTypes);
+    
+    const employees = await Employee.find({});
+    let updatedCount = 0;
+    let errorCount = 0;
+
+    for (const employee of employees) {
+      try {
+        // Create new leave balance structure based on configured types
+        const newLeaveBalance = {};
+        
+        configuredLeaveTypes.forEach(leaveType => {
+          const typeKey = leaveType.name.toLowerCase().replace(/\s+/g, '');
+          newLeaveBalance[typeKey] = {
+            total: leaveType.days || 0,
+            used: 0,
+            remaining: leaveType.days || 0
+          };
+        });
+        
+        // Preserve existing used days if possible
+        if (employee.leaveBalance) {
+          Object.keys(newLeaveBalance).forEach(typeKey => {
+            if (employee.leaveBalance[typeKey]) {
+              newLeaveBalance[typeKey].used = employee.leaveBalance[typeKey].used || 0;
+              newLeaveBalance[typeKey].remaining = newLeaveBalance[typeKey].total - newLeaveBalance[typeKey].used;
+            }
+          });
+        }
+        
+        // Update employee's leave balance structure
+        employee.leaveBalance = newLeaveBalance;
+        await employee.save();
+        
+        updatedCount++;
+        console.log(`✅ Leave balance structure synced for employee: ${employee.name}`, newLeaveBalance);
+      } catch (error) {
+        console.error(`❌ Error syncing leave balance structure for employee ${employee.name}:`, error);
+        errorCount++;
+      }
+    }
+
+    res.status(200).json({
+      message: 'Leave balance structure synced for all employees',
+      configuredLeaveTypes,
+      totalEmployees: employees.length,
+      updatedCount,
+      errorCount
+    });
+
+  } catch (error) {
+    console.error('❌ Error syncing leave balance structure:', error);
+    res.status(500).json({ 
+      error: 'Internal server error',
+      message: 'Failed to sync leave balance structure' 
     });
   }
 });

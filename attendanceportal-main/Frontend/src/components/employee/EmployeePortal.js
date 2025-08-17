@@ -9,7 +9,9 @@ import {
   checkInEmployee,
   checkOutEmployee,
   getLeaveTypes,
-  getTodayHoliday
+  getTodayHoliday,
+  recalculateEmployeeLeaveBalance,
+  getEmployeeLeaveBalance
 } from '../../services/api';
 import LeaveRequestForm from './LeaveRequestForm';
 
@@ -64,6 +66,8 @@ const EmployeePortal = ({ currentUser }) => {
     reason: ''
   });
 
+  const [leaveBalanceLoading, setLeaveBalanceLoading] = useState(false);
+
   useEffect(() => {
     const timer = setInterval(() => {
       // Use consistent timezone handling
@@ -116,6 +120,12 @@ const EmployeePortal = ({ currentUser }) => {
           console.log('🔍 Loading portal data for employee:', employeeId);
           const portalData = await getEmployeePortalData(employeeId);
           console.log('📊 Portal data received:', portalData);
+          console.log('📊 Portal data structure:', {
+            hasAttendance: !!portalData?.attendance,
+            hasLeaveBalance: !!portalData?.leaveBalance,
+            leaveBalanceKeys: portalData?.leaveBalance ? Object.keys(portalData.leaveBalance) : 'none',
+            leaveBalanceData: portalData?.leaveBalance
+          });
 
           if (portalData) {
             // Map database structure to frontend structure
@@ -145,6 +155,18 @@ const EmployeePortal = ({ currentUser }) => {
               }
             }));
             setRecentAttendance(portalData.recentAttendance || []);
+            
+            // Update leave balance with real database data
+            if (portalData.leaveBalance) {
+              console.log('📊 Setting leave balance from portal data:', portalData.leaveBalance);
+              
+              // Use the leave balance data directly from backend (it's already formatted)
+              setLeaveBalance(portalData.leaveBalance);
+              console.log('✅ Leave balance set from portal data:', portalData.leaveBalance);
+            } else {
+              console.log('⚠️ No leave balance data in portal data');
+              setLeaveBalance({});
+            }
           }
 
           // Fetch employee's leave requests
@@ -169,6 +191,21 @@ const EmployeePortal = ({ currentUser }) => {
           const holidayData = await getTodayHoliday();
           setTodayHoliday(holidayData?.isHoliday ? holidayData.holiday : null);
           
+          // Fetch leave types for the leave request form
+          try {
+            const leaveTypesData = await getLeaveTypes();
+            if (leaveTypesData && Array.isArray(leaveTypesData)) {
+              setLeaveTypes(leaveTypesData);
+              console.log('✅ Leave types loaded:', leaveTypesData);
+            } else {
+              console.log('⚠️ No leave types data received');
+              setLeaveTypes([]);
+            }
+          } catch (leaveTypesError) {
+            console.error('❌ Error fetching leave types:', leaveTypesError);
+            setLeaveTypes([]);
+          }
+          
           } catch (error) {
             console.error('Error loading employee portal data:', error);
           } finally {
@@ -181,6 +218,19 @@ const EmployeePortal = ({ currentUser }) => {
   useEffect(() => {
     loadEmployeePortalData();
   }, [currentUser?.id, currentUser?._id, currentUser?.email]);
+
+  // Debug effect to show leave balance changes
+  useEffect(() => {
+    console.log('🔍 Current leave balance state:', leaveBalance);
+  }, [leaveBalance]);
+
+  // Refresh leave balance when leave types change (after admin sync)
+  useEffect(() => {
+    if (leaveTypes.length > 0 && currentUser) {
+      console.log('🔄 Leave types updated, refreshing leave balance data');
+      loadEmployeePortalData();
+    }
+  }, [leaveTypes]);
 
   const handleCheckIn = async () => {
     // Check if already checked in today
@@ -493,6 +543,51 @@ const EmployeePortal = ({ currentUser }) => {
     return status || 'Pending';
   };
 
+  const handleRecalculateLeaveBalance = async () => {
+    try {
+      setLeaveBalanceLoading(true);
+      
+      // Get employee ID from current user
+      let employeeId = currentUser?.id || currentUser?._id;
+      if (!employeeId && currentUser?.email) {
+        const employeeData = await findEmployeeByEmail(currentUser.email);
+        if (employeeData && employeeData._id) {
+          employeeId = employeeData._id;
+        }
+      }
+      
+      if (!employeeId) {
+        throw new Error('Employee ID not found');
+      }
+      
+      console.log('🔄 Recalculating leave balance for employee:', employeeId);
+      
+      const result = await recalculateEmployeeLeaveBalance(employeeId);
+      console.log('✅ Leave balance recalculated:', result);
+      
+      // Refresh the leave balance data
+      const updatedLeaveBalance = await getEmployeeLeaveBalance(employeeId);
+      setLeaveBalance(updatedLeaveBalance);
+      
+      // Show success message
+      alert('Leave balance recalculated successfully!');
+    } catch (error) {
+      console.error('❌ Error recalculating leave balance:', error);
+      alert('Failed to recalculate leave balance. Please try again.');
+    } finally {
+      setLeaveBalanceLoading(false);
+    }
+  };
+
+  const refreshLeaveBalance = async () => {
+    try {
+      console.log('🔄 Refreshing leave balance data');
+      await loadEmployeePortalData();
+    } catch (error) {
+      console.error('❌ Error refreshing leave balance:', error);
+    }
+  };
+
   return (
     <div className="employee-portal">
       <div className="page-header">
@@ -716,45 +811,59 @@ const EmployeePortal = ({ currentUser }) => {
         </div>
       </div>
 
-      <div className="content-grid">
-        <div className="leave-balance">
-          <h3>Leave Balance</h3>
-          <div className="leave-cards">
-            {leaveTypes && leaveTypes.length > 0 ? (
-              leaveTypes.map((type, index) => {
-                const typeKey = type.name.toLowerCase().replace(/\s+/g, '');
-                const balance = leaveBalance[typeKey] || { total: type.days, used: 0, remaining: type.days };
-                const usedDays = (myLeaveRequests || [])
-                  .filter(req => req.leaveType === type.name && req.status === 'Approved')
-                  .reduce((total, req) => total + (req.totalDays || 0), 0);
-                const remaining = Math.max(0, balance.total - usedDays);
-                
-                return (
-                  <div key={index} className="leave-card">
-                    <div className="leave-type">{type.name}</div>
-              <div className="leave-stats">
-                      <span className="remaining">{remaining}</span>
-                <span className="separator">/</span>
-                      <span className="total">{balance.total}</span>
-            </div>
-            <div className="leave-progress">
-              <div 
-                className="progress-bar" 
-                        style={{ 
-                          width: `${(usedDays / balance.total) * 100}%`,
-                          backgroundColor: type.color || '#007bff'
-                        }}
-              ></div>
-            </div>
+      <div className={`leave-balance ${!dataLoaded ? 'loading' : ''}`}>
+          <div className="leave-balance-header">
+            <h3>Leave Balance</h3>
+            <button 
+              className="btn btn-sm btn-outline-secondary refresh-btn"
+              onClick={refreshLeaveBalance}
+              disabled={!dataLoaded || leaveBalanceLoading}
+              title="Refresh leave balance"
+            >
+              {leaveBalanceLoading ? '⏳' : '🔄'}
+            </button>
           </div>
-                );
-              })
+          <div className="leave-cards">
+            {leaveBalance && Object.keys(leaveBalance).length > 0 ? (
+              <>
+                {Object.entries(leaveBalance).map(([leaveTypeKey, leaveData]) => {
+                  // Get the display name from configured leave types or use a formatted key
+                  const configuredLeaveType = leaveTypes.find(lt => 
+                    lt.name.toLowerCase().replace(/\s+/g, '') === leaveTypeKey
+                  );
+                  const displayName = configuredLeaveType ? configuredLeaveType.name : 
+                    leaveTypeKey.charAt(0).toUpperCase() + leaveTypeKey.slice(1).replace(/([A-Z])/g, ' $1');
+                  
+                  // Get color from configured leave type or use default
+                  const color = configuredLeaveType?.color || '#007bff';
+                  
+                  return (
+                    <div key={leaveTypeKey} className="leave-card">
+                      <div className="leave-type">{displayName}</div>
+                      <div className="leave-stats">
+                        <span className="remaining">{leaveData.remaining || 0}</span>
+                        <span className="separator">/</span>
+                        <span className="total">{leaveData.total || 0}</span>
+                      </div>
+                      <div className="leave-progress">
+                        <div 
+                          className="progress-bar" 
+                          style={{ 
+                            width: `${leaveData.total > 0 ? ((leaveData.used || 0) / leaveData.total) * 100 : 0}%`,
+                            backgroundColor: color
+                          }}
+                        ></div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </>
             ) : (
               <div className="no-leave-types">
-                <p>No leave types configured. Please contact your administrator.</p>
-            </div>
+                <p>{dataLoaded ? 'Leave balance data not available' : 'Loading leave balance...'}</p>
+              </div>
             )}
-        </div>
+          </div>
           <button 
             className="btn btn-primary"
             onClick={() => setShowLeaveForm(true)}
@@ -764,35 +873,36 @@ const EmployeePortal = ({ currentUser }) => {
           </button>
       </div>
 
+      <div className="content-grid">
         <div className="recent-attendance">
           <h3>Recent Attendance</h3>
-        <div className="attendance-list">
+          <div className="attendance-list">
             {recentAttendance && recentAttendance.length > 0 ? (
               recentAttendance.map((record, index) => (
-              <div key={index} className="attendance-item">
-                <div className="attendance-date">
-                  {new Date(record.date).toLocaleDateString()}
-                </div>
-                <div className="attendance-details">
-                  <div className="time-info">
-                    {record.checkIn && <span>In: {record.checkIn}</span>}
-                    {record.checkOut && <span>Out: {record.checkOut}</span>}
-              </div>
-                  <div className="status-info">
-                <span className={`status-badge ${getStatusColor(record.status)}`}>
-                  {record.status}
-                </span>
-                    {record.hours > 0 && <span className="hours">{record.hours}h</span>}
+                <div key={index} className="attendance-item">
+                  <div className="attendance-date">
+                    {new Date(record.date).toLocaleDateString()}
+                  </div>
+                  <div className="attendance-details">
+                    <div className="time-info">
+                      {record.checkIn && <span>In: {record.checkIn}</span>}
+                      {record.checkOut && <span>Out: {record.checkOut}</span>}
+                    </div>
+                    <div className="status-info">
+                      <span className={`status-badge ${getStatusColor(record.status)}`}>
+                        {record.status}
+                      </span>
+                      {record.hours > 0 && <span className="hours">{record.hours}h</span>}
+                    </div>
                   </div>
                 </div>
-              </div>
               ))
             ) : (
               <div className="no-attendance">
                 <p>No recent attendance records available.</p>
               </div>
             )}
-            </div>
+          </div>
         </div>
       </div>
 
