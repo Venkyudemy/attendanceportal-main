@@ -7,9 +7,9 @@ RUN apk add --no-cache \
     dumb-init \
     && rm -rf /var/cache/apk/*
 
-# Create app user for security
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nodejs -u 1001
+# Create app user for security (using different name to avoid conflicts)
+RUN addgroup -g 1001 -S appuser && \
+    adduser -S appuser -u 1001
 
 # Set working directory
 WORKDIR /app
@@ -27,10 +27,10 @@ COPY . .
 
 # Create logs directory
 RUN mkdir -p /app/logs && \
-    chown -R nodejs:nodejs /app
+    chown -R appuser:appuser /app
 
 # Switch to non-root user
-USER nodejs
+USER appuser
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
