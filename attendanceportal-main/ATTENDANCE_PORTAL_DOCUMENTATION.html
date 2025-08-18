@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance Portal - Complete Application Documentation</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: white;
+        }
+        
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+            font-size: 2.5em;
+            text-align: center;
+        }
+        
+        h2 {
+            color: #34495e;
+            border-bottom: 2px solid #ecf0f1;
+            padding-bottom: 8px;
+            margin-top: 30px;
+            font-size: 1.8em;
+        }
+        
+        h3 {
+            color: #2c3e50;
+            font-size: 1.4em;
+            margin-top: 25px;
+        }
+        
+        h4 {
+            color: #34495e;
+            font-size: 1.2em;
+            margin-top: 20px;
+        }
+        
+        code {
+            background-color: #f8f9fa;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            color: #e74c3c;
+        }
+        
+        pre {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            border-left: 4px solid #3498db;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+            color: #333;
+        }
+        
+        blockquote {
+            border-left: 4px solid #3498db;
+            margin: 0;
+            padding-left: 20px;
+            color: #7f8c8d;
+            font-style: italic;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background-color: #3498db;
+            color: white;
+            font-weight: bold;
+        }
+        
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        
+        .highlight {
+            background-color: #fff3cd;
+            padding: 10px;
+            border-radius: 5px;
+            border-left: 4px solid #ffc107;
+        }
+        
+        .success {
+            background-color: #d4edda;
+            padding: 10px;
+            border-radius: 5px;
+            border-left: 4px solid #28a745;
+        }
+        
+        .info {
+            background-color: #d1ecf1;
+            padding: 10px;
+            border-radius: 5px;
+            border-left: 4px solid #17a2b8;
+        }
+        
+        .warning {
+            background-color: #fff3cd;
+            padding: 10px;
+            border-radius: 5px;
+            border-left: 4px solid #ffc107;
+        }
+        
+        .danger {
+            background-color: #f8d7da;
+            padding: 10px;
+            border-radius: 5px;
+            border-left: 4px solid #dc3545;
+        }
+        
+        .flow-diagram {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            white-space: pre;
+            overflow-x: auto;
+        }
+        
+        .architecture-diagram {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            white-space: pre;
+            overflow-x: auto;
+            border: 2px solid #3498db;
+        }
+        
+        .toc {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .toc ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        
+        .toc li {
+            margin: 5px 0;
+        }
+        
+        .toc a {
+            color: #3498db;
+            text-decoration: none;
+        }
+        
+        .toc a:hover {
+            text-decoration: underline;
+        }
+        
+        .page-break {
+            page-break-before: always;
+        }
+        
+        .credentials-box {
+            background-color: #e8f4fd;
+            border: 2px solid #3498db;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .credentials-box h3 {
+            color: #2980b9;
+            margin-top: 0;
+        }
+        
+        .credentials-box table {
+            margin: 10px 0;
+        }
+        
+        .credentials-box th {
+            background-color: #2980b9;
+        }
+        
+        @media print {
+            body {
+                font-size: 12px;
+            }
+            
+            h1 {
+                font-size: 24px;
+            }
+            
+            h2 {
+                font-size: 20px;
+            }
+            
+            h3 {
+                font-size: 16px;
+            }
+            
+            .page-break {
+                page-break-before: always;
+            }
+            
+            .no-print {
+                display: none;
+            }
+        }
+        
+        .print-instructions {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        .print-instructions h3 {
+            margin-top: 0;
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <div class="print-instructions no-print">
+        <h3>📄 PDF Generation Instructions</h3>
+        <p><strong>To save as PDF:</strong> Press Ctrl+P (or Cmd+P on Mac) → Select "Save as PDF" → Click Save</p>
+    </div>
+
+    <h1>🏢 Attendance Portal</h1>
+    <h2 style="text-align: center; color: #7f8c8d;">Complete Application Documentation</h2>
+
+    <div class="toc">
+        <h3>📋 Table of Contents</h3>
+        <ul>
+            <li><a href="#overview">1. Application Overview</a></li>
+            <li><a href="#architecture">2. System Architecture</a></li>
+            <li><a href="#roles">3. User Roles & Access</a></li>
+            <li><a href="#flow">4. Application Flow</a></li>
+            <li><a href="#features">5. Features & Functionality</a></li>
+            <li><a href="#technical">6. Technical Specifications</a></li>
+            <li><a href="#database">7. Database Schema</a></li>
+            <li><a href="#api">8. API Endpoints</a></li>
+            <li><a href="#security">9. Security Features</a></li>
+            <li><a href="#deployment">10. Deployment Information</a></li>
+            <li><a href="#benefits">11. Business Benefits</a></li>
+        </ul>
+    </div>
+
+    <div id="overview" class="page-break">
+        <h2>🎯 Application Overview</h2>
+        
+        <h3>What is Attendance Portal?</h3>
+        <p>A comprehensive web-based attendance management system designed for modern organizations to track employee attendance, manage leaves, and generate reports efficiently.</p>
+        
+        <h3>Key Benefits:</h3>
+        <ul>
+            <li>✅ <strong>Real-time Attendance Tracking</strong></li>
+            <li>📊 <strong>Automated Reports & Analytics</strong></li>
+            <li>🔐 <strong>Secure Authentication System</strong></li>
+            <li>📱 <strong>Responsive Design (Mobile & Desktop)</strong></li>
+            <li>🎯 <strong>Role-based Access Control</strong></li>
+            <li>📅 <strong>Calendar Integration</strong></li>
+            <li>💰 <strong>LOP (Loss of Pay) Calculations</strong></li>
+        </ul>
+    </div>
+
+    <div id="architecture">
+        <h2>🏗️ System Architecture</h2>
+        
+        <h3>Technology Stack:</h3>
+        <pre><code>Frontend: React.js + CSS3
+Backend: Node.js + Express.js
+Database: MongoDB + Mongoose
+Authentication: JWT Tokens
+Deployment: Docker + Docker Compose</code></pre>
+        
+        <h3>Architecture Diagram:</h3>
+        <div class="architecture-diagram">┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Frontend      │    │    Backend      │    │    Database     │
+│   (React.js)    │◄──►│   (Node.js)     │◄──►│   (MongoDB)     │
+│                 │    │                 │    │                 │
+│ • Login UI      │    │ • API Routes    │    │ • Employees     │
+│ • Dashboard     │    │ • Authentication│    │ • Attendance    │
+│ • Calendar      │    │ • Business Logic│    │ • Leave Requests│
+│ • Reports       │    │ • Data Validation│   │ • Settings      │
+└─────────────────┘    └─────────────────┘    └─────────────────┘</div>
+    </div>
+
+    <div id="roles">
+        <h2>👥 User Roles & Access</h2>
+        
+        <div class="credentials-box">
+            <h3>🔑 System Credentials</h3>
+            <table>
+                <tr>
+                    <th>Role</th>
+                    <th>Email</th>
+                    <th>Password</th>
+                    <th>Access Level</th>
+                </tr>
+                <tr>
+                    <td><strong>Admin</strong></td>
+                    <td>admin@techcorp.com</td>
+                    <td>password123</td>
+                    <td>Full System Access</td>
+                </tr>
+                <tr>
+                    <td><strong>Employee</strong></td>
+                    <td>demo1@gmail.com</td>
+                    <td>demo1</td>
+                    <td>Personal Data Only</td>
+                </tr>
+                <tr>
+                    <td><strong>Employee</strong></td>
+                    <td>venkatesh@gmail.com</td>
+                    <td>venkatesh</td>
+                    <td>Personal Data Only</td>
+                </tr>
+            </table>
+        </div>
+
+        <h3>Admin Capabilities:</h3>
+        <ul>
+            <li>👥 Manage all employees</li>
+            <li>📊 View attendance reports</li>
+            <li>✅ Approve/reject leave requests</li>
+            <li>⚙️ Configure system settings</li>
+            <li>📈 Generate analytics</li>
+            <li>💰 Process payroll calculations</li>
+        </ul>
+
+        <h3>Employee Capabilities:</h3>
+        <ul>
+            <li>✅ Check-in/Check-out</li>
+            <li>📅 View personal attendance calendar</li>
+            <li>📝 Submit leave requests</li>
+            <li>👤 Update personal profile</li>
+            <li>📊 View attendance statistics</li>
+        </ul>
+    </div>
+
+    <div id="flow">
+        <h2>🔄 Application Flow</h2>
+        
+        <h3>1. Authentication Flow</h3>
+        <div class="flow-diagram">User Opens Application
+        ↓
+    Login Page
+        ↓
+Enter Email & Password
+        ↓
+    Backend Validation
+        ↓
+    JWT Token Generated
+        ↓
+    Role-based Redirect
+        ↓
+Admin Portal / Employee Portal</div>
+
+        <h3>2. Admin Portal Flow</h3>
+        <div class="flow-diagram">Admin Login
+    ↓
+Dashboard Overview
+    ↓
+┌─────────────────┬─────────────────┬─────────────────┐
+│ Employee Mgmt   │ Attendance      │ Leave Mgmt      │
+│                 │ Reports         │                 │
+│ • Add Employee  │ • Daily Stats   │ • View Requests │
+│ • Edit Employee │ • Monthly Rep   │ • Approve/Reject│
+│ • Delete Emp    │ • LOP Calc      │ • Leave Balance │
+└─────────────────┴─────────────────┴─────────────────┘</div>
+
+        <h3>3. Employee Portal Flow</h3>
+        <div class="flow-diagram">Employee Login
+    ↓
+Personal Dashboard
+    ↓
+┌─────────────────┬─────────────────┬─────────────────┐
+│ Check-in/Out    │ Attendance      │ Leave Request   │
+│                 │ Calendar        │                 │
+│ • Current Time  │ • Monthly View  │ • Submit Leave  │
+│ • Check-in Btn  │ • Status Colors │ • View Status   │
+│ • Check-out Btn │ • Holiday Info  │ • Leave Balance │
+└─────────────────┴─────────────────┴─────────────────┘</div>
+    </div>
+
+    <div id="features">
+        <h2>⭐ Features & Functionality</h2>
+        
+        <h3>🔐 Authentication & Security</h3>
+        <ul>
+            <li><strong>JWT Token-based Authentication</strong></li>
+            <li><strong>Password Hashing (bcrypt)</strong></li>
+            <li><strong>Session Persistence</strong></li>
+            <li><strong>Role-based Access Control</strong></li>
+            <li><strong>Secure API Endpoints</strong></li>
+        </ul>
+
+        <h3>⏰ Attendance Management</h3>
+        <ul>
+            <li><strong>Real-time Check-in/Check-out</strong></li>
+            <li><strong>Automatic Late Detection</strong></li>
+            <li><strong>Working Hours Configuration</strong></li>
+            <li><strong>LOP (Loss of Pay) Calculations</strong></li>
+            <li><strong>Attendance Statistics</strong></li>
+        </ul>
+
+        <h3>📅 Calendar Integration</h3>
+        <ul>
+            <li><strong>Monthly Attendance View</strong></li>
+            <li><strong>Color-coded Status Display</strong></li>
+            <li><strong>Holiday Integration</strong></li>
+            <li><strong>Leave Request Display</strong></li>
+            <li><strong>Weekend Recognition</strong></li>
+        </ul>
+
+        <h3>📝 Leave Management</h3>
+        <ul>
+            <li><strong>Leave Request Submission</strong></li>
+            <li><strong>Admin Approval/Rejection</strong></li>
+            <li><strong>Leave Balance Tracking</strong></li>
+            <li><strong>Multiple Leave Types</strong></li>
+            <li><strong>Leave History</strong></li>
+        </ul>
+
+        <h3>📊 Reporting & Analytics</h3>
+        <ul>
+            <li><strong>Daily Attendance Reports</strong></li>
+            <li><strong>Monthly Statistics</strong></li>
+            <li><strong>Employee Performance</strong></li>
+            <li><strong>LOP Calculations</strong></li>
+            <li><strong>Export Capabilities</strong></li>
+        </ul>
+    </div>
+
+    <div id="technical">
+        <h2>🛠️ Technical Specifications</h2>
+        
+        <h3>Frontend (React.js)</h3>
+        <pre><code>Framework: React 18.x
+Routing: React Router v6
+State Management: React Hooks
+Styling: CSS3 with Responsive Design
+HTTP Client: Fetch API</code></pre>
+
+        <h3>Backend (Node.js)</h3>
+        <pre><code>Runtime: Node.js 18.x
+Framework: Express.js 4.x
+Database: MongoDB 6.x
+ORM: Mongoose 7.x
+Authentication: JWT</code></pre>
+
+        <h3>Database (MongoDB)</h3>
+        <pre><code>Collections:
+- employees
+- leave_requests
+- settings
+- attendance_records</code></pre>
+
+        <h3>Deployment</h3>
+        <pre><code>Containerization: Docker
+Orchestration: Docker Compose
+Web Server: NGINX
+Process Manager: PM2</code></pre>
+    </div>
+
+    <div id="database">
+        <h2>🗄️ Database Schema</h2>
+        
+        <h3>Employee Collection</h3>
+        <pre><code>{
+  _id: ObjectId,
+  employeeId: String,
+  name: String,
+  email: String,
+  password: String (hashed),
+  department: String,
+  position: String,
+  role: String (admin/employee),
+  status: String,
+  joinDate: Date,
+  phone: String,
+  attendance: {
+    records: Array,
+    today: Object
+  },
+  leaveBalance: Object
+}</code></pre>
+
+        <h3>Leave Request Collection</h3>
+        <pre><code>{
+  _id: ObjectId,
+  employeeId: Mixed,
+  employeeName: String,
+  employeeEmail: String,
+  leaveType: String,
+  startDate: String,
+  endDate: String,
+  totalDays: Number,
+  reason: String,
+  status: String,
+  adminResponse: String,
+  requestedAt: Date
+}</code></pre>
+    </div>
+
+    <div id="api">
+        <h2>🔌 API Endpoints</h2>
+        
+        <h3>Authentication</h3>
+        <pre><code>POST /api/auth/login - User login</code></pre>
+
+        <h3>Employee Management</h3>
+        <pre><code>GET    /api/employee/stats - Get employee statistics
+GET    /api/employee/attendance - Get attendance data
+POST   /api/employee - Create new employee
+PUT    /api/employee/:id - Update employee
+DELETE /api/employee/:id - Delete employee
+GET    /api/employee/:id/attendance-details - Get attendance details</code></pre>
+
+        <h3>Attendance</h3>
+        <pre><code>POST /api/employee/:id/check-in - Employee check-in
+POST /api/employee/:id/check-out - Employee check-out
+GET  /api/employee/:id/portal-data - Get portal data</code></pre>
+
+        <h3>Leave Management</h3>
+        <pre><code>GET    /api/leave-requests - Get all leave requests
+POST   /api/leave-requests - Create leave request
+PUT    /api/leave-requests/:id/status - Update leave status
+DELETE /api/leave-requests/:id - Delete leave request</code></pre>
+    </div>
+
+    <div id="security">
+        <h2>🔒 Security Features</h2>
+        
+        <h3>Authentication Security</h3>
+        <ul>
+            <li><strong>JWT Token Expiration</strong>: 24 hours</li>
+            <li><strong>Password Hashing</strong>: bcrypt with 10 rounds</li>
+            <li><strong>Token Storage</strong>: Secure localStorage</li>
+            <li><strong>Session Management</strong>: Automatic cleanup</li>
+        </ul>
+
+        <h3>Data Security</h3>
+        <ul>
+            <li><strong>Input Validation</strong>: All user inputs validated</li>
+            <li><strong>SQL Injection Protection</strong>: MongoDB with Mongoose</li>
+            <li><strong>XSS Protection</strong>: React's built-in protection</li>
+            <li><strong>CORS Configuration</strong>: Proper cross-origin setup</li>
+        </ul>
+
+        <h3>API Security</h3>
+        <ul>
+            <li><strong>Rate Limiting</strong>: 100 requests per 15 minutes</li>
+            <li><strong>Request Validation</strong>: All endpoints validated</li>
+            <li><strong>Error Handling</strong>: Secure error messages</li>
+            <li><strong>Logging</strong>: Comprehensive audit logs</li>
+        </ul>
+    </div>
+
+    <div id="deployment">
+        <h2>🚀 Deployment Information</h2>
+        
+        <h3>System Requirements</h3>
+        <pre><code>Node.js: 18.x or higher
+MongoDB: 6.x or higher
+Docker: 20.x or higher
+RAM: 2GB minimum
+Storage: 10GB minimum</code></pre>
+
+        <h3>Environment Variables</h3>
+        <pre><code># Database
+MONGO_URL=mongodb://localhost:27017/attendanceportal
+
+# Server
+PORT=5000
+NODE_ENV=production
+
+# JWT
+JWT_SECRET=your-secret-key
+JWT_EXPIRES_IN=24h
+
+# Working Hours
+WORKING_HOURS_START=09:00
+WORKING_HOURS_END=17:45
+LATE_THRESHOLD_MINUTES=15</code></pre>
+
+        <h3>Deployment Commands</h3>
+        <pre><code># Quick Start
+./deploy.bat
+
+# Production Deployment
+./deploy-production.bat
+
+# Manual Start
+./start-services.bat</code></pre>
+    </div>
+
+    <div id="benefits">
+        <h2>📊 Business Benefits</h2>
+        
+        <h3>For Management</h3>
+        <ul>
+            <li>✅ <strong>Real-time Monitoring</strong>: Track attendance instantly</li>
+            <li>📈 <strong>Data Analytics</strong>: Comprehensive reports and insights</li>
+            <li>💰 <strong>Cost Control</strong>: Accurate LOP calculations</li>
+            <li>⚡ <strong>Efficiency</strong>: Automated processes reduce manual work</li>
+            <li>📊 <strong>Compliance</strong>: Maintain attendance records for audits</li>
+        </ul>
+
+        <h3>For Employees</h3>
+        <ul>
+            <li>📱 <strong>Easy Access</strong>: Simple check-in/check-out process</li>
+            <li>📅 <strong>Transparency</strong>: Clear view of attendance and leaves</li>
+            <li>🎯 <strong>Self-service</strong>: Submit leave requests independently</li>
+            <li>📊 <strong>Personal Analytics</strong>: View personal attendance statistics</li>
+        </ul>
+
+        <h3>For Organization</h3>
+        <ul>
+            <li>🔒 <strong>Security</strong>: Secure authentication and data protection</li>
+            <li>📈 <strong>Scalability</strong>: Handles multiple employees efficiently</li>
+            <li>💼 <strong>Professional</strong>: Modern, user-friendly interface</li>
+            <li>🌐 <strong>Accessibility</strong>: Works on all devices and browsers</li>
+        </ul>
+    </div>
+
+    <div class="page-break">
+        <h2>🎯 Conclusion</h2>
+        
+        <p>The Attendance Portal is a comprehensive, modern, and secure attendance management system designed to streamline organizational attendance tracking. With its user-friendly interface, robust features, and scalable architecture, it provides an efficient solution for both management and employees.</p>
+
+        <h3>Key Highlights:</h3>
+        <ul>
+            <li>🏢 <strong>Professional Interface</strong>: Modern, responsive design</li>
+            <li>🔐 <strong>Secure System</strong>: JWT authentication and data protection</li>
+            <li>📊 <strong>Comprehensive Reports</strong>: Detailed analytics and insights</li>
+            <li>⚡ <strong>High Performance</strong>: Fast and efficient operation</li>
+            <li>🔧 <strong>Easy Configuration</strong>: Simple setup and customization</li>
+            <li>📱 <strong>Mobile Friendly</strong>: Works seamlessly on all devices</li>
+        </ul>
+
+        <p>This system is ready for production deployment and can be easily scaled to accommodate growing organizations.</p>
+
+        <div style="text-align: center; margin-top: 40px; padding: 20px; border-top: 2px solid #3498db;">
+            <p><strong>Document Version</strong>: 1.0</p>
+            <p><strong>Last Updated</strong>: January 2025</p>
+            <p><strong>Contact</strong>: Technical Support Team</p>
+        </div>
+    </div>
+
+    <script>
+        // Add smooth scrolling for table of contents links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
