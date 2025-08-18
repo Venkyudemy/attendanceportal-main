@@ -13,9 +13,9 @@ const getApiBaseUrl = () => {
     return '/api';
   }
   
-  // Development fallback - use server IP instead of localhost for external access
-  console.log('Using development API URL: http://10.140.94.16:5000/api');
-  return 'http://10.140.94.16:5000/api';
+  // Development fallback - use localhost for local development
+  console.log('Using development API URL: http://localhost:5000/api');
+  return 'http://localhost:5000/api';
 };
 
 const API_BASE_URL = getApiBaseUrl();

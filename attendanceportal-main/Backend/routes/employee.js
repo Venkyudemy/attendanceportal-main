@@ -2470,31 +2470,36 @@ router.get('/:id/attendance-details', async (req, res) => {
     // Try to find leave requests by both employeeId (string) and _id (ObjectId)
     let approvedLeaveRequests = [];
     
-    // First try with employeeId (string)
-    if (employee.employeeId) {
-      approvedLeaveRequests = await LeaveRequest.find({
-        employeeId: employee.employeeId,
-        status: 'Approved'
-      });
-      console.log(`🔍 Searching leave requests with employeeId: ${employee.employeeId}`);
-    }
-    
-    // If no results, try with _id (ObjectId)
-    if (approvedLeaveRequests.length === 0 && employee._id) {
-      approvedLeaveRequests = await LeaveRequest.find({
-        employeeId: employee._id,
-        status: 'Approved'
-      });
-      console.log(`🔍 Searching leave requests with _id: ${employee._id}`);
-    }
-    
-    // If still no results, try with _id as string
-    if (approvedLeaveRequests.length === 0 && employee._id) {
-      approvedLeaveRequests = await LeaveRequest.find({
-        employeeId: employee._id.toString(),
-        status: 'Approved'
-      });
-      console.log(`🔍 Searching leave requests with _id as string: ${employee._id.toString()}`);
+    try {
+      // First try with employeeId (string)
+      if (employee.employeeId) {
+        approvedLeaveRequests = await LeaveRequest.find({
+          employeeId: employee.employeeId,
+          status: 'Approved'
+        });
+        console.log(`🔍 Searching leave requests with employeeId: ${employee.employeeId}`);
+      }
+      
+      // If no results, try with _id (ObjectId)
+      if (approvedLeaveRequests.length === 0 && employee._id) {
+        approvedLeaveRequests = await LeaveRequest.find({
+          employeeId: employee._id,
+          status: 'Approved'
+        });
+        console.log(`🔍 Searching leave requests with _id: ${employee._id}`);
+      }
+      
+      // If still no results, try with _id as string
+      if (approvedLeaveRequests.length === 0 && employee._id) {
+        approvedLeaveRequests = await LeaveRequest.find({
+          employeeId: employee._id.toString(),
+          status: 'Approved'
+        });
+        console.log(`🔍 Searching leave requests with _id as string: ${employee._id.toString()}`);
+      }
+    } catch (error) {
+      console.error('Error fetching leave requests:', error);
+      approvedLeaveRequests = [];
     }
     
     console.log('📋 Found approved leave requests for calendar:', approvedLeaveRequests.length);
