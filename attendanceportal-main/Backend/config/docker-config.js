@@ -52,8 +52,8 @@ module.exports = {
   
   // Attendance Configuration
   workingHoursStart: process.env.WORKING_HOURS_START || '09:00',
-  workingHoursEnd: process.env.WORKING_HOURS_END || '17:00',
-  lateThresholdMinutes: parseInt(process.env.LATE_THRESHOLD_MINUTES) || 30,
+  workingHoursEnd: process.env.WORKING_HOURS_END || '17:45',
+  lateThresholdMinutes: parseInt(process.env.LATE_THRESHOLD_MINUTES) || 15,
   
   // API Rate Limiting
   rateLimitWindowMs: 15 * 60 * 1000, // 15 minutes

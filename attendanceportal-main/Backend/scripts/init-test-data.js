@@ -17,7 +17,7 @@ async function initializeTestData() {
 
     // Create test admin user
     console.log('👤 Creating test admin user...');
-    const adminPassword = await bcrypt.hash('admin123', 10);
+    const adminPassword = await bcrypt.hash('password123', 10);
     const adminUser = await Employee.findOneAndUpdate(
       { email: 'admin@company.com' },
       {
@@ -36,7 +36,7 @@ async function initializeTestData() {
           today: {
             status: 'Present',
             checkIn: '09:00',
-            checkOut: '17:00',
+            checkOut: '17:45',
             isLate: false,
             totalHours: 8
           },
@@ -193,7 +193,7 @@ async function initializeTestData() {
 
     console.log('\n🎉 Test data initialization complete!');
     console.log('📋 Test Credentials:');
-    console.log('   Admin: admin@company.com / admin123');
+    console.log('   Admin: admin@company.com / password123');
     console.log('   Employee: employee@company.com / employee123');
     console.log('📊 Database Status: ✅ Connected');
     console.log('👥 Users Created: ✅ Admin + Employee');

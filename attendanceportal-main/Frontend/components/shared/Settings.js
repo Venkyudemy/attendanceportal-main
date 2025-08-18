@@ -6,7 +6,7 @@ const Settings = () => {
     companyName: 'TechCorp Solutions',
     workingHours: {
       start: '09:00',
-      end: '17:00'
+      end: '17:45'
     },
     lateThreshold: 15,
     overtimeThreshold: 8,

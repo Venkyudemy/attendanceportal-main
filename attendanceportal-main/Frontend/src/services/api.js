@@ -66,13 +66,6 @@ export const loginUser = async (credentials) => {
   });
 };
 
-export const registerUser = async (userData) => {
-  return apiCall('/auth/register', {
-    method: 'POST',
-    body: JSON.stringify(userData),
-  });
-};
-
 // Employee API calls
 export const getEmployeeStats = async () => {
   try {

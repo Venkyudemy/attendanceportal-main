@@ -1132,8 +1132,8 @@ router.post('/:id/check-in', async (req, res) => {
       });
     }
     
-    // Check if late (after 9:30 AM) using server local time
-    const isLate = now.getHours() > 9 || (now.getHours() === 9 && now.getMinutes() > 30);
+    // Check if late (after 9:15 AM) using server local time
+    const isLate = now.getHours() > 9 || (now.getHours() === 9 && now.getMinutes() > 15);
     const status = isLate ? 'Late' : 'Present';
     
     // Use server local date
@@ -2001,7 +2001,7 @@ router.put('/:id/attendance', async (req, res) => {
       checkIn: checkIn || employee.attendance.today.checkIn,
       checkOut: checkOut || employee.attendance.today.checkOut,
       status: status || employee.attendance.today.status,
-      isLate: checkIn && new Date(`2000-01-01 ${checkIn}`) > new Date('2000-01-01 09:30:00')
+      isLate: checkIn && new Date(`2000-01-01 ${checkIn}`) > new Date('2000-01-01 09:15:00')
     };
 
     await employee.save();

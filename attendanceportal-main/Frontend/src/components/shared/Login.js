@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { loginUser, registerUser } from '../../services/api';
+import { loginUser } from '../../services/api';
 import './Login.css';
 
 const Login = ({ onLogin }) => {
@@ -7,16 +7,7 @@ const Login = ({ onLogin }) => {
     email: '',
     password: ''
   });
-  const [registerData, setRegisterData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    role: 'employee'
-  });
   const [error, setError] = useState('');
-  const [registerError, setRegisterError] = useState('');
-  const [registerSuccess, setRegisterSuccess] = useState('');
-  const [showRegister, setShowRegister] = useState(false);
 
   const handleChange = (e) => {
     setFormData({
@@ -25,21 +16,15 @@ const Login = ({ onLogin }) => {
     });
   };
 
-  const handleRegisterChange = (e) => {
-    setRegisterData({
-      ...registerData,
-      [e.target.name]: e.target.value
-    });
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    setRegisterSuccess(''); // Clear registration success on login attempt
+    
     if (!formData.email || !formData.password) {
       setError('Please fill in all fields');
       return;
     }
+    
     try {
       const data = await loginUser(formData);
       if (data.error) {
@@ -51,46 +36,16 @@ const Login = ({ onLogin }) => {
       onLogin(data.user);
     } catch (err) {
       console.error('Login error:', err);
-      setError(`Connection error: ${err.message}. Please check if the backend server is running.`);
-    }
-  };
-
-  const handleRegister = async (e) => {
-    e.preventDefault();
-    setRegisterError('');
-    setRegisterSuccess('');
-    setError(''); // Clear login error on registration attempt
-    if (!registerData.name || !registerData.email || !registerData.password) {
-      setRegisterError('Please fill in all fields');
-      return;
-    }
-    try {
-      const data = await registerUser(registerData);
-      if (data.error) {
-        setRegisterError(data.message || 'Registration failed');
-        return;
+      
+      // Check if it's a connection error or authentication error
+      if (err.message.includes('Failed to fetch') || err.message.includes('backend server')) {
+        setError(`Connection error: ${err.message}. Please check if the backend server is running.`);
+      } else if (err.isAuthError || err.message.includes('Invalid username and password') || err.message.includes('Invalid email or password') || err.message.includes('Unauthorized')) {
+        setError('Invalid username and password');
+      } else {
+        setError('Invalid username and password');
       }
-      setRegisterSuccess('Registration successful! You can now log in.');
-      setRegisterError('');
-      setShowRegister(false);
-      setFormData({ email: registerData.email, password: '' });
-    } catch (err) {
-      setRegisterError('Server error. Please try again later.');
     }
-  };
-
-  // Clear errors/success when toggling forms
-  const handleShowRegister = () => {
-    setShowRegister(true);
-    setError('');
-    setRegisterError('');
-    setRegisterSuccess('');
-  };
-  const handleShowLogin = () => {
-    setShowRegister(false);
-    setError('');
-    setRegisterError('');
-    setRegisterSuccess('');
   };
 
   return (
@@ -100,69 +55,7 @@ const Login = ({ onLogin }) => {
           <h1>🏢 Attendance Portal</h1>
           <p>Welcome! Please sign in to your account.</p>
         </div>
-        {showRegister ? (
-          <form onSubmit={handleRegister} className="login-form">
-            {registerError && <div className="error-message">{registerError}</div>}
-            {registerSuccess && <div className="success-message">{registerSuccess}</div>}
-            <div className="form-group">
-              <label htmlFor="name">Full Name</label>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                value={registerData.name}
-                onChange={handleRegisterChange}
-                placeholder="Enter your name"
-                required
-              />
-            </div>
-            <div className="form-group">
-              <label htmlFor="register-email">Email Address</label>
-              <input
-                type="email"
-                id="register-email"
-                name="email"
-                value={registerData.email}
-                onChange={handleRegisterChange}
-                placeholder="Enter your email"
-                required
-              />
-            </div>
-            <div className="form-group">
-              <label htmlFor="register-password">Password</label>
-              <input
-                type="password"
-                id="register-password"
-                name="password"
-                value={registerData.password}
-                onChange={handleRegisterChange}
-                placeholder="Enter your password"
-                required
-              />
-            </div>
-            <div className="form-group">
-              <label htmlFor="role">Role</label>
-              <select
-                id="role"
-                name="role"
-                value={registerData.role}
-                onChange={handleRegisterChange}
-              >
-                <option value="employee">Employee</option>
-                <option value="admin">Admin</option>
-              </select>
-            </div>
-            <button type="submit" className="login-btn">Register</button>
-            <div className="login-footer">
-              <span>Already have an account?{' '}
-                <button type="button" className="link-btn" onClick={handleShowLogin}>
-                  Login here
-                </button>
-              </span>
-            </div>
-          </form>
-        ) : (
-          <>
+        
         <form onSubmit={handleSubmit} className="login-form">
           {error && <div className="error-message">{error}</div>}
           <div className="form-group">
@@ -189,17 +82,16 @@ const Login = ({ onLogin }) => {
               required
             />
           </div>
-              <button type="submit" className="login-btn">Sign In</button>
+          <button type="submit" className="login-btn">Sign In</button>
         </form>
+        
         <div className="login-footer">
-              <span>Don't have an account?{' '}
-                <button type="button" className="link-btn" onClick={handleShowRegister}>
-                  Register here
-                </button>
-              </span>
-            </div>
-          </>
-        )}
+          <div className="admin-info">
+            <p><strong>Default Admin Login:</strong></p>
+            <p>Email: admin@company.com</p>
+            <p>Password: password123</p>
+          </div>
+        </div>
       </div>
     </div>
   );

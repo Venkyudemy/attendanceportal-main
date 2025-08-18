@@ -21,7 +21,7 @@ async function createAdminUser() {
     if (existingAdmin) {
       console.log('👤 Admin user already exists, updating password...');
       // Update password
-      const hashedPassword = await bcrypt.hash('admin123', 12);
+      const hashedPassword = await bcrypt.hash('password123', 12);
       existingAdmin.password = hashedPassword;
       await existingAdmin.save();
       console.log('✅ Admin password updated successfully');
@@ -29,7 +29,7 @@ async function createAdminUser() {
       console.log('👤 Creating new admin user...');
       
       // Hash the password
-      const hashedPassword = await bcrypt.hash('admin123', 12);
+      const hashedPassword = await bcrypt.hash('password123', 12);
       
       // Create admin user
       const adminUser = new Employee({
@@ -65,7 +65,7 @@ async function createAdminUser() {
     
     console.log('🔑 Admin Login Credentials:');
     console.log('📧 Email: admin@company.com');
-    console.log('🔐 Password: admin123');
+    console.log('🔐 Password: password123');
     console.log('🎯 Role: admin');
     
     mongoose.connection.close();

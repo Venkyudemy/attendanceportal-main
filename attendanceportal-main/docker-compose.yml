@@ -29,6 +29,9 @@ services:
       - JWT_SECRET=your-super-secret-jwt-key-change-in-production
       - TZ=Asia/Kolkata
       - MONGODB_URI=mongodb://mongo:27017/attendanceportal
+      - WORKING_HOURS_START=09:00
+      - WORKING_HOURS_END=17:45
+      - LATE_THRESHOLD_MINUTES=15
     depends_on:
       - mongo
     restart: unless-stopped
@@ -36,6 +39,15 @@ services:
       - attendance-network
     volumes:
       - ./Backend/scripts:/app/scripts:ro
+    command: >
+      sh -c "
+        echo 'Waiting for MongoDB to be ready...' &&
+        sleep 10 &&
+        echo 'Creating admin user...' &&
+        node scripts/createAdmin.js &&
+        echo 'Starting backend server...' &&
+        npm start
+      "
 
   mongo:
     image: mongo:6

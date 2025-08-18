@@ -24,7 +24,7 @@ router.post('/login', async (req, res) => {
     if (!user) {
       return res.status(401).json({
         error: 'Unauthorized',
-        message: 'Invalid email or password'
+        message: 'Invalid username and password'
       });
     }
 
@@ -33,7 +33,7 @@ router.post('/login', async (req, res) => {
     if (!isPasswordValid) {
       return res.status(401).json({
         error: 'Unauthorized',
-        message: 'Invalid email or password'
+        message: 'Invalid username and password'
       });
     }
 
@@ -85,81 +85,6 @@ router.post('/login', async (req, res) => {
     res.status(500).json({
       error: 'Internal server error',
       message: 'Login failed'
-    });
-  }
-});
-
-// POST /api/auth/register - User registration
-router.post('/register', async (req, res) => {
-  try {
-    const { name, email, password, role } = req.body;
-
-    // Validate input
-    if (!name || !email || !password) {
-      return res.status(400).json({
-        error: 'Bad request',
-        message: 'Name, email and password are required'
-      });
-    }
-
-    // Check if user already exists
-    const existingUser = await Employee.findOne({ email });
-    if (existingUser) {
-      return res.status(409).json({
-        error: 'Conflict',
-        message: 'User with this email already exists'
-      });
-    }
-
-    // Hash password
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
-
-    // Determine department based on role
-    let department = 'Engineering';
-    if (role === 'admin') {
-      department = 'HR';
-    }
-
-    // Create new user
-    const newUser = new Employee({
-      name,
-      email,
-      department,
-      position: role === 'admin' ? 'System Administrator' : 'Employee',
-      status: 'Active',
-      joinDate: new Date().toISOString().split('T')[0],
-      phone: '+1 (555) 000-0000',
-      password: hashedPassword,
-      attendance: {
-        today: {
-          checkIn: null,
-          checkOut: null,
-          status: 'Absent',
-          isLate: false
-        }
-      }
-    });
-
-    await newUser.save();
-
-    res.status(201).json({
-      message: 'Registration successful',
-      user: {
-        id: newUser._id,
-        name: newUser.name,
-        email: newUser.email,
-        department: newUser.department,
-        position: newUser.position,
-        role: role
-      }
-    });
-
-  } catch (error) {
-    console.error('Registration error:', error);
-    res.status(500).json({
-      error: 'Internal server error',
-      message: 'Registration failed'
     });
   }
 });

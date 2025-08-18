@@ -7,7 +7,7 @@ const Settings = () => {
     companyName: 'TechCorp Solutions',
     workingHours: {
       start: '09:00',
-      end: '17:00'
+      end: '17:45'
     },
     lateThreshold: 15,
     overtimeThreshold: 8,
@@ -47,7 +47,7 @@ const Settings = () => {
             companyName: data.companyName || 'TechCorp Solutions',
             workingHours: {
               start: data.workingHoursStart ? data.workingHoursStart.replace(' AM', '').replace(' PM', '') : '09:00',
-              end: data.workingHoursEnd ? data.workingHoursEnd.replace(' AM', '').replace(' PM', '') : '17:00'
+              end: data.workingHoursEnd ? data.workingHoursEnd.replace(' AM', '').replace(' PM', '') : '17:45'
             },
             lateThreshold: data.lateThreshold || 15,
             overtimeThreshold: data.overtimeThreshold || 8,

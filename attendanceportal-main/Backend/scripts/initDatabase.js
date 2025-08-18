@@ -57,7 +57,7 @@ async function initializeDatabase() {
       adminUser = new Employee({
         name: 'Admin User',
         email: 'admin@techcorp.com',
-        password: 'admin123', // In production, this should be hashed
+        password: 'password123', // In production, this should be hashed
         role: 'admin',
         position: 'System Administrator',
         department: 'IT',
@@ -81,7 +81,7 @@ async function initializeDatabase() {
         }
       });
       await adminUser.save();
-      console.log('✅ Admin user created (admin@techcorp.com / admin123)');
+      console.log('✅ Admin user created (admin@techcorp.com / password123)');
     } else {
       console.log('✅ Admin user already exists');
     }
@@ -124,7 +124,7 @@ async function initializeDatabase() {
     
     console.log('🎉 Database initialization completed successfully!');
     console.log('\n📋 Test Credentials:');
-    console.log('👑 Admin: admin@techcorp.com / admin123');
+    console.log('👑 Admin: admin@techcorp.com / password123');
     console.log('👤 Employee: employee@techcorp.com / employee123');
     
   } catch (error) {
