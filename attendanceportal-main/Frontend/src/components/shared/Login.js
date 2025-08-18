@@ -86,11 +86,7 @@ const Login = ({ onLogin }) => {
         </form>
         
         <div className="login-footer">
-          <div className="admin-info">
-            <p><strong>Default Admin Login:</strong></p>
-            <p>Email: admin@company.com</p>
-            <p>Password: password123</p>
-          </div>
+          <p>Secure Attendance Management System</p>
         </div>
       </div>
     </div>

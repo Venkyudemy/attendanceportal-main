@@ -46,8 +46,8 @@ echo    Frontend: http://localhost:3000
 echo    Backend API: http://localhost:5000
 echo.
 echo 🔑 Default Admin Login:
-echo    Email: admin@company.com
-echo    Password: password123
+echo    Email: admin@techcorp.com
+echo    Password: [Contact system administrator for credentials]
 echo.
 echo 📊 Working Hours:
 echo    Check-in: 9:00 AM

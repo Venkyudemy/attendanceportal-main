@@ -3305,7 +3305,7 @@ router.post('/:id/leave-balance', async (req, res) => {
     }
 
     await employee.save();
-
+    
     res.status(200).json({
       message: 'Leave balance updated successfully',
       leaveBalance: employee.leaveBalance
@@ -3499,4 +3499,4 @@ router.post('/admin/sync-leave-balance-structure', async (req, res) => {
   }
 });
 
-module.exports = router; 
+module.exports = router;

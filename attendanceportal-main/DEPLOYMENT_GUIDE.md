@@ -47,8 +47,8 @@ After successful deployment, access your application at:
 ## 🔑 Default Admin Login
 
 ```
-Email: admin@company.com
-Password: password123
+Email: admin@techcorp.com
+Password: [Contact system administrator for credentials]
 ```
 
 ## ⏰ Working Hours Configuration
@@ -215,19 +215,3 @@ For deployment issues or questions:
 
 1. Check the logs: `docker-compose logs -f`
 2. Verify Docker is running: `docker info`
-3. Check service status: `docker-compose ps`
-4. Review this deployment guide
-
-## 🎉 Success Indicators
-
-Your deployment is successful when:
-
-- ✅ All containers show "Up" status
-- ✅ Frontend loads at http://localhost:3000
-- ✅ Admin login works with default credentials
-- ✅ No error messages in logs
-- ✅ Database connection is established
-
----
-
-**Happy Deploying! 🚀**

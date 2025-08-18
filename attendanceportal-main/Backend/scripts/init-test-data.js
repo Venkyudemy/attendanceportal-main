@@ -193,7 +193,7 @@ async function initializeTestData() {
 
     console.log('\n🎉 Test data initialization complete!');
     console.log('📋 Test Credentials:');
-    console.log('   Admin: admin@company.com / password123');
+    console.log('   Admin: admin@techcorp.com / [password hidden for security]');
     console.log('   Employee: employee@company.com / employee123');
     console.log('📊 Database Status: ✅ Connected');
     console.log('👥 Users Created: ✅ Admin + Employee');
