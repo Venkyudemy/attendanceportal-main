@@ -13,9 +13,9 @@ const getApiBaseUrl = () => {
     return '/api';
   }
   
-  // Development fallback - always use localhost:5000 for development
-  console.log('Using development API URL: http://localhost:5000/api');
-  return 'http://localhost:5000/api';
+  // Development fallback - use server IP instead of localhost for external access
+  console.log('Using development API URL: http://10.140.94.16:5000/api');
+  return 'http://10.140.94.16:5000/api';
 };
 
 const API_BASE_URL = getApiBaseUrl();
@@ -68,6 +68,11 @@ const apiCall = async (endpoint, options = {}) => {
     // Check if it's a network/connection error
     if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
       throw new Error('Connection error: Unable to reach the server. Please check your internet connection and try again.');
+    }
+    
+    // Check if it's a Bad Gateway error
+    if (error.message.includes('Bad Gateway') || error.message.includes('502')) {
+      throw new Error('Server error: Backend service is not responding. Please try again in a few moments.');
     }
     
     // Check if it's an authentication error
