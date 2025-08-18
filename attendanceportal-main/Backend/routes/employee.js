@@ -2439,6 +2439,12 @@ router.get('/:id/attendance-details', async (req, res) => {
       email: employee.email
     });
 
+    // Safely access attendance structures even if missing
+    const attendanceRecords = Array.isArray(employee.attendance?.records)
+      ? employee.attendance.records
+      : [];
+    const todayAttendance = employee.attendance?.today || null;
+
     // Default to current month and year if not specified
     const currentDate = new Date();
     // Use consistent timezone handling
@@ -2573,7 +2579,7 @@ router.get('/:id/attendance-details', async (req, res) => {
       });
       
       // Find attendance record for this date
-      const attendanceRecord = employee.attendance.records.find(record => record.date === dateString);
+      const attendanceRecord = attendanceRecords.find(record => record.date === dateString);
       
       let status, checkIn, checkOut, hours, isLeave, leaveType;
       
@@ -2593,12 +2599,12 @@ router.get('/:id/attendance-details', async (req, res) => {
         hours = 0;
         isLeave = false;
         leaveType = null;
-      } else if (isToday && employee.attendance.today && employee.attendance.today.checkIn) {
+      } else if (isToday && todayAttendance && todayAttendance.checkIn) {
         // Today's current attendance from the 'today' field
-        status = employee.attendance.today.status;
-        checkIn = employee.attendance.today.checkIn;
-        checkOut = employee.attendance.today.checkOut;
-        hours = employee.attendance.today.hours || 0;
+        status = todayAttendance.status;
+        checkIn = todayAttendance.checkIn;
+        checkOut = todayAttendance.checkOut;
+        hours = todayAttendance.hours || 0;
         isLeave = false;
         leaveType = null;
       } else if (attendanceRecord) {
@@ -2635,7 +2641,7 @@ router.get('/:id/attendance-details', async (req, res) => {
     }
 
     // Get month statistics
-    const monthRecords = employee.attendance.records.filter(record => {
+    const monthRecords = attendanceRecords.filter(record => {
       if (!record.date) return false;
       // Parse the date string and convert to local time
       const [year, month, day] = record.date.split('-').map(Number);
@@ -2662,13 +2668,13 @@ router.get('/:id/attendance-details', async (req, res) => {
 
     // Add today's attendance to stats if it's the current month
     if (targetMonth === currentDate.getMonth() && targetYear === currentDate.getFullYear() && 
-        employee.attendance.today && employee.attendance.today.checkIn) {
-      if (employee.attendance.today.status === 'Present') {
+        todayAttendance && todayAttendance.checkIn) {
+      if (todayAttendance.status === 'Present') {
         monthStats.present++;
-      } else if (employee.attendance.today.status === 'Late') {
+      } else if (todayAttendance.status === 'Late') {
         monthStats.late++;
       }
-      monthStats.totalHours += employee.attendance.today.hours || 0;
+      monthStats.totalHours += todayAttendance.hours || 0;
     }
 
     // Get holidays for this month
