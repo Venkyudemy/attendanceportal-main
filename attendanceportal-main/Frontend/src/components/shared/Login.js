@@ -32,6 +32,7 @@ const Login = ({ onLogin }) => {
         return;
       }
       localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
       setError(''); // Clear error on success
       onLogin(data.user);
     } catch (err) {
