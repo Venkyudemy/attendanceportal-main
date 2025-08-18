@@ -10,7 +10,8 @@ services:
     depends_on:
       - backend
     environment:
-      - REACT_APP_API_URL=http://localhost:5000/api
+      # Updated with actual server IP address
+      - REACT_APP_API_URL=http://10.140.94.16:5000/api
       - TZ=Asia/Kolkata
     restart: unless-stopped
     networks:

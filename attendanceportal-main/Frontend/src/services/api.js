@@ -41,7 +41,22 @@ const apiCall = async (endpoint, options = {}) => {
     console.log(`Response status: ${response.status}`);
     
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      // Get the error message from the response
+      let errorMessage = 'Request failed';
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.message || errorData.error || `HTTP ${response.status}`;
+      } catch (e) {
+        // If we can't parse the error response, use status text
+        errorMessage = response.statusText || `HTTP ${response.status}`;
+      }
+      
+      // Create a custom error with authentication flag
+      const error = new Error(errorMessage);
+      if (response.status === 401) {
+        error.isAuthError = true;
+      }
+      throw error;
     }
     
     const data = await response.json();
@@ -49,12 +64,19 @@ const apiCall = async (endpoint, options = {}) => {
     return data;
   } catch (error) {
     console.error(`API call failed for ${url}:`, error);
-    console.error('Error details:', error.message);
     
-    // Throw error with clear message
-    const errorMsg = 'Failed to fetch. Please check if the backend server is running.';
-    console.error(errorMsg);
-    throw new Error(errorMsg);
+    // Check if it's a network/connection error
+    if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+      throw new Error('Connection error: Unable to reach the server. Please check your internet connection and try again.');
+    }
+    
+    // Check if it's an authentication error
+    if (error.isAuthError || error.message.includes('Invalid') || error.message.includes('Unauthorized')) {
+      throw new Error('Invalid username and password');
+    }
+    
+    // For other errors, throw the original error message
+    throw error;
   }
 };
 

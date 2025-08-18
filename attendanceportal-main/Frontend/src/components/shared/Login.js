@@ -37,14 +37,8 @@ const Login = ({ onLogin }) => {
     } catch (err) {
       console.error('Login error:', err);
       
-      // Check if it's a connection error or authentication error
-      if (err.message.includes('Failed to fetch') || err.message.includes('backend server')) {
-        setError(`Connection error: ${err.message}. Please check if the backend server is running.`);
-      } else if (err.isAuthError || err.message.includes('Invalid username and password') || err.message.includes('Invalid email or password') || err.message.includes('Unauthorized')) {
-        setError('Invalid username and password');
-      } else {
-        setError('Invalid username and password');
-      }
+      // Use the improved error message from the API service
+      setError(err.message || 'Login failed. Please try again.');
     }
   };
 
