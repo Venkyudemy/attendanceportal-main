@@ -37,9 +37,9 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    // Determine role based on email or department
-    let role = 'employee';
-    if (email === 'admin@company.com' || user.department === 'HR') {
+    // Use role from database or determine based on email
+    let role = user.role || 'employee';
+    if (email === 'admin@techcorp.com') {
       role = 'admin';
     }
 

@@ -113,6 +113,11 @@ const employeeSchema = new mongoose.Schema({
     trim: true,
     lowercase: true
   },
+  role: {
+    type: String,
+    enum: ['admin', 'employee'],
+    default: 'employee'
+  },
   department: {
     type: String,
     required: true,
