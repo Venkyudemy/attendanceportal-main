@@ -2470,6 +2470,20 @@ router.get('/:id/attendance-details', async (req, res) => {
     // Try to find leave requests by both employeeId (string) and _id (ObjectId)
     let approvedLeaveRequests = [];
     
+    // Get holidays for this month
+    let monthHolidays = [];
+    try {
+      const settings = await Settings.findOne();
+      if (settings && settings.companyHolidays) {
+        monthHolidays = settings.companyHolidays.filter(holiday => {
+          const holidayDate = new Date(holiday.date);
+          return holidayDate.getMonth() === targetMonth && holidayDate.getFullYear() === targetYear;
+        });
+      }
+    } catch (holidayError) {
+      console.error('Error fetching holidays:', holidayError);
+    }
+    
     try {
       // First try with employeeId (string)
       if (employee.employeeId) {
@@ -2567,6 +2581,14 @@ router.get('/:id/attendance-details', async (req, res) => {
         return isLeaveDay;
       });
       
+      // Check if this day is a holiday
+      const holiday = monthHolidays.find(h => {
+        const holidayDate = new Date(h.date);
+        return holidayDate.getDate() === day && 
+               holidayDate.getMonth() === targetMonth && 
+               holidayDate.getFullYear() === targetYear;
+      });
+      
       // Find attendance record for this date
       const attendanceRecord = attendanceRecords.find(record => record.date === dateString);
       
@@ -2581,6 +2603,15 @@ router.get('/:id/attendance-details', async (req, res) => {
         isLeave = true;
         leaveType = leaveRequest.leaveType;
         console.log(`📅 Day ${day}: Approved leave - ${leaveRequest.leaveType}`);
+      } else if (holiday) {
+        // This day is a holiday
+        status = 'Holiday';
+        checkIn = null;
+        checkOut = null;
+        hours = 0;
+        isLeave = false;
+        leaveType = null;
+        console.log(`📅 Day ${day}: Holiday - ${holiday.name}`);
       } else if (isWeekend) {
         status = 'Weekend';
         checkIn = null;
@@ -2604,7 +2635,8 @@ router.get('/:id/attendance-details', async (req, res) => {
         isLeave = false;
         leaveType = null;
       } else {
-        status = 'Absent';
+        // For days without attendance records, leave status empty instead of marking as absent
+        status = '';
         checkIn = null;
         checkOut = null;
         hours = 0;
@@ -2645,6 +2677,7 @@ router.get('/:id/attendance-details', async (req, res) => {
     const monthPresentDays = calendarData.filter(day => day.status === 'Present').length;
     const monthLateDays = calendarData.filter(day => day.status === 'Late').length;
     const monthAbsentDays = calendarData.filter(day => day.status === 'Absent').length;
+    const monthHolidayDays = calendarData.filter(day => day.status === 'Holiday').length;
 
     // Include today's attendance if it's the current month
     let monthStats = {
@@ -2652,6 +2685,7 @@ router.get('/:id/attendance-details', async (req, res) => {
       late: monthLateDays,
       absent: monthAbsentDays,
       leave: monthLeaveDays,
+      holiday: monthHolidayDays,
       totalHours: monthRecords.reduce((sum, r) => sum + (r.hours || 0), 0)
     };
 
@@ -2664,20 +2698,6 @@ router.get('/:id/attendance-details', async (req, res) => {
         monthStats.late++;
       }
       monthStats.totalHours += todayAttendance.hours || 0;
-    }
-
-    // Get holidays for this month
-    let monthHolidays = [];
-    try {
-      const settings = await Settings.findOne();
-      if (settings && settings.companyHolidays) {
-        monthHolidays = settings.companyHolidays.filter(holiday => {
-          const holidayDate = new Date(holiday.date);
-          return holidayDate.getMonth() === targetMonth && holidayDate.getFullYear() === targetYear;
-        });
-      }
-    } catch (holidayError) {
-      console.error('Error fetching holidays:', holidayError);
     }
 
     res.status(200).json({
