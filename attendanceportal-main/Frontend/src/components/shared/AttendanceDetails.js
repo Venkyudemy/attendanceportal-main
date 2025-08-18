@@ -38,40 +38,6 @@ const AttendanceDetails = ({ currentUser }) => {
     return isNaN(parsed.getTime()) ? '-' : parsed.toLocaleDateString();
   };
 
-  // Lightweight fallback calendar generator (used only if API returns no data)
-  const buildFallbackCalendar = (monthDate) => {
-    const year = monthDate.getFullYear();
-    const month = monthDate.getMonth();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const firstDay = new Date(year, month, 1);
-    const startWeekday = firstDay.getDay();
-
-    const data = [];
-    // leading blanks for grid alignment
-    for (let i = 0; i < startWeekday; i++) {
-      data.push({ dayName: '', status: 'empty', isToday: false, isLeave: false });
-    }
-    for (let d = 1; d <= daysInMonth; d++) {
-      const date = new Date(year, month, d);
-      const isWeekend = date.getDay() === 0 || date.getDay() === 6;
-      const isToday = date.toDateString() === new Date().toDateString();
-      const dateIso = date.toISOString();
-      data.push({
-        date: dateIso,
-        day: d,
-        dayName: date.toLocaleDateString('en-US', { weekday: 'short' }),
-        status: isWeekend ? 'Weekend' : 'Absent',
-        checkIn: null,
-        checkOut: null,
-        hours: 0,
-        isToday,
-        isLeave: false,
-        leaveType: null,
-      });
-    }
-    return data;
-  };
-
   // Fetch real attendance data from backend
   useEffect(() => {
     const fetchAttendanceData = async () => {
@@ -106,8 +72,7 @@ const AttendanceDetails = ({ currentUser }) => {
         console.log('📊 Month stats:', data.monthStats);
         console.log('🎉 Month holidays:', data.monthHolidays);
         
-        const hasCalendar = Array.isArray(data.calendarData) && data.calendarData.length > 0;
-        setAttendanceData(hasCalendar ? data.calendarData : buildFallbackCalendar(currentMonth));
+        setAttendanceData(data.calendarData || []);
         setMonthStats(data.monthStats || { present: 0, late: 0, absent: 0, totalHours: 0 });
         setHolidays(data.monthHolidays || []);
         

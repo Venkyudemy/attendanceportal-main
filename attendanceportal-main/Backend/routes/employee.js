@@ -2532,20 +2532,8 @@ router.get('/:id/attendance-details', async (req, res) => {
       const isWeekend = date.getDay() === 0 || date.getDay() === 6;
       const isToday = date.toDateString() === currentDate.toDateString();
       
-      console.log(`📅 Processing day ${day}:`, {
-        date: date.toISOString(),
-        dateString: dateString,
-        isWeekend: isWeekend,
-        isToday: isToday
-      });
-      
       // Check if this day has approved leave
       const leaveRequest = approvedLeaveRequests.find(request => {
-        // Debug the date formats
-        console.log(`🔍 Checking leave request: ${request.leaveType}`);
-        console.log(`   Start date: ${request.startDate} (type: ${typeof request.startDate})`);
-        console.log(`   End date: ${request.endDate} (type: ${typeof request.endDate})`);
-        
         // Convert leave request dates to Date objects and normalize to start of day
         let startDate, endDate;
         
@@ -2563,10 +2551,6 @@ router.get('/:id/attendance-details', async (req, res) => {
         
         // Create a date object for the current day being processed
         const currentDayDate = new Date(targetYear, targetMonth, day);
-        
-        console.log(`   Parsed start date: ${startDate.toISOString()}`);
-        console.log(`   Parsed end date: ${endDate.toISOString()}`);
-        console.log(`   Current day date: ${currentDayDate.toISOString()}`);
         
         // Check if current day falls within leave period
         const isLeaveDay = currentDayDate >= startDate && currentDayDate <= endDate;
