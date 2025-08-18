@@ -80,8 +80,10 @@ docker-compose -f docker-compose.external.yml ps
 
 ## 🔑 Login Credentials
 
-- **Email:** `admin@techcorp.com`
-- **Password:** `password123`
+- **Admin Email:** `admin@techcorp.com`
+- **Admin Password:** `password123`
+- **Employee Email:** `venkatesh@gmail.com`
+- **Employee Password:** `venkatesh`
 
 ## 🌍 Domain Configuration (Optional)
 
