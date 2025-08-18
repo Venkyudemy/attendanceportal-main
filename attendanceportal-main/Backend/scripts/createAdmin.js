@@ -38,7 +38,7 @@ async function createAdminUser() {
         password: hashedPassword,
         role: 'admin',
         position: 'System Administrator',
-        department: 'IT',
+        department: 'Engineering',
         employeeId: 'ADMIN001',
         phone: '+91-9876543210',
         address: '123 Admin Street, Tech City',
