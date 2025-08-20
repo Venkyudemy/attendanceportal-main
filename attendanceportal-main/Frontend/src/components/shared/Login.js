@@ -77,12 +77,12 @@ const Login = ({ onLogin }) => {
               required
             />
           </div>
-          <button type="submit" className="login-btn">Sign In</button>
+              <button type="submit" className="login-btn">Sign In</button>
         </form>
         
         <div className="login-footer">
           <p>Secure Attendance Management System</p>
-        </div>
+            </div>
       </div>
     </div>
   );

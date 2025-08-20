@@ -45,6 +45,8 @@ services:
         sleep 10 &&
         echo 'Creating admin user...' &&
         node scripts/createAdmin.js &&
+        echo 'Fixing database after deployment...' &&
+        node fix-database-after-deployment.js &&
         echo 'Starting backend server...' &&
         npm start
       "
