@@ -842,7 +842,10 @@ router.get('/:id/portal-data', async (req, res) => {
       .find(summary => summary.weekStart === currentWeek);
     
     if (!weeklySummary) {
-      weeklySummary = calculateWeeklySummary(currentWeek);
+      weeklySummary = {
+        weekStart: currentWeek,
+        ...calculateWeeklySummary(currentWeek)
+      };
       // Add to weekly summaries array
       employee.attendance.weeklySummaries.push(weeklySummary);
     } else {
@@ -859,7 +862,10 @@ router.get('/:id/portal-data', async (req, res) => {
       .find(summary => summary.month === currentMonth);
     
     if (!monthlySummary) {
-      monthlySummary = calculateMonthlySummary(currentMonth);
+      monthlySummary = {
+        month: currentMonth,
+        ...calculateMonthlySummary(currentMonth)
+      };
       // Add to monthly summaries array
       employee.attendance.monthlySummaries.push(monthlySummary);
     } else {
@@ -1173,7 +1179,7 @@ router.post('/:id/check-in', async (req, res) => {
       });
     }
 
-    // Update weekly summary
+    // Update weekly summary - recalculate based on actual records
     const weekStart = getWeekStart(now);
     let weeklySummary = employee.attendance.weeklySummaries.find(summary => summary.weekStart === weekStart);
     
@@ -1188,14 +1194,21 @@ router.post('/:id/check-in', async (req, res) => {
       employee.attendance.weeklySummaries.push(weeklySummary);
     }
 
-    // Update weekly summary counts
-    if (status === 'Present') {
-      weeklySummary.present++;
-    } else if (status === 'Late') {
-      weeklySummary.late++;
-    }
+    // Recalculate weekly summary from actual records
+    const weekRecords = employee.attendance.records.filter(record => {
+      const recordDate = new Date(record.date);
+      const weekStartDate = new Date(weekStart);
+      const weekEndDate = new Date(weekStartDate);
+      weekEndDate.setDate(weekStartDate.getDate() + 6);
+      return recordDate >= weekStartDate && recordDate <= weekEndDate;
+    });
 
-    // Update monthly summary
+    weeklySummary.present = weekRecords.filter(r => r.status === 'Present').length;
+    weeklySummary.late = weekRecords.filter(r => r.status === 'Late').length;
+    weeklySummary.absent = weekRecords.filter(r => r.status === 'Absent').length;
+    weeklySummary.totalHours = weekRecords.reduce((sum, r) => sum + (r.hours || 0), 0);
+
+    // Update monthly summary - recalculate based on actual records
     const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     let monthlySummary = employee.attendance.monthlySummaries.find(summary => summary.month === monthKey);
     
@@ -1210,15 +1223,30 @@ router.post('/:id/check-in', async (req, res) => {
       employee.attendance.monthlySummaries.push(monthlySummary);
     }
 
-    // Update monthly summary counts
-    if (status === 'Present') {
-      monthlySummary.present++;
-    } else if (status === 'Late') {
-      monthlySummary.late++;
-    }
+    // Recalculate monthly summary from actual records
+    const monthRecords = employee.attendance.records.filter(record => {
+      const recordDate = new Date(record.date);
+      const recordMonth = `${recordDate.getFullYear()}-${String(recordDate.getMonth() + 1).padStart(2, '0')}`;
+      return recordMonth === monthKey;
+    });
+
+    monthlySummary.present = monthRecords.filter(r => r.status === 'Present').length;
+    monthlySummary.late = monthRecords.filter(r => r.status === 'Late').length;
+    monthlySummary.absent = monthRecords.filter(r => r.status === 'Absent').length;
+    monthlySummary.totalHours = monthRecords.reduce((sum, r) => sum + (r.hours || 0), 0);
 
     // Save the updated employee data with enhanced error handling
     try {
+      console.log('💾 Attempting to save employee data to MongoDB...');
+      console.log('📊 Data to be saved:', {
+        employeeId: employee._id,
+        checkIn: checkInTime,
+        status: status,
+        isLate: isLate,
+        date: today,
+        timestamp: now.toISOString()
+      });
+      
       await employee.save();
       console.log('✅ Employee data saved to MongoDB successfully');
       
@@ -1226,11 +1254,27 @@ router.post('/:id/check-in', async (req, res) => {
       const savedEmployee = await Employee.findById(employee._id);
       if (savedEmployee && savedEmployee.attendance.today.checkIn === checkInTime) {
         console.log('✅ Data verification successful - check-in time confirmed in database');
+        console.log('📊 Saved data verification:', {
+          checkIn: savedEmployee.attendance.today.checkIn,
+          status: savedEmployee.attendance.today.status,
+          isLate: savedEmployee.attendance.today.isLate,
+          date: savedEmployee.attendance.today.date,
+          timestamp: savedEmployee.attendance.today.timestamp
+        });
       } else {
         console.warn('⚠️ Data verification failed - check-in time not found in database');
+        console.log('📊 Expected vs Actual:', {
+          expected: checkInTime,
+          actual: savedEmployee?.attendance?.today?.checkIn
+        });
       }
     } catch (saveError) {
       console.error('❌ Failed to save employee data to MongoDB:', saveError);
+      console.error('❌ Save error details:', {
+        name: saveError.name,
+        message: saveError.message,
+        stack: saveError.stack
+      });
       throw new Error('Database save operation failed');
     }
     
@@ -1336,58 +1380,100 @@ router.post('/:id/check-out', async (req, res) => {
       });
     }
 
-    // Update weekly summary
+    // Update weekly summary - recalculate based on actual records
     const weekStart = getWeekStart(now);
     let weeklySummary = employee.attendance.weeklySummaries.find(summary => summary.weekStart === weekStart);
     
-    if (weeklySummary) {
-      // Update total hours
-      weeklySummary.totalHours += hoursWorked;
-    } else {
-      // Create new weekly summary if it doesn't exist
+    if (!weeklySummary) {
       weeklySummary = {
         weekStart: weekStart,
         present: 0,
         absent: 0,
         late: 0,
-        totalHours: hoursWorked
+        totalHours: 0
       };
       employee.attendance.weeklySummaries.push(weeklySummary);
     }
 
-    // Update monthly summary
+    // Recalculate weekly summary from actual records
+    const weekRecords = employee.attendance.records.filter(record => {
+      const recordDate = new Date(record.date);
+      const weekStartDate = new Date(weekStart);
+      const weekEndDate = new Date(weekStartDate);
+      weekEndDate.setDate(weekStartDate.getDate() + 6);
+      return recordDate >= weekStartDate && recordDate <= weekEndDate;
+    });
+
+    weeklySummary.present = weekRecords.filter(r => r.status === 'Present').length;
+    weeklySummary.late = weekRecords.filter(r => r.status === 'Late').length;
+    weeklySummary.absent = weekRecords.filter(r => r.status === 'Absent').length;
+    weeklySummary.totalHours = weekRecords.reduce((sum, r) => sum + (r.hours || 0), 0);
+
+    // Update monthly summary - recalculate based on actual records
     const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     let monthlySummary = employee.attendance.monthlySummaries.find(summary => summary.month === monthKey);
     
-    if (monthlySummary) {
-      // Update total hours
-      monthlySummary.totalHours += hoursWorked;
-    } else {
-      // Create new monthly summary if it doesn't exist
+    if (!monthlySummary) {
       monthlySummary = {
         month: monthKey,
         present: 0,
         absent: 0,
         late: 0,
-        totalHours: hoursWorked
+        totalHours: 0
       };
       employee.attendance.monthlySummaries.push(monthlySummary);
     }
 
+    // Recalculate monthly summary from actual records
+    const monthRecords = employee.attendance.records.filter(record => {
+      const recordDate = new Date(record.date);
+      const recordMonth = `${recordDate.getFullYear()}-${String(recordDate.getMonth() + 1).padStart(2, '0')}`;
+      return recordMonth === monthKey;
+    });
+
+    monthlySummary.present = monthRecords.filter(r => r.status === 'Present').length;
+    monthlySummary.late = monthRecords.filter(r => r.status === 'Late').length;
+    monthlySummary.absent = monthRecords.filter(r => r.status === 'Absent').length;
+    monthlySummary.totalHours = monthRecords.reduce((sum, r) => sum + (r.hours || 0), 0);
+
     // Save the updated employee data with enhanced error handling
     try {
+      console.log('💾 Attempting to save employee check-out data to MongoDB...');
+      console.log('📊 Check-out data to be saved:', {
+        employeeId: employee._id,
+        checkOut: checkOutTime,
+        hoursWorked: hoursWorked,
+        date: today,
+        timestamp: now.toISOString()
+      });
+      
       await employee.save();
-      console.log('✅ Employee data saved to MongoDB successfully');
+      console.log('✅ Employee check-out data saved to MongoDB successfully');
       
       // Verify the data was actually saved by fetching it back
       const savedEmployee = await Employee.findById(employee._id);
       if (savedEmployee && savedEmployee.attendance.today.checkOut === checkOutTime) {
-        console.log('✅ Data verification successful - check-out time confirmed in database');
+        console.log('✅ Check-out data verification successful - check-out time confirmed in database');
+        console.log('📊 Saved check-out data verification:', {
+          checkOut: savedEmployee.attendance.today.checkOut,
+          hours: savedEmployee.attendance.today.hours,
+          date: savedEmployee.attendance.today.date,
+          timestamp: savedEmployee.attendance.today.timestamp
+        });
       } else {
-        console.warn('⚠️ Data verification failed - check-out time not found in database');
+        console.warn('⚠️ Check-out data verification failed - check-out time not found in database');
+        console.log('📊 Expected vs Actual check-out:', {
+          expected: checkOutTime,
+          actual: savedEmployee?.attendance?.today?.checkOut
+        });
       }
     } catch (saveError) {
-      console.error('❌ Failed to save employee data to MongoDB:', saveError);
+      console.error('❌ Failed to save employee check-out data to MongoDB:', saveError);
+      console.error('❌ Check-out save error details:', {
+        name: saveError.name,
+        message: saveError.message,
+        stack: saveError.stack
+      });
       throw new Error('Database save operation failed');
     }
     
@@ -2485,31 +2571,31 @@ router.get('/:id/attendance-details', async (req, res) => {
     }
     
     try {
-      // First try with employeeId (string)
-      if (employee.employeeId) {
-        approvedLeaveRequests = await LeaveRequest.find({
-          employeeId: employee.employeeId,
-          status: 'Approved'
-        });
-        console.log(`🔍 Searching leave requests with employeeId: ${employee.employeeId}`);
-      }
-      
-      // If no results, try with _id (ObjectId)
-      if (approvedLeaveRequests.length === 0 && employee._id) {
-        approvedLeaveRequests = await LeaveRequest.find({
-          employeeId: employee._id,
-          status: 'Approved'
-        });
-        console.log(`🔍 Searching leave requests with _id: ${employee._id}`);
-      }
-      
-      // If still no results, try with _id as string
-      if (approvedLeaveRequests.length === 0 && employee._id) {
-        approvedLeaveRequests = await LeaveRequest.find({
-          employeeId: employee._id.toString(),
-          status: 'Approved'
-        });
-        console.log(`🔍 Searching leave requests with _id as string: ${employee._id.toString()}`);
+    // First try with employeeId (string)
+    if (employee.employeeId) {
+      approvedLeaveRequests = await LeaveRequest.find({
+        employeeId: employee.employeeId,
+        status: 'Approved'
+      });
+      console.log(`🔍 Searching leave requests with employeeId: ${employee.employeeId}`);
+    }
+    
+    // If no results, try with _id (ObjectId)
+    if (approvedLeaveRequests.length === 0 && employee._id) {
+      approvedLeaveRequests = await LeaveRequest.find({
+        employeeId: employee._id,
+        status: 'Approved'
+      });
+      console.log(`🔍 Searching leave requests with _id: ${employee._id}`);
+    }
+    
+    // If still no results, try with _id as string
+    if (approvedLeaveRequests.length === 0 && employee._id) {
+      approvedLeaveRequests = await LeaveRequest.find({
+        employeeId: employee._id.toString(),
+        status: 'Approved'
+      });
+      console.log(`🔍 Searching leave requests with _id as string: ${employee._id.toString()}`);
       }
     } catch (error) {
       console.error('Error fetching leave requests:', error);

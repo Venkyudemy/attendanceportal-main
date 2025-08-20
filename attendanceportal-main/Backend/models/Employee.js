@@ -26,6 +26,10 @@ const attendanceRecordSchema = new mongoose.Schema({
   isLate: {
     type: Boolean,
     default: false
+  },
+  timestamp: {
+    type: String,
+    default: null
   }
 });
 
@@ -90,6 +94,18 @@ const attendanceSchema = new mongoose.Schema({
     isLate: {
       type: Boolean,
       default: false
+    },
+    hours: {
+      type: Number,
+      default: 0
+    },
+    date: {
+      type: String,
+      default: null
+    },
+    timestamp: {
+      type: String,
+      default: null
     }
   },
   // Historical attendance records
