@@ -47,6 +47,15 @@ function App() {
           // In a production app, you might want to validate the token with the backend
           setIsAuthenticated(true);
           setCurrentUser(user);
+          
+          // Auto-redirect based on user role if they're on the root path
+          if (window.location.pathname === '/') {
+            if (user.role === 'admin') {
+              window.location.href = '/dashboard';
+            } else {
+              window.location.href = '/employee-portal';
+            }
+          }
         } catch (error) {
           console.error('Error parsing saved user:', error);
           localStorage.removeItem('token');
@@ -75,7 +84,11 @@ function App() {
   }
 
   if (!isAuthenticated) {
-    return <Login onLogin={handleLogin} />;
+    return (
+      <Router>
+        <Login onLogin={handleLogin} />
+      </Router>
+    );
   }
 
   // Role-based routing

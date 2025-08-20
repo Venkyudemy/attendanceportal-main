@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getEmployeeById, getEmployeeLeaveBalance, recalculateEmployeeLeaveBalance } from '../../services/api';
+import { getEmployeeById, getEmployeeLeaveBalance, recalculateEmployeeLeaveBalance, getAttendanceDetailsById } from '../../services/api';
 import './EmployeeDetails.css';
 
 const EmployeeDetails = () => {
@@ -93,9 +93,35 @@ const EmployeeDetails = () => {
   // Generate monthly attendance calendar data
   useEffect(() => {
     if (showAttendanceHistory && employee) {
+      fetchAttendanceDetails();
+    }
+  }, [showAttendanceHistory, currentMonth, employee]);
+
+  const fetchAttendanceDetails = async () => {
+    if (!employee) return;
+
+    try {
+      const year = currentMonth.getFullYear();
+      const month = currentMonth.getMonth() + 1; // API expects 1-based month
+      
+      console.log('📅 Fetching attendance details for:', year, month, 'Employee ID:', employee._id);
+      
+      const attendanceDetails = await getAttendanceDetailsById(employee._id, month, year);
+      
+      console.log('✅ Attendance details received:', attendanceDetails);
+      
+      if (attendanceDetails && attendanceDetails.calendarData) {
+        setAttendanceData(attendanceDetails.calendarData);
+      } else {
+        console.log('⚠️ No calendar data in response, generating fallback');
+        generateMonthlyCalendar();
+      }
+    } catch (error) {
+      console.error('❌ Error fetching attendance details:', error);
+      console.log('🔄 Falling back to local calendar generation');
       generateMonthlyCalendar();
     }
-  }, [showAttendanceHistory, currentMonth, employee, companyHolidays]);
+  };
 
   const generateMonthlyCalendar = () => {
     if (!employee) return;
@@ -104,7 +130,7 @@ const EmployeeDetails = () => {
     const month = currentMonth.getMonth();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     
-    console.log('📅 Generating calendar for:', year, month + 1, 'Days in month:', daysInMonth);
+    console.log('📅 Generating fallback calendar for:', year, month + 1, 'Days in month:', daysInMonth);
     
     // Get the first day of the month and its day of week (0 = Sunday, 1 = Monday, etc.)
     const firstDayOfMonth = new Date(year, month, 1);
@@ -160,7 +186,7 @@ const EmployeeDetails = () => {
       });
     }
     
-    console.log('✅ Calendar data generated:', monthlyData.length, 'days');
+    console.log('✅ Fallback calendar data generated:', monthlyData.length, 'days');
     setAttendanceData(monthlyData);
   };
 
@@ -576,19 +602,19 @@ const EmployeeDetails = () => {
               <div className="attendance-summary-stats">
                 <div className="stat-card present">
                   <div className="stat-number">
-                    {attendanceData.filter(day => !day.isEmpty && day.status === 'Present').length}
+                    {attendanceData.filter(day => day.status === 'Present').length}
                   </div>
                   <div className="stat-label">PRESENT DAYS</div>
                 </div>
                 <div className="stat-card late">
                   <div className="stat-number">
-                    {attendanceData.filter(day => !day.isEmpty && day.status === 'Late').length}
+                    {attendanceData.filter(day => day.status === 'Late').length}
                   </div>
                   <div className="stat-label">LATE DAYS</div>
                 </div>
                 <div className="stat-card absent">
                   <div className="stat-number">
-                    {attendanceData.filter(day => !day.isEmpty && day.status === 'Absent').length}
+                    {attendanceData.filter(day => day.status === 'Absent').length}
                   </div>
                   <div className="stat-label">ABSENT DAYS</div>
                 </div>
@@ -616,22 +642,19 @@ const EmployeeDetails = () => {
                     key={index} 
                     className={`calendar-day ${day.isWeekend ? 'weekend' : ''} ${day.isToday ? 'today' : ''} ${day.isEmpty ? 'empty' : ''} ${day.isHoliday ? 'holiday' : ''}`}
                   >
-                    {!day.isEmpty ? (
-                      <>
-                        <div className="day-number">{day.day}</div>
-                        {day.isHoliday ? (
-                          <div className="holiday-indicator">
-                            <span className="holiday-text">H</span>
-                            <div className="holiday-tooltip">{day.holidayName}</div>
-                          </div>
-                        ) : !day.isWeekend ? (
-                          <div className={`status-indicator ${day.status?.toLowerCase() || 'absent'}`}>
-                            {day.status?.charAt(0) || 'A'}
-                          </div>
-                        ) : null}
-                      </>
+                    <div className="day-number">{day.day}</div>
+                    {day.isWeekend ? (
+                      <div className="weekend-label">WEEKEND</div>
+                    ) : day.isHoliday ? (
+                      <div className="holiday-label">{day.holidayName}</div>
+                    ) : day.status && day.status !== '' ? (
+                      <div className={`status-label ${day.status.toLowerCase()}`}>
+                        {day.status}
+                        {day.checkIn && <div className="check-time">In {day.checkIn}</div>}
+                        {day.checkOut && <div className="check-time">Out {day.checkOut}</div>}
+                      </div>
                     ) : (
-                      <div className="empty-day"></div>
+                      <div className="empty-status"></div>
                     )}
                   </div>
                 ))}

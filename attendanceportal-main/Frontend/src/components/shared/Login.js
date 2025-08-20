@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { loginUser } from '../../services/api';
 import './Login.css';
 
 const Login = ({ onLogin }) => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -35,6 +37,13 @@ const Login = ({ onLogin }) => {
       localStorage.setItem('user', JSON.stringify(data.user));
       setError(''); // Clear error on success
       onLogin(data.user);
+      
+      // Auto-redirect based on user role
+      if (data.user.role === 'admin') {
+        navigate('/dashboard');
+      } else {
+        navigate('/employee-portal');
+      }
     } catch (err) {
       console.error('Login error:', err);
       
