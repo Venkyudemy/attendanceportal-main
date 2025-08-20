@@ -837,44 +837,30 @@ router.get('/:id/portal-data', async (req, res) => {
       return { present, absent, late, totalHours };
     };
 
-    // Get weekly summary - calculate if not exists
-    let weeklySummary = employee.attendance.weeklySummaries
-      .find(summary => summary.weekStart === currentWeek);
-    
-    if (!weeklySummary) {
-      weeklySummary = {
-        weekStart: currentWeek,
-        ...calculateWeeklySummary(currentWeek)
-      };
-      // Add to weekly summaries array
-      employee.attendance.weeklySummaries.push(weeklySummary);
+    // Always recalculate summaries from actual records to ensure consistency
+    const weeklySummary = {
+      weekStart: currentWeek,
+      ...calculateWeeklySummary(currentWeek)
+    };
+
+    const monthlySummary = {
+      month: currentMonth,
+      ...calculateMonthlySummary(currentMonth)
+    };
+
+    // Update the stored summaries to match the calculated ones
+    const weeklyIndex = employee.attendance.weeklySummaries.findIndex(summary => summary.weekStart === currentWeek);
+    if (weeklyIndex >= 0) {
+      employee.attendance.weeklySummaries[weeklyIndex] = weeklySummary;
     } else {
-      // Update existing summary with recalculated data
-      const recalculated = calculateWeeklySummary(currentWeek);
-      weeklySummary.present = recalculated.present;
-      weeklySummary.absent = recalculated.absent;
-      weeklySummary.late = recalculated.late;
-      weeklySummary.totalHours = recalculated.totalHours;
+      employee.attendance.weeklySummaries.push(weeklySummary);
     }
 
-    // Get monthly summary - calculate if not exists
-    let monthlySummary = employee.attendance.monthlySummaries
-      .find(summary => summary.month === currentMonth);
-    
-    if (!monthlySummary) {
-      monthlySummary = {
-        month: currentMonth,
-        ...calculateMonthlySummary(currentMonth)
-      };
-      // Add to monthly summaries array
-      employee.attendance.monthlySummaries.push(monthlySummary);
+    const monthlyIndex = employee.attendance.monthlySummaries.findIndex(summary => summary.month === currentMonth);
+    if (monthlyIndex >= 0) {
+      employee.attendance.monthlySummaries[monthlyIndex] = monthlySummary;
     } else {
-      // Update existing summary with recalculated data
-      const recalculated = calculateMonthlySummary(currentMonth);
-      monthlySummary.present = recalculated.present;
-      monthlySummary.absent = recalculated.absent;
-      monthlySummary.late = recalculated.late;
-      monthlySummary.totalHours = recalculated.totalHours;
+      employee.attendance.monthlySummaries.push(monthlySummary);
     }
 
     // Save the updated summaries to database
