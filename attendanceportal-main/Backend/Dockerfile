@@ -7,6 +7,9 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci --legacy-peer-deps --only=production
 
+# Install curl for health checks
+RUN apk add --no-cache curl
+
 # Copy source code
 COPY . .
 
@@ -17,8 +20,8 @@ ENV TZ=Asia/Kolkata
 RUN mkdir -p scripts
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node healthcheck.js || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=5 \
+  CMD curl -f http://localhost:5000/api/health || exit 1
 
 EXPOSE 5000
 

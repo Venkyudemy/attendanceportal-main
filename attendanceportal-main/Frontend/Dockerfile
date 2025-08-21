@@ -8,7 +8,7 @@ ENV REACT_APP_API_URL=/api
 
 # Copy package files first for better caching
 COPY package*.json ./
-RUN npm ci --legacy-peer-deps --only=production
+RUN npm ci --legacy-peer-deps
 
 # Copy source code
 COPY . .

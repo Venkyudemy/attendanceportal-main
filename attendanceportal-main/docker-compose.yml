@@ -50,6 +50,8 @@ services:
         node scripts/fix-leave-balance-v2.js &&
         echo '🔧 Running final leave balance fix...' &&
         node scripts/fix-leave-balance-final.js &&
+        echo '🔧 Verifying leave balance fix...' &&
+        node scripts/check-raw-data.js &&
         echo '🔧 Fixing database after deployment...' &&
         node fix-database-after-deployment.js &&
         echo '🚀 Starting backend server...' &&

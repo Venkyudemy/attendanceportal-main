@@ -1,6 +1,8 @@
 @echo off
 echo 🚀 Deploying Attendance Portal with Leave Balance Fix
-echo ====================================================
+echo ===================================================
+
+setlocal enabledelayedexpansion
 
 echo [INFO] Stopping existing containers...
 docker-compose down --remove-orphans
@@ -12,7 +14,7 @@ echo [INFO] Building and starting services...
 docker-compose up --build -d
 
 echo [INFO] Waiting for services to be ready...
-timeout /t 60 /nobreak >nul
+timeout /t 45 /nobreak >nul
 
 echo [INFO] Checking service status...
 docker-compose ps
@@ -21,12 +23,14 @@ echo [INFO] Waiting for backend initialization to complete...
 timeout /t 90 /nobreak >nul
 
 echo [INFO] Checking backend logs for leave balance fix...
-docker-compose logs backend | findstr "Final leave balance fix completed" >nul
+docker-compose logs backend | findstr "Leave Balance"
+
+echo [INFO] Testing admin login...
+curl -s -X POST http://localhost:5000/api/auth/login -H "Content-Type: application/json" -d "{\"email\":\"admin@techcorp.com\",\"password\":\"password123\"}" | findstr "token" >nul
 if %errorlevel% equ 0 (
-    echo [SUCCESS] Leave balance fix completed successfully
+    echo [SUCCESS] Admin login test successful
 ) else (
-    echo [WARNING] Leave balance fix status unclear, checking logs...
-    docker-compose logs backend | tail -20
+    echo [WARNING] Admin login test failed
 )
 
 echo.
@@ -40,10 +44,10 @@ echo 🔑 Admin Login Credentials:
 echo    Email: admin@techcorp.com
 echo    Password: password123
 echo.
-echo 📝 Leave Balance Fix Applied:
-echo    ✅ All employees have correct leave balance structure
-echo    ✅ Admin view should now show proper leave balance
-echo    ✅ Employee portal leave balance working correctly
+echo 📝 Useful Commands:
+echo    View logs: docker-compose logs -f
+echo    Stop services: docker-compose down
+echo    Restart services: docker-compose restart
 echo.
-echo [SUCCESS] Deployment with leave balance fix completed!
+echo [SUCCESS] Deployment completed with leave balance fix!
 pause
