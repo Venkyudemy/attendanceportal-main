@@ -238,17 +238,19 @@ router.patch('/:id/status', async (req, res) => {
         const leaveTypeKey = leaveRequest.leaveType.toLowerCase().replace(' ', '');
         if (employee.leaveBalance[leaveTypeKey]) {
           // Check if this request was previously approved to avoid double counting
-          const previousStatus = leaveRequest.status;
           if (previousStatus !== 'Approved') {
-            employee.leaveBalance[leaveTypeKey].used += leaveRequest.totalDays || leaveRequest.days || 0;
+            const daysToDeduct = leaveRequest.totalDays || leaveRequest.days || 0;
+            employee.leaveBalance[leaveTypeKey].used += daysToDeduct;
             employee.leaveBalance[leaveTypeKey].remaining = 
               employee.leaveBalance[leaveTypeKey].total - employee.leaveBalance[leaveTypeKey].used;
             await employee.save();
-            console.log('Employee leave balance updated in MongoDB for:', employee.name, {
+            console.log('✅ Employee leave balance updated in MongoDB for:', employee.name, {
               leaveType: leaveRequest.leaveType,
-              daysUsed: leaveRequest.totalDays || leaveRequest.days || 0,
+              daysUsed: daysToDeduct,
               newBalance: employee.leaveBalance[leaveTypeKey]
             });
+          } else {
+            console.log('⚠️ Leave request was already approved, skipping balance update');
           }
         }
       }
@@ -260,13 +262,14 @@ router.patch('/:id/status', async (req, res) => {
       if (employee) {
         const leaveTypeKey = leaveRequest.leaveType.toLowerCase().replace(' ', '');
         if (employee.leaveBalance[leaveTypeKey]) {
-          employee.leaveBalance[leaveTypeKey].used -= leaveRequest.totalDays || leaveRequest.days || 0;
+          const daysToRestore = leaveRequest.totalDays || leaveRequest.days || 0;
+          employee.leaveBalance[leaveTypeKey].used -= daysToRestore;
           employee.leaveBalance[leaveTypeKey].remaining = 
             employee.leaveBalance[leaveTypeKey].total - employee.leaveBalance[leaveTypeKey].used;
           await employee.save();
-          console.log('Employee leave balance restored in MongoDB for:', employee.name, {
+          console.log('✅ Employee leave balance restored in MongoDB for:', employee.name, {
             leaveType: leaveRequest.leaveType,
-            daysRestored: leaveRequest.totalDays || leaveRequest.days || 0,
+            daysRestored: daysToRestore,
             newBalance: employee.leaveBalance[leaveTypeKey]
           });
         }
