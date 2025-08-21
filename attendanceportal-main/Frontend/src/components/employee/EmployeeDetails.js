@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getEmployeeById, getEmployeeLeaveBalance, recalculateEmployeeLeaveBalance, getAttendanceDetailsById } from '../../services/api';
+import { getEmployeeById, getEmployeeLeaveBalance, recalculateEmployeeLeaveBalance, getAttendanceDetailsById, syncAllEmployeesLeaveBalanceStructure } from '../../services/api';
 import './EmployeeDetails.css';
 
 const EmployeeDetails = () => {
@@ -22,44 +22,36 @@ const EmployeeDetails = () => {
         setLoading(true);
         console.log('🔍 Fetching employee details for ID:', employeeId);
         
-        // Fetch employee details and leave balance in parallel
-        const [employeeData, leaveBalanceData] = await Promise.all([
-          getEmployeeById(employeeId),
-          getEmployeeLeaveBalance(employeeId)
-        ]);
-        
+        // Fetch employee details first
+        const employeeData = await getEmployeeById(employeeId);
         console.log('✅ Employee details received:', employeeData);
-        console.log('✅ Leave balance received:', leaveBalanceData);
         console.log('📊 Attendance data:', employeeData.attendance);
         console.log('🆔 Employee ID in data:', employeeData._id);
         
         setEmployee(employeeData);
-        setLeaveBalance(leaveBalanceData);
+        
+        // Use employee's stored leave balance directly (more reliable)
+        if (employeeData.leaveBalance) {
+          console.log('✅ Using employee stored leave balance:', employeeData.leaveBalance);
+          setLeaveBalance(employeeData.leaveBalance);
+        } else {
+          console.log('⚠️ No leave balance found in employee data, trying API...');
+          try {
+            const leaveBalanceData = await getEmployeeLeaveBalance(employeeId);
+            console.log('✅ Leave balance from API:', leaveBalanceData);
+            setLeaveBalance(leaveBalanceData);
+          } catch (leaveBalanceErr) {
+            console.error('❌ Error fetching leave balance from API:', leaveBalanceErr);
+            setLeaveBalance(null);
+          }
+        }
+        
         setError(null);
         setLeaveBalanceLoading(false);
-        
-        // Debug logging for leave balance
-        console.log('🔍 Leave Balance Debug:');
-        console.log('Raw leave balance data:', leaveBalanceData);
-        console.log('Annual leave:', leaveBalanceData?.annual);
-        console.log('Sick leave:', leaveBalanceData?.sick);
-        console.log('Personal leave:', leaveBalanceData?.personal);
       } catch (err) {
         console.error('❌ Error fetching employee details:', err);
-        
-        // Try to fetch just employee details if leave balance fails
-        try {
-          const employeeData = await getEmployeeById(employeeId);
-          setEmployee(employeeData);
-          setLeaveBalance(null); // Set leave balance to null if it failed
-          setError(null);
-          setLeaveBalanceLoading(false);
-          console.log('⚠️ Leave balance fetch failed, but employee details loaded');
-        } catch (fallbackErr) {
-          console.error('❌ Fallback employee fetch also failed:', fallbackErr);
-          setError(`Failed to load employee details: ${fallbackErr.message}`);
-          setLeaveBalanceLoading(false);
-        }
+        setError(`Failed to load employee details: ${err.message}`);
+        setLeaveBalanceLoading(false);
       } finally {
         setLoading(false);
       }
@@ -442,19 +434,19 @@ const EmployeeDetails = () => {
                     <div className="leave-type">
                       <span className="leave-label">Annual Leave:</span>
                       <span className="leave-value">
-                        {leaveBalance.annual?.remaining || 0} / {leaveBalance.annual?.total || 0}
+                        {leaveBalance.annualleave?.remaining || leaveBalance.annual?.remaining || 0} / {leaveBalance.annualleave?.total || leaveBalance.annual?.total || 0}
                       </span>
                     </div>
                     <div className="leave-type">
                       <span className="leave-label">Sick Leave:</span>
                       <span className="leave-value">
-                        {leaveBalance.sick?.remaining || 0} / {leaveBalance.sick?.total || 0}
+                        {leaveBalance.sickleave?.remaining || leaveBalance.sick?.remaining || 0} / {leaveBalance.sickleave?.total || leaveBalance.sick?.total || 0}
                       </span>
                     </div>
                     <div className="leave-type">
                       <span className="leave-label">Personal Leave:</span>
                       <span className="leave-value">
-                        {leaveBalance.personal?.remaining || 0} / {leaveBalance.personal?.total || 0}
+                        {leaveBalance.personalleave?.remaining || leaveBalance.personal?.remaining || 0} / {leaveBalance.personalleave?.total || leaveBalance.personal?.total || 0}
                       </span>
                     </div>
                   </div>
@@ -463,13 +455,46 @@ const EmployeeDetails = () => {
                     <p>Leave balance data not available</p>
                   </div>
                 )}
-                <button 
-                  className="btn btn-primary recalculate-btn"
-                  onClick={handleRecalculateLeaveBalance}
-                  disabled={leaveBalanceLoading}
-                >
-                  {leaveBalanceLoading ? 'Recalculating...' : 'Recalculate Leave Balance'}
-                </button>
+                <div className="leave-balance-actions">
+                  <button 
+                    className="btn btn-primary recalculate-btn"
+                    onClick={handleRecalculateLeaveBalance}
+                    disabled={leaveBalanceLoading}
+                  >
+                    {leaveBalanceLoading ? 'Recalculating...' : 'Recalculate Leave Balance'}
+                  </button>
+                  <button 
+                    className="btn btn-secondary refresh-btn"
+                    onClick={async () => {
+                      try {
+                        setLeaveBalanceLoading(true);
+                        console.log('🔄 Refreshing employee data and leave balance...');
+                        
+                        // First sync the leave balance structure
+                        await syncAllEmployeesLeaveBalanceStructure();
+                        
+                        // Then get fresh employee data
+                        const freshEmployeeData = await getEmployeeById(employeeId);
+                        setEmployee(freshEmployeeData);
+                        
+                        // Use the fresh leave balance from employee data
+                        if (freshEmployeeData.leaveBalance) {
+                          setLeaveBalance(freshEmployeeData.leaveBalance);
+                          console.log('✅ Leave balance refreshed from employee data:', freshEmployeeData.leaveBalance);
+                        } else {
+                          console.log('⚠️ No leave balance in fresh employee data');
+                        }
+                      } catch (error) {
+                        console.error('❌ Error refreshing leave balance:', error);
+                      } finally {
+                        setLeaveBalanceLoading(false);
+                      }
+                    }}
+                    disabled={leaveBalanceLoading}
+                  >
+                    {leaveBalanceLoading ? 'Refreshing...' : 'Refresh Leave Balance'}
+                  </button>
+                </div>
               </div>
 
               <div className="detail-section">
@@ -553,19 +578,19 @@ const EmployeeDetails = () => {
                   <div className="leave-type">
                     <span className="leave-label">Annual Leave:</span>
                     <span className="leave-value">
-                      {employee.leaveBalance?.annual?.remaining || 0} / {employee.leaveBalance?.annual?.total || 0}
+                      {employee.leaveBalance?.annualleave?.remaining || employee.leaveBalance?.annual?.remaining || 0} / {employee.leaveBalance?.annualleave?.total || employee.leaveBalance?.annual?.total || 0}
                     </span>
                   </div>
                   <div className="leave-type">
                     <span className="leave-label">Sick Leave:</span>
                     <span className="leave-value">
-                      {employee.leaveBalance?.sick?.remaining || 0} / {employee.leaveBalance?.sick?.total || 0}
+                      {employee.leaveBalance?.sickleave?.remaining || employee.leaveBalance?.sick?.remaining || 0} / {employee.leaveBalance?.sickleave?.total || employee.leaveBalance?.sick?.total || 0}
                     </span>
                   </div>
                   <div className="leave-type">
                     <span className="leave-label">Personal Leave:</span>
                     <span className="leave-value">
-                      {employee.leaveBalance?.personal?.remaining || 0} / {employee.leaveBalance?.personal?.total || 0}
+                      {employee.leaveBalance?.personalleave?.remaining || employee.leaveBalance?.personal?.remaining || 0} / {employee.leaveBalance?.personalleave?.total || employee.leaveBalance?.personal?.total || 0}
                     </span>
                   </div>
                 </div>

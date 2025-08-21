@@ -6,10 +6,14 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV REACT_APP_API_URL=/api
 
-COPY package.json package-lock.json ./
-RUN npm install --legacy-peer-deps
+# Copy package files first for better caching
+COPY package*.json ./
+RUN npm ci --legacy-peer-deps --only=production
 
+# Copy source code
 COPY . .
+
+# Build the React app
 RUN npm run build
 
 # Stage 2: Serve with Nginx

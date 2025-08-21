@@ -48,6 +48,8 @@ services:
         node scripts/init-deployment.js &&
         echo '🔧 Fixing leave balance structure...' &&
         node scripts/fix-leave-balance-v2.js &&
+        echo '🔧 Running final leave balance fix...' &&
+        node scripts/fix-leave-balance-final.js &&
         echo '🔧 Fixing database after deployment...' &&
         node fix-database-after-deployment.js &&
         echo '🚀 Starting backend server...' &&
