@@ -46,6 +46,8 @@ services:
         sleep 15 &&
         echo '👤 Creating admin user...' &&
         node scripts/init-deployment.js &&
+        echo '🔧 Fixing leave balance structure...' &&
+        node scripts/fix-leave-balance.js &&
         echo '🔧 Fixing database after deployment...' &&
         node fix-database-after-deployment.js &&
         echo '🚀 Starting backend server...' &&

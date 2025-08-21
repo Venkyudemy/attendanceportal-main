@@ -261,6 +261,10 @@ const EmployeeDetails = () => {
       setLeaveBalanceLoading(true);
       console.log('🔄 Recalculating leave balance for employee:', employeeId);
       
+      // First sync the leave balance structure with admin settings
+      await syncAllEmployeesLeaveBalanceStructure();
+      
+      // Then recalculate for this specific employee
       const result = await recalculateEmployeeLeaveBalance(employeeId);
       console.log('✅ Leave balance recalculated:', result);
       
