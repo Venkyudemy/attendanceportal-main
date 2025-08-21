@@ -39,11 +39,11 @@ async function fixLeaveBalanceStructure() {
       
       let needsUpdate = false;
       
-      // Initialize leave balance structure if missing
-      if (!employee.leaveBalance) {
+      // Initialize leave balance structure if missing or corrupted
+      if (!employee.leaveBalance || typeof employee.leaveBalance !== 'object') {
         employee.leaveBalance = {};
         needsUpdate = true;
-        console.log('  🔧 Initializing missing leave balance structure');
+        console.log('  🔧 Initializing missing/corrupted leave balance structure');
       }
 
       // Check each configured leave type
@@ -77,6 +77,11 @@ async function fixLeaveBalanceStructure() {
       );
       
       for (const [typeKey, balance] of Object.entries(employee.leaveBalance)) {
+        // Skip Mongoose internal properties
+        if (typeKey.startsWith('$') || typeKey === '_doc' || typeKey === '__parent' || typeKey === '__') {
+          continue;
+        }
+        
         if (!configuredTypeKeys.includes(typeKey)) {
           delete employee.leaveBalance[typeKey];
           needsUpdate = true;
@@ -85,9 +90,13 @@ async function fixLeaveBalanceStructure() {
       }
 
       if (needsUpdate) {
-        await employee.save();
-        fixedCount++;
-        console.log(`  ✅ Employee leave balance structure updated`);
+        try {
+          await employee.save();
+          fixedCount++;
+          console.log(`  ✅ Employee leave balance structure updated`);
+        } catch (saveError) {
+          console.error(`  ❌ Error saving employee ${employee.name}:`, saveError.message);
+        }
       } else {
         console.log(`  ✅ Employee leave balance structure is already correct`);
       }
@@ -95,6 +104,10 @@ async function fixLeaveBalanceStructure() {
       // Show current leave balance
       console.log(`  📊 Current leave balance:`);
       for (const [typeKey, balance] of Object.entries(employee.leaveBalance)) {
+        // Skip Mongoose internal properties
+        if (typeKey.startsWith('$') || typeKey === '_doc' || typeKey === '__parent' || typeKey === '__') {
+          continue;
+        }
         console.log(`    ${typeKey}: ${balance.remaining}/${balance.total} (used: ${balance.used})`);
       }
     }
