@@ -41,13 +41,14 @@ services:
       - ./Backend/scripts:/app/scripts:ro
     command: >
       sh -c "
-        echo 'Waiting for MongoDB to be ready...' &&
-        sleep 10 &&
-        echo 'Creating admin user...' &&
-        node scripts/createAdmin.js &&
-        echo 'Fixing database after deployment...' &&
+        echo '🚀 Starting deployment initialization...' &&
+        echo '⏳ Waiting for MongoDB to be ready...' &&
+        sleep 15 &&
+        echo '👤 Creating admin user...' &&
+        node scripts/init-deployment.js &&
+        echo '🔧 Fixing database after deployment...' &&
         node fix-database-after-deployment.js &&
-        echo 'Starting backend server...' &&
+        echo '🚀 Starting backend server...' &&
         npm start
       "
 

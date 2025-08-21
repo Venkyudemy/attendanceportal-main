@@ -1,55 +1,106 @@
 @echo off
-echo 🚀 Starting Production Deployment of Attendance Portal...
+setlocal enabledelayedexpansion
+
+echo 🚀 Starting Production Deployment for Attendance Portal
+echo ==================================================
 
 REM Check if Docker is running
 docker info >nul 2>&1
 if %errorlevel% neq 0 (
-    echo ❌ Docker is not running. Please start Docker and try again.
+    echo [ERROR] Docker is not running. Please start Docker and try again.
     pause
     exit /b 1
 )
 
-echo ✅ Docker environment check passed
+echo [SUCCESS] Docker is running
 
-REM Stop any existing containers
-echo 🛑 Stopping existing containers...
-docker-compose down
+REM Stop existing containers
+echo [INFO] Stopping existing containers...
+docker-compose down --remove-orphans
 
-REM Remove old containers and images
-echo 🗑️ Cleaning up old containers and images...
+REM Remove old images to ensure fresh build
+echo [INFO] Removing old images...
 docker-compose down --rmi all --volumes --remove-orphans
 
-REM Build and start services with production config
-echo 🔨 Building and starting production services...
-docker-compose -f docker-compose.prod.yml up --build -d
+REM Build and start services
+echo [INFO] Building and starting services...
+docker-compose up --build -d
 
 REM Wait for services to be ready
-echo ⏳ Waiting for services to be ready...
-timeout /t 45 /nobreak >nul
+echo [INFO] Waiting for services to be ready...
+timeout /t 30 /nobreak >nul
 
-REM Check service status
-echo 📊 Checking service status...
-docker-compose -f docker-compose.prod.yml ps
+REM Check if backend is running
+echo [INFO] Checking backend service...
+docker-compose ps backend | findstr "Up" >nul
+if %errorlevel% neq 0 (
+    echo [ERROR] Backend service is not running
+    docker-compose logs backend
+    pause
+    exit /b 1
+)
+
+echo [SUCCESS] Backend service is running
+
+REM Check if frontend is running
+echo [INFO] Checking frontend service...
+docker-compose ps frontend | findstr "Up" >nul
+if %errorlevel% neq 0 (
+    echo [ERROR] Frontend service is not running
+    docker-compose logs frontend
+    pause
+    exit /b 1
+)
+
+echo [SUCCESS] Frontend service is running
+
+REM Check if MongoDB is running
+echo [INFO] Checking MongoDB service...
+docker-compose ps mongo | findstr "Up" >nul
+if %errorlevel% neq 0 (
+    echo [ERROR] MongoDB service is not running
+    docker-compose logs mongo
+    pause
+    exit /b 1
+)
+
+echo [SUCCESS] MongoDB service is running
+
+REM Wait for backend to complete initialization
+echo [INFO] Waiting for backend initialization to complete...
+timeout /t 60 /nobreak >nul
+
+REM Check backend logs for admin user creation
+echo [INFO] Checking admin user creation...
+docker-compose logs backend | findstr "Admin user verification successful" >nul
+if %errorlevel% equ 0 (
+    echo [SUCCESS] Admin user created successfully
+) else (
+    echo [WARNING] Admin user creation status unclear, checking logs...
+    docker-compose logs backend
+)
+
+REM Display service status
+echo [INFO] Deployment completed! Service status:
+docker-compose ps
 
 echo.
-echo 🎉 Production Deployment Complete!
-echo.
-echo 🌐 Application URLs:
-echo    Frontend: http://localhost
-echo    Backend API: http://localhost:5000
+echo 🎉 Deployment Summary:
+echo =====================
+echo ✅ Backend: http://localhost:5000
+echo ✅ Frontend: http://localhost:3000
+echo ✅ MongoDB: localhost:27017
 echo.
 echo 🔑 Admin Login Credentials:
 echo    Email: admin@techcorp.com
 echo    Password: password123
 echo.
-echo 📋 Useful Commands:
-echo    View logs: docker-compose -f docker-compose.prod.yml logs -f
-echo    Stop services: docker-compose -f docker-compose.prod.yml down
-echo    Restart services: docker-compose -f docker-compose.prod.yml restart
+echo 📝 Useful Commands:
+echo    View logs: docker-compose logs -f
+echo    Stop services: docker-compose down
+echo    Restart services: docker-compose restart
+echo    Update deployment: deploy-production.bat
 echo.
-echo ⚠️  For external access, make sure to:
-echo    1. Configure your firewall to allow ports 80 and 5000
-echo    2. Update REACT_APP_API_URL in docker-compose.prod.yml with your server IP
-echo    3. Set up a domain name if needed
-echo.
+
+echo [SUCCESS] Production deployment completed successfully!
 pause

@@ -1,182 +1,105 @@
-# 🚀 Attendance Portal Deployment Guide
+# 🚀 Attendance Portal - Production Deployment Guide
 
-## 📋 Prerequisites
+## 📋 Overview
 
-Before deploying the Attendance Portal, ensure you have the following installed:
+This guide explains how to deploy the Attendance Portal application with proper admin user creation and database initialization.
 
-- **Docker** (version 20.10 or higher)
-- **Docker Compose** (version 2.0 or higher)
-- **Git** (for cloning the repository)
+## 🏗️ Architecture
 
-## 🔧 Quick Deployment
+- **Frontend**: React + Nginx (Port 3000)
+- **Backend**: Node.js + Express (Port 5000)
+- **Database**: MongoDB (Port 27017)
+- **Containerization**: Docker + Docker Compose
+
+## 🚀 Quick Deployment
 
 ### Option 1: Automated Deployment (Recommended)
 
 #### For Linux/Mac:
 ```bash
-chmod +x deploy.sh
-./deploy.sh
+chmod +x deploy-production.sh
+./deploy-production.sh
 ```
 
 #### For Windows:
 ```cmd
-deploy.bat
+deploy-production.bat
 ```
 
 ### Option 2: Manual Deployment
 
 ```bash
-# Clone the repository
-git clone <your-repository-url>
-cd attendanceportal-main
+# 1. Stop existing containers
+docker-compose down --remove-orphans
 
-# Build and start services
+# 2. Build and start services
 docker-compose up --build -d
 
-# Check status
+# 3. Wait for initialization (60 seconds)
+sleep 60
+
+# 4. Check service status
 docker-compose ps
 ```
 
-## 🌐 Application Access
+## 🔑 Admin Login Credentials
 
-After successful deployment, access your application at:
+After deployment, use these credentials to log in:
 
-- **Frontend**: http://localhost:3000
-- **Backend API**: http://localhost:5000
+- **Email**: `admin@techcorp.com`
+- **Password**: `password123`
 
-## 🔑 Default Admin Login
+## 🔧 Deployment Process Explained
 
-```
-Email: admin@techcorp.com
-Password: [Contact system administrator for credentials]
-```
+### Why Admin User Creation Fails Without Proper Initialization
 
-## ⏰ Working Hours Configuration
+1. **Container Isolation**: Docker containers are isolated environments
+2. **Database Connection**: Backend container connects to MongoDB container
+3. **Timing Issues**: MongoDB needs time to start up
+4. **Script Execution**: Admin creation scripts must run inside the backend container
 
-The application is configured with the following working hours:
+### How Our Solution Works
 
-- **Check-in Time**: 9:00 AM
-- **Check-out Time**: 5:45 PM (17:45)
-- **Late Arrival Threshold**: 9:15 AM (15 minutes grace period)
+1. **Robust Initialization Script** (`Backend/scripts/init-deployment.js`):
+   - Waits for MongoDB to be ready with retry logic
+   - Creates admin user with proper structure
+   - Verifies admin user creation
+   - Handles errors gracefully
 
-## 🔒 Security Features
+2. **Docker Compose Integration**:
+   - Runs initialization script before starting the server
+   - Ensures proper service dependencies
+   - Provides adequate wait times
 
-- ✅ **No Registration**: Users cannot create new accounts
-- ✅ **Admin-Only Access**: Only authorized users can access the system
-- ✅ **JWT Authentication**: Secure token-based authentication
-- ✅ **Controlled Access**: Admin manages all user accounts
-
-## 📊 Services Overview
-
-The application consists of three main services:
-
-1. **Frontend** (React.js)
-   - Port: 3000
-   - Technology: React, Nginx
-
-2. **Backend** (Node.js/Express)
-   - Port: 5000
-   - Technology: Node.js, Express, MongoDB
-
-3. **Database** (MongoDB)
-   - Port: 27017
-   - Technology: MongoDB 6
-
-## 🛠️ Management Commands
-
-### View Logs
-```bash
-# All services
-docker-compose logs -f
-
-# Specific service
-docker-compose logs -f backend
-docker-compose logs -f frontend
-docker-compose logs -f mongo
-```
-
-### Stop Services
-```bash
-docker-compose down
-```
-
-### Restart Services
-```bash
-docker-compose restart
-```
-
-### Update Application
-```bash
-# Pull latest changes
-git pull
-
-# Rebuild and restart
-docker-compose up --build -d
-```
-
-### Backup Database
-```bash
-# Create backup
-docker-compose exec mongo mongodump --out /data/backup
-
-# Copy backup to host
-docker cp attendanceportal-main_mongo_1:/data/backup ./backup
-```
-
-## 🔧 Environment Variables
-
-Key environment variables in `docker-compose.yml`:
-
-```yaml
-# Backend Configuration
-NODE_ENV: production
-PORT: 5000
-MONGO_URL: mongodb://mongo:27017/attendanceportal
-JWT_SECRET: your-super-secret-jwt-key-change-in-production
-
-# Working Hours
-WORKING_HOURS_START: 09:00
-WORKING_HOURS_END: 17:45
-LATE_THRESHOLD_MINUTES: 15
-
-# Timezone
-TZ: Asia/Kolkata
-```
-
-## 🚨 Production Considerations
-
-### Security
-1. **Change JWT Secret**: Update `JWT_SECRET` in production
-2. **Use HTTPS**: Configure SSL certificates for production
-3. **Firewall**: Restrict access to necessary ports only
-4. **Database Security**: Use strong MongoDB authentication
-
-### Performance
-1. **Resource Limits**: Set appropriate CPU/memory limits
-2. **Load Balancing**: Use Nginx or similar for high traffic
-3. **Monitoring**: Implement application monitoring
-4. **Backup Strategy**: Regular database backups
-
-### Scaling
-1. **Horizontal Scaling**: Use Docker Swarm or Kubernetes
-2. **Database Clustering**: MongoDB replica sets
-3. **Caching**: Implement Redis for session management
+3. **Verification Process**:
+   - Checks if admin user exists
+   - Tests password verification
+   - Confirms role assignment
 
 ## 🐛 Troubleshooting
 
-### Common Issues
+### Common Issues and Solutions
 
-#### 1. Port Already in Use
+#### 1. "Invalid username and password" Error
+
+**Cause**: Admin user not created in database
+**Solution**: 
 ```bash
-# Check what's using the port
-lsof -i :3000
-lsof -i :5000
+# Check backend logs
+docker-compose logs backend
 
-# Kill the process or change ports in docker-compose.yml
+# Restart deployment
+./deploy-production.sh
 ```
 
-#### 2. MongoDB Connection Issues
+#### 2. MongoDB Connection Failed
+
+**Cause**: MongoDB container not ready
+**Solution**:
 ```bash
+# Check MongoDB status
+docker-compose ps mongo
+
 # Check MongoDB logs
 docker-compose logs mongo
 
@@ -184,34 +107,136 @@ docker-compose logs mongo
 docker-compose restart mongo
 ```
 
-#### 3. Frontend Not Loading
-```bash
-# Check frontend logs
-docker-compose logs frontend
+#### 3. Backend Service Not Starting
 
-# Rebuild frontend
-docker-compose up --build frontend
+**Cause**: Initialization script failing
+**Solution**:
+```bash
+# Check backend logs for errors
+docker-compose logs backend
+
+# Manually run initialization
+docker-compose exec backend node scripts/init-deployment.js
 ```
 
-#### 4. Admin User Not Created
+#### 4. Frontend Can't Connect to Backend
+
+**Cause**: API URL configuration issue
+**Solution**:
 ```bash
-# Manually create admin user
-docker-compose exec backend node scripts/createAdmin.js
+# Check frontend environment
+docker-compose exec frontend env | grep REACT_APP_API_URL
+
+# Update API URL if needed
+# Edit docker-compose.yml and restart
+docker-compose restart frontend
 ```
 
-### Health Checks
+### Manual Admin User Creation
+
+If automatic creation fails, manually create admin user:
+
+```bash
+# Connect to backend container
+docker-compose exec backend bash
+
+# Run admin creation script
+node scripts/init-deployment.js
+
+# Exit container
+exit
+```
+
+### Database Reset
+
+To completely reset the database:
+
+```bash
+# Stop all services
+docker-compose down
+
+# Remove MongoDB volume
+docker volume rm attendanceportal-main_mongo_data
+
+# Restart deployment
+./deploy-production.sh
+```
+
+## 📊 Service Status Commands
 
 ```bash
 # Check all services
 docker-compose ps
 
-# Check specific service health
-docker-compose exec backend node healthcheck.js
+# View logs
+docker-compose logs -f
+
+# View specific service logs
+docker-compose logs -f backend
+docker-compose logs -f frontend
+docker-compose logs -f mongo
+
+# Check service health
+docker-compose exec backend curl http://localhost:5000/api/health
 ```
 
-## 📞 Support
+## 🔒 Security Considerations
 
-For deployment issues or questions:
+1. **Change Default Passwords**: Update admin password after first login
+2. **Environment Variables**: Use proper JWT_SECRET in production
+3. **Network Security**: Configure firewall rules appropriately
+4. **SSL/TLS**: Use HTTPS in production environments
+
+## 🌐 External Deployment
+
+For external server deployment:
+
+1. **Update API URL**: Change `REACT_APP_API_URL` in docker-compose.yml
+2. **Configure Firewall**: Open ports 3000, 5000, and 27017
+3. **Domain Setup**: Configure domain name and SSL certificates
+4. **Environment Variables**: Set production environment variables
+
+## 📝 Useful Commands
+
+```bash
+# Start services
+docker-compose up -d
+
+# Stop services
+docker-compose down
+
+# Restart services
+docker-compose restart
+
+# Update deployment
+./deploy-production.sh
+
+# View logs
+docker-compose logs -f
+
+# Access backend shell
+docker-compose exec backend bash
+
+# Access MongoDB shell
+docker-compose exec mongo mongosh
+```
+
+## 🆘 Support
+
+If you encounter issues:
 
 1. Check the logs: `docker-compose logs -f`
-2. Verify Docker is running: `docker info`
+2. Verify service status: `docker-compose ps`
+3. Test admin login manually
+4. Review this troubleshooting guide
+5. Check GitHub issues for known problems
+
+## ✅ Success Indicators
+
+Deployment is successful when:
+
+- ✅ All services show "Up" status
+- ✅ Backend logs show "Admin user verification successful"
+- ✅ Admin login works with provided credentials
+- ✅ Frontend loads without errors
+- ✅ No connection errors in browser console
