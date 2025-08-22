@@ -183,11 +183,22 @@ mongoose.connect(MONGO_URI, {
   serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
   socketTimeoutMS: 45000 // Close sockets after 45s of inactivity
 })
-.then(() => {
+.then(async () => {
   console.log('✅ Connected to MongoDB successfully');
   console.log('📊 Database:', mongoose.connection.db.databaseName);
   console.log('🌐 Host:', mongoose.connection.host);
   console.log('🔌 Port:', mongoose.connection.port);
+  
+  // Ensure admin user exists
+  try {
+    console.log('🔧 Ensuring admin user exists...');
+    const { createAdminUser } = require('./scripts/initDatabase');
+    await createAdminUser();
+    console.log('✅ Admin user verification completed');
+  } catch (error) {
+    console.error('⚠️  Admin user creation failed:', error.message);
+    console.log('💡 This is not critical - admin user may already exist');
+  }
   
   console.log('🚀 Starting HTTP server...');
   app.listen(PORT, '0.0.0.0', () => {

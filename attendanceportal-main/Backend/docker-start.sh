@@ -24,26 +24,23 @@ echo "✅ MongoDB is ready!"
 # Wait a bit more for MongoDB to fully initialize
 sleep 5
 
-# Check if we need to run database initialization
-if [ ! -f /app/.db-initialized ]; then
-  echo "🔧 Running database initialization..."
-  
-  # Run database initialization scripts if they exist
-  if [ -f /app/scripts/initDatabase.js ]; then
-    echo "Running initDatabase.js..."
-    node /app/scripts/initDatabase.js
-  fi
-  
-  if [ -f /app/scripts/createTestUser.js ]; then
-    echo "Running createTestUser.js..."
-    node /app/scripts/createTestUser.js
-  fi
-  
-  # Mark database as initialized
-  touch /app/.db-initialized
+# Always run database initialization to ensure admin user exists
+echo "🔧 Running database initialization..."
+echo "📡 MongoDB URI: $MONGO_URL"
+
+# Run database initialization script
+if [ -f /app/scripts/initDatabase.js ]; then
+  echo "Running initDatabase.js..."
+  node /app/scripts/initDatabase.js
   echo "✅ Database initialization completed"
 else
-  echo "✅ Database already initialized, skipping..."
+  echo "⚠️  initDatabase.js not found, trying createAdmin.js..."
+  if [ -f /app/scripts/createAdmin.js ]; then
+    node /app/scripts/createAdmin.js
+    echo "✅ Admin user creation completed"
+  else
+    echo "❌ No database initialization scripts found!"
+  fi
 fi
 
 # Set proper permissions for logs directory
