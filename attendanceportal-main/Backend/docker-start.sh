@@ -1,21 +1,21 @@
 #!/bin/sh
 
 # Docker Startup Script for Attendance Portal Backend
-# This script ensures proper initialization and configuration
+# This script ensures proper initialization and admin user creation
 
 set -e
 
 echo "🚀 Starting Attendance Portal Backend in Docker..."
 
 # Set default timezone if not set
-export TZ=${TZ:-Asia/Kolkata}
+export TZ=${TZ:-UTC}
 
 # Create logs directory if it doesn't exist
 mkdir -p /app/logs
 
 # Wait for MongoDB to be ready
 echo "⏳ Waiting for MongoDB to be ready..."
-until nc -z mongo 27017; do
+until nc -z mongodb 27017; do
   echo "MongoDB is not ready yet, waiting..."
   sleep 2
 done
@@ -24,8 +24,8 @@ echo "✅ MongoDB is ready!"
 # Wait a bit more for MongoDB to fully initialize
 sleep 5
 
-# Always run database initialization to ensure admin user exists
-echo "🔧 Running database initialization..."
+# Always ensure admin user exists
+echo "🔧 Ensuring admin user exists..."
 echo "📡 MongoDB URI: $MONGO_URL"
 
 # Run database initialization script
@@ -39,7 +39,14 @@ else
     node /app/scripts/createAdmin.js
     echo "✅ Admin user creation completed"
   else
-    echo "❌ No database initialization scripts found!"
+    echo "⚠️  createAdmin.js not found, trying createAdminUser.js..."
+    if [ -f /app/scripts/createAdminUser.js ]; then
+      node /app/scripts/createAdminUser.js
+      echo "✅ Admin user creation completed"
+    else
+      echo "❌ No database initialization scripts found!"
+      echo "💡 Admin user should be created by MongoDB init script"
+    fi
   fi
 fi
 
