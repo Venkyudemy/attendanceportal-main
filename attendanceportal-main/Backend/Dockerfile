@@ -3,12 +3,16 @@ FROM node:18-alpine
 
 WORKDIR /app
 
+# Install system dependencies for better functionality
+RUN apk add --no-cache \
+    curl \
+    netcat-openbsd \
+    bash \
+    git
+
 # Install dependencies for better caching
 COPY package*.json ./
 RUN npm ci --legacy-peer-deps --only=production
-
-# Install curl and netcat for health checks and MongoDB connectivity
-RUN apk add --no-cache curl netcat-openbsd
 
 # Copy source code
 COPY . .
@@ -16,11 +20,14 @@ COPY . .
 # Set timezone for consistent date handling
 ENV TZ=UTC
 
-# Make startup script executable
-RUN chmod +x docker-start.sh
+# Make startup script executable and ensure proper line endings
+RUN chmod +x docker-start.sh && \
+    chmod +x initAdmin.js && \
+    dos2unix docker-start.sh 2>/dev/null || true && \
+    dos2unix initAdmin.js 2>/dev/null || true
 
-# Ensure initAdmin.js is executable
-RUN chmod +x initAdmin.js
+# Create logs directory
+RUN mkdir -p /app/logs && chmod 755 /app/logs
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=5 \

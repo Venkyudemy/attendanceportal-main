@@ -41,6 +41,7 @@ services:
       - attendance-network
     volumes:
       - ./Backend/scripts:/app/scripts:ro
+      - ./Backend/logs:/app/logs
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
       interval: 30s
@@ -51,8 +52,11 @@ services:
       sh -c "
         echo '🚀 Starting backend server...' &&
         echo '⏳ Waiting for MongoDB to be ready...' &&
-        sleep 15 &&
-        echo '🔧 Starting backend with admin user creation...' &&
+        sleep 20 &&
+        echo '🔧 Ensuring admin user exists...' &&
+        node initAdmin.js &&
+        echo '✅ Admin user creation completed' &&
+        echo '🎯 Starting backend server...' &&
         npm start
       "
 
@@ -74,6 +78,11 @@ services:
       timeout: 10s
       retries: 5
       start_period: 60s
+    command: >
+      mongod 
+      --bind_ip_all 
+      --replSet rs0 
+      --oplogSize 128
 
 volumes:
   mongo_data:

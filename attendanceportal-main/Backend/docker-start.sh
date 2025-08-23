@@ -12,17 +12,18 @@ export TZ=${TZ:-UTC}
 
 # Create logs directory if it doesn't exist
 mkdir -p /app/logs
+chmod 755 /app/logs
 
 # Wait for MongoDB to be ready
 echo "⏳ Waiting for MongoDB to be ready..."
-until nc -z mongodb 27017; do
+until nc -z mongo 27017; do
   echo "MongoDB is not ready yet, waiting..."
   sleep 2
 done
 echo "✅ MongoDB is ready!"
 
 # Wait a bit more for MongoDB to fully initialize
-sleep 5
+sleep 10
 
 # Always ensure admin user exists
 echo "🔧 Ensuring admin user exists..."
@@ -52,9 +53,6 @@ else
     echo "💡 Admin user should be created by MongoDB init script"
   fi
 fi
-
-# Set proper permissions for logs directory
-chmod 755 /app/logs
 
 # Start the application
 echo "🎯 Starting Node.js application..."
