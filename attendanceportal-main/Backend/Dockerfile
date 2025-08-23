@@ -8,17 +8,21 @@ RUN apk add --no-cache \
     curl \
     netcat-openbsd \
     bash \
-    git
+    git \
+    python3 \
+    make \
+    g++
 
 # Install dependencies for better caching
 COPY package*.json ./
-RUN npm ci --legacy-peer-deps --only=production
+RUN npm ci --legacy-peer-deps --only=production --silent
 
 # Copy source code
 COPY . .
 
 # Set timezone for consistent date handling
 ENV TZ=UTC
+ENV NODE_ENV=production
 
 # Make startup script executable and ensure proper line endings
 RUN chmod +x docker-start.sh && \
@@ -26,8 +30,13 @@ RUN chmod +x docker-start.sh && \
     dos2unix docker-start.sh 2>/dev/null || true && \
     dos2unix initAdmin.js 2>/dev/null || true
 
-# Create logs directory
-RUN mkdir -p /app/logs && chmod 755 /app/logs
+# Create logs directory and set permissions
+RUN mkdir -p /app/logs && \
+    chmod 755 /app/logs && \
+    chown -R node:node /app
+
+# Switch to non-root user for security
+USER node
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=5 \

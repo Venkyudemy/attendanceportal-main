@@ -1,34 +1,44 @@
 version: '3.8'
 
 services:
-  frontend:
-    build:
-      context: ./Frontend
-      dockerfile: Dockerfile
+  # MongoDB Database Service
+  mongo:
+    image: mongo:6
+    container_name: attendance-mongo
     ports:
-      - "3000:80"
-    depends_on:
-      backend:
-        condition: service_healthy
+      - "27017:27017"
     environment:
-      - REACT_APP_API_URL=/api
       - TZ=Asia/Kolkata
+      - MONGO_INITDB_DATABASE=attendanceportal
+    volumes:
+      - mongo_data:/data/db
+      - ./Backend/scripts/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+      - ./Backend/logs/mongo:/var/log/mongodb
     restart: unless-stopped
     networks:
       - attendance-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       interval: 30s
       timeout: 10s
       retries: 5
       start_period: 60s
-    volumes:
-      - ./Frontend/logs:/var/log/nginx
+    command: >
+      mongod 
+      --bind_ip_all 
+      --replSet rs0 
+      --oplogSize 128
+      --logpath /var/log/mongodb/mongod.log
+      --logappend
 
+  # Backend API Service
   backend:
     build:
       context: ./Backend
       dockerfile: Dockerfile
+      args:
+        NODE_ENV: production
+    container_name: attendance-backend
     ports:
       - "5000:5000"
     environment:
@@ -41,6 +51,7 @@ services:
       - WORKING_HOURS_START=09:00
       - WORKING_HOURS_END=17:45
       - LATE_THRESHOLD_MINUTES=15
+      - CORS_ORIGIN=http://localhost:3000
     depends_on:
       mongo:
         condition: service_healthy
@@ -50,6 +61,7 @@ services:
     volumes:
       - ./Backend/scripts:/app/scripts:ro
       - ./Backend/logs:/app/logs
+      - ./Backend/uploads:/app/uploads
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
       interval: 30s
@@ -68,32 +80,64 @@ services:
         npm start
       "
 
-  mongo:
-    image: mongo:6
+  # Frontend Web Service
+  frontend:
+    build:
+      context: ./Frontend
+      dockerfile: Dockerfile
+      args:
+        NODE_ENV: production
+        REACT_APP_API_URL: /api
+    container_name: attendance-frontend
     ports:
-      - "27017:27017"
+      - "3000:80"
+    depends_on:
+      backend:
+        condition: service_healthy
     environment:
+      - REACT_APP_API_URL=/api
       - TZ=Asia/Kolkata
-    volumes:
-      - mongo_data:/data/db
-      - ./Backend/scripts/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+      - NGINX_HOST=localhost
+      - NGINX_PORT=80
     restart: unless-stopped
     networks:
       - attendance-network
+    volumes:
+      - ./Frontend/logs:/var/log/nginx
+      - ./Frontend/public:/usr/share/nginx/html/public:ro
     healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
       interval: 30s
       timeout: 10s
       retries: 5
       start_period: 60s
-    command: >
-      mongod 
-      --bind_ip_all 
-      --replSet rs0 
-      --oplogSize 128
+
+  # Nginx Reverse Proxy (Optional - for production)
+  nginx-proxy:
+    image: nginx:1.25-alpine
+    container_name: attendance-nginx-proxy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./nginx/logs:/var/log/nginx
+    depends_on:
+      - frontend
+      - backend
+    restart: unless-stopped
+    networks:
+      - attendance-network
+    profiles:
+      - production
 
 volumes:
   mongo_data:
+    driver: local
+  backend_logs:
+    driver: local
+  frontend_logs:
     driver: local
 
 networks:
@@ -102,3 +146,5 @@ networks:
     ipam:
       config:
         - subnet: 172.20.0.0/16
+    driver_opts:
+      com.docker.network.bridge.name: attendance-bridge

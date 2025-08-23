@@ -54,6 +54,10 @@ else
   fi
 fi
 
+# Create uploads directory if it doesn't exist
+mkdir -p /app/uploads
+chmod 755 /app/uploads
+
 # Start the application
 echo "🎯 Starting Node.js application..."
 exec node index.js

@@ -3,12 +3,17 @@ FROM node:18-alpine AS build
 WORKDIR /app
 
 # Install necessary build tools
-RUN apk add --no-cache python3 make g++
+RUN apk add --no-cache \
+    python3 \
+    make \
+    g++ \
+    git
 
 # Set environment variables for build
 ENV NODE_ENV=production
 ENV CI=false
 ENV GENERATE_SOURCEMAP=false
+ENV REACT_APP_API_URL=/api
 
 # Copy package files first for better caching
 COPY package*.json ./
@@ -25,8 +30,10 @@ RUN npm run build || (echo "Build failed, trying with CI=false" && CI=false npm 
 # Stage 2: Serve with Nginx
 FROM nginx:1.25-alpine AS production
 
-# Install necessary tools for debugging
-RUN apk add --no-cache curl
+# Install necessary tools for debugging and health checks
+RUN apk add --no-cache \
+    curl \
+    bash
 
 WORKDIR /usr/share/nginx/html
 
@@ -45,6 +52,10 @@ RUN echo "healthy" > /usr/share/nginx/html/health
 # Set proper permissions
 RUN chown -R nginx:nginx /usr/share/nginx/html && \
     chmod -R 755 /usr/share/nginx/html
+
+# Create logs directory
+RUN mkdir -p /var/log/nginx && \
+    chown -R nginx:nginx /var/log/nginx
 
 # Switch to nginx user for security
 USER nginx
