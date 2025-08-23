@@ -13,9 +13,18 @@ export TZ=${TZ:-Asia/Kolkata}
 # Create logs directory if it doesn't exist
 mkdir -p /app/logs
 
+# Parse host and port from MONGO_URI
+MONGO_HOST=$(echo $MONGO_URI | sed -E 's#mongodb://([^:/]+).*#\1#')
+MONGO_PORT=$(echo $MONGO_URI | sed -E 's#.*:([0-9]+)/.*#\1#')
+
+if [ -z "$MONGO_HOST" ] || [ -z "$MONGO_PORT" ]; then
+  echo "❌ Could not parse MONGO_URI: $MONGO_URI"
+  exit 1
+fi
+
 # Wait for MongoDB to be ready
-echo "⏳ Waiting for MongoDB to be ready..."
-until nc -z mongo 27017; do
+echo "⏳ Waiting for MongoDB at $MONGO_HOST:$MONGO_PORT..."
+until nc -z "$MONGO_HOST" "$MONGO_PORT"; do
   echo "MongoDB is not ready yet, waiting..."
   sleep 2
 done
@@ -26,9 +35,8 @@ sleep 5
 
 # Always run database initialization to ensure admin user exists
 echo "🔧 Running database initialization..."
-echo "📡 MongoDB URI: $MONGO_URL"
+echo "📡 MongoDB URI: $MONGO_URI"
 
-# Run database initialization script
 if [ -f /app/scripts/initDatabase.js ]; then
   echo "Running initDatabase.js..."
   node /app/scripts/initDatabase.js
