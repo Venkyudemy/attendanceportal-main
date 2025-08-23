@@ -192,9 +192,13 @@ mongoose.connect(MONGO_URI, {
   // Ensure admin user exists
   try {
     console.log('🔧 Ensuring admin user exists...');
-    const { createAdminUser } = require('./scripts/initDatabase');
-    await createAdminUser();
-    console.log('✅ Admin user verification completed');
+    const { ensureAdminUserExists } = require('./startup-admin-creation');
+    const adminCreated = await ensureAdminUserExists();
+    if (adminCreated) {
+      console.log('✅ Admin user verification completed');
+    } else {
+      console.log('⚠️  Admin user creation failed, but continuing...');
+    }
   } catch (error) {
     console.error('⚠️  Admin user creation failed:', error.message);
     console.log('💡 This is not critical - admin user may already exist');
