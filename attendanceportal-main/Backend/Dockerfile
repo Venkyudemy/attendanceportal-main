@@ -7,6 +7,9 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci --legacy-peer-deps --only=production
 
+# Ensure bcryptjs is installed
+RUN npm install bcryptjs --save
+
 # Install curl and netcat for health checks and MongoDB connectivity
 RUN apk add --no-cache curl netcat-openbsd
 

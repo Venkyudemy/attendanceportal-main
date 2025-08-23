@@ -28,24 +28,31 @@ sleep 5
 echo "🔧 Ensuring admin user exists..."
 echo "📡 MongoDB URI: $MONGO_URL"
 
-# Run database initialization script
-if [ -f /app/scripts/initDatabase.js ]; then
-  echo "Running initDatabase.js..."
-  node /app/scripts/initDatabase.js
-  echo "✅ Database initialization completed"
+# Run admin initialization script
+if [ -f /app/initAdmin.js ]; then
+  echo "Running initAdmin.js..."
+  node /app/initAdmin.js
+  echo "✅ Admin initialization completed"
 else
-  echo "⚠️  initDatabase.js not found, trying createAdmin.js..."
-  if [ -f /app/scripts/createAdmin.js ]; then
-    node /app/scripts/createAdmin.js
-    echo "✅ Admin user creation completed"
+  echo "⚠️  initAdmin.js not found, trying fallback scripts..."
+  if [ -f /app/scripts/initDatabase.js ]; then
+    echo "Running initDatabase.js..."
+    node /app/scripts/initDatabase.js
+    echo "✅ Database initialization completed"
   else
-    echo "⚠️  createAdmin.js not found, trying createAdminUser.js..."
-    if [ -f /app/scripts/createAdminUser.js ]; then
-      node /app/scripts/createAdminUser.js
+    echo "⚠️  initDatabase.js not found, trying createAdmin.js..."
+    if [ -f /app/scripts/createAdmin.js ]; then
+      node /app/scripts/createAdmin.js
       echo "✅ Admin user creation completed"
     else
-      echo "❌ No database initialization scripts found!"
-      echo "💡 Admin user should be created by MongoDB init script"
+      echo "⚠️  createAdmin.js not found, trying createAdminUser.js..."
+      if [ -f /app/scripts/createAdminUser.js ]; then
+        node /app/scripts/createAdminUser.js
+        echo "✅ Admin user creation completed"
+      else
+        echo "❌ No database initialization scripts found!"
+        echo "💡 Admin user should be created by MongoDB init script"
+      fi
     fi
   fi
 fi
