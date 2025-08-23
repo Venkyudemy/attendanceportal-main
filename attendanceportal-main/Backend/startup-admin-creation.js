@@ -20,31 +20,36 @@ async function ensureAdminUserExists() {
       console.log('📧 Email:', existingAdmin.email);
       console.log('👤 Name:', existingAdmin.name);
       console.log('🎯 Role:', existingAdmin.role);
+      console.log('🏢 Department:', existingAdmin.department);
       
       // Update password to ensure it's correct
-      const hashedPassword = await bcrypt.hash('password123', 12);
+      const hashedPassword = await bcrypt.hash('Admin@123', 12);
       existingAdmin.password = hashedPassword;
       await existingAdmin.save();
-      console.log('✅ Admin password updated to: password123');
+      console.log('✅ Admin password updated to: Admin@123');
     } else {
       console.log('👤 Creating new admin user...');
       
-      // Hash the password
-      const hashedPassword = await bcrypt.hash('password123', 12);
+      // Hash the password for 'Admin@123'
+      const hashedPassword = await bcrypt.hash('Admin@123', 12);
       
-      // Create admin user with complete structure
+      // Create admin user with valid enum values and proper structure
       const adminUser = new Employee({
         name: 'Admin User',
         email: 'admin@techcorp.com',
         password: hashedPassword,
         role: 'admin',
         position: 'System Administrator',
-        department: 'IT',
+        department: 'HR', // Valid enum: ['Engineering', 'Marketing', 'Sales', 'HR', 'Finance']
         employeeId: 'ADMIN001',
         phone: '+91-9876543210',
         address: '123 Admin Street, Tech City',
-        joinDate: new Date(),
-        status: 'Active',
+        joinDate: new Date().toLocaleDateString('en-US', { 
+          month: '2-digit', 
+          day: '2-digit', 
+          year: 'numeric' 
+        }), // Format: MM/DD/YYYY
+        status: 'Active', // Valid enum: ['Active', 'Inactive', 'On Leave']
         emergencyContact: {
           name: 'Emergency Contact',
           relationship: 'Spouse',
@@ -58,7 +63,9 @@ async function ensureAdminUserExists() {
             status: 'Absent',
             isLate: false
           },
-          history: []
+          records: [],
+          weeklySummaries: [],
+          monthlySummaries: []
         },
         leaveBalance: {
           annual: { total: 20, used: 0, remaining: 20 },
@@ -70,6 +77,8 @@ async function ensureAdminUserExists() {
       await adminUser.save();
       console.log('✅ Admin user created successfully');
       console.log('🆔 User ID:', adminUser._id);
+      console.log('🏢 Department:', adminUser.department);
+      console.log('📅 Join Date:', adminUser.joinDate);
     }
     
     // Check if sample employee exists
@@ -86,12 +95,16 @@ async function ensureAdminUserExists() {
         password: empHashedPassword,
         role: 'employee',
         position: 'Software Developer',
-        department: 'Engineering',
+        department: 'Engineering', // Valid enum value
         employeeId: 'EMP001',
         phone: '+91-9876543212',
         address: '456 Employee Street, Tech City',
-        joinDate: new Date(),
-        status: 'Active',
+        joinDate: new Date().toLocaleDateString('en-US', { 
+          month: '2-digit', 
+          day: '2-digit', 
+          year: 'numeric' 
+        }),
+        status: 'Active', // Valid enum value
         emergencyContact: {
           name: 'Emergency Contact',
           relationship: 'Spouse',
@@ -105,7 +118,9 @@ async function ensureAdminUserExists() {
             status: 'Absent',
             isLate: false
           },
-          history: []
+          records: [],
+          weeklySummaries: [],
+          monthlySummaries: []
         },
         leaveBalance: {
           annual: { total: 20, used: 0, remaining: 20 },
@@ -119,7 +134,7 @@ async function ensureAdminUserExists() {
     }
     
     console.log('\n🔑 Login Credentials:');
-    console.log('👑 Admin: admin@techcorp.com / password123');
+    console.log('👑 Admin: admin@techcorp.com / Admin@123');
     console.log('👤 Employee: venkatesh@gmail.com / venkatesh');
     console.log('🎯 Total users in database:', await Employee.countDocuments());
     
@@ -127,6 +142,7 @@ async function ensureAdminUserExists() {
     
   } catch (error) {
     console.error('❌ Error ensuring admin user exists:', error.message);
+    console.error('🔍 Error details:', error);
     return false;
   }
 }

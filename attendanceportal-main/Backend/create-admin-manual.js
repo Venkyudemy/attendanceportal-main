@@ -30,15 +30,15 @@ async function createAdminManually() {
       console.log('🎯 Role:', existingAdmin.role);
       
       // Update password to ensure it's correct
-      const hashedPassword = await bcrypt.hash('password123', 12);
+      const hashedPassword = await bcrypt.hash('Admin@123', 12);
       existingAdmin.password = hashedPassword;
       await existingAdmin.save();
-      console.log('✅ Admin password updated to: password123');
+      console.log('✅ Admin password updated to: Admin@123');
     } else {
       console.log('👤 Creating new admin user...');
       
-      // Hash the password
-      const hashedPassword = await bcrypt.hash('password123', 12);
+      // Hash the password for 'Admin@123'
+      const hashedPassword = await bcrypt.hash('Admin@123', 12);
       
       // Create admin user
       const adminUser = new Employee({
@@ -47,12 +47,16 @@ async function createAdminManually() {
         password: hashedPassword,
         role: 'admin',
         position: 'System Administrator',
-        department: 'IT',
+        department: 'HR', // Valid enum: ['Engineering', 'Marketing', 'Sales', 'HR', 'Finance']
         employeeId: 'ADMIN001',
         phone: '+91-9876543210',
         address: '123 Admin Street, Tech City',
-        joinDate: new Date(),
-        status: 'Active',
+        joinDate: new Date().toLocaleDateString('en-US', { 
+          month: '2-digit', 
+          day: '2-digit', 
+          year: 'numeric' 
+        }), // Format: MM/DD/YYYY
+        status: 'Active', // Valid enum: ['Active', 'Inactive', 'On Leave']
         emergencyContact: {
           name: 'Emergency Contact',
           relationship: 'Spouse',
@@ -66,7 +70,9 @@ async function createAdminManually() {
             status: 'Absent',
             isLate: false
           },
-          history: []
+          records: [],
+          weeklySummaries: [],
+          monthlySummaries: []
         },
         leaveBalance: {
           annual: { total: 20, used: 0, remaining: 20 },
@@ -93,7 +99,7 @@ async function createAdminManually() {
     
     console.log('\n🔑 Admin Login Credentials:');
     console.log('📧 Email: admin@techcorp.com');
-    console.log('🔐 Password: password123');
+    console.log('🔐 Password: Admin@123');
     console.log('🎯 Role: admin');
     
     mongoose.connection.close();

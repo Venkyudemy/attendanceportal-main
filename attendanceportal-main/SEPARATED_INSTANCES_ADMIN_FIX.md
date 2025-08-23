@@ -100,7 +100,7 @@ Look for these messages:
 # Test with curl
 curl -X POST http://YOUR_BACKEND_IP:5000/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@techcorp.com","password":"password123"}'
+  -d '{"email":"admin@techcorp.com","password":"Admin@123"}'
 ```
 
 ### **3. Check MongoDB Directly**
@@ -124,7 +124,7 @@ node create-admin-manual.js
 
 ## 🔑 **Default Credentials**
 
-- **Admin:** `admin@techcorp.com` / `password123`
+- **Admin:** `admin@techcorp.com` / `Admin@123`
 - **Employee:** `venkatesh@gmail.com` / `venkatesh`
 
 ## 🚨 **Troubleshooting**
@@ -240,7 +240,7 @@ After successful deployment:
    - Proper password hashing
 
 3. **Login works with:**
-   - `admin@techcorp.com` / `password123`
+   - `admin@techcorp.com` / `Admin@123`
    - `venkatesh@gmail.com` / `venkatesh`
 
 ## 💡 **Key Benefits**
@@ -278,4 +278,4 @@ curl -X POST http://YOUR_BACKEND_IP:5000/api/auth/login \
 
 ---
 
-**🎯 Goal:** Ensure admin user `admin@techcorp.com` with password `password123` is automatically created when your backend starts and connects to MongoDB.
+**🎯 Goal:** Ensure admin user `admin@techcorp.com` with password `Admin@123` is automatically created when your backend starts and connects to MongoDB.
