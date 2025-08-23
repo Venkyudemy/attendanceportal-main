@@ -8,7 +8,8 @@ services:
     ports:
       - "3000:80"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     environment:
       - REACT_APP_API_URL=/api
       - TZ=Asia/Kolkata
@@ -33,17 +34,24 @@ services:
       - WORKING_HOURS_END=17:45
       - LATE_THRESHOLD_MINUTES=15
     depends_on:
-      - mongo
+      mongo:
+        condition: service_healthy
     restart: unless-stopped
     networks:
       - attendance-network
     volumes:
       - ./Backend/scripts:/app/scripts:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
     command: >
       sh -c "
         echo '🚀 Starting backend server...' &&
         echo '⏳ Waiting for MongoDB to be ready...' &&
-        sleep 10 &&
+        sleep 15 &&
         echo '🔧 Starting backend with admin user creation...' &&
         npm start
       "
@@ -60,6 +68,12 @@ services:
     restart: unless-stopped
     networks:
       - attendance-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
 
 volumes:
   mongo_data:

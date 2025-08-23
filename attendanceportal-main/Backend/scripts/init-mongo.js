@@ -26,41 +26,51 @@ if (existingAdmin) {
 } else {
   print('👤 Creating admin user...');
   
-  // Create admin user document
+  // Create admin user document - EXACTLY matching Employee.js schema
   const adminUser = {
     name: 'Admin User',
     email: 'admin@techcorp.com',
     password: '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj4J/8QqHqOe', // password123
     role: 'admin',
+    department: 'Engineering', // Must match enum: ['Engineering', 'Marketing', 'Sales', 'HR', 'Finance']
     position: 'System Administrator',
-    department: 'IT',
-    employeeId: 'ADMIN001',
+    status: 'Active', // Must match enum: ['Active', 'Inactive', 'On Leave']
     phone: '+91-9876543210',
+    employeeId: 'ADMIN001',
+    domain: 'techcorp.com',
     address: '123 Admin Street, Tech City',
-    joinDate: new Date(),
-    status: 'Active',
+    joinDate: '01/01/2024',
+    salary: 'Competitive',
+    manager: 'Self',
     emergencyContact: {
       name: 'Emergency Contact',
       relationship: 'Spouse',
       phone: '+91-9876543211',
-      email: 'emergency@example.com'
+      address: '123 Admin Street, Tech City'
+    },
+    generalSettings: {
+      companyName: 'TechCorp Solutions',
+      workingHoursStart: '09:00 AM',
+      workingHoursEnd: '05:00 PM'
     },
     attendance: {
       today: {
         checkIn: null,
         checkOut: null,
         status: 'Absent',
-        isLate: false
+        isLate: false,
+        hours: 0,
+        date: null,
+        timestamp: null
       },
-      history: []
+      records: [],
+      weeklySummaries: [],
+      monthlySummaries: []
     },
     leaveBalance: {
-      casual: 12,
-      sick: 12,
-      earned: 15,
-      maternity: 180,
-      paternity: 15,
-      unpaid: 30
+      annual: { total: 20, used: 0, remaining: 20 },
+      sick: { total: 10, used: 0, remaining: 10 },
+      personal: { total: 5, used: 0, remaining: 5 }
     },
     createdAt: new Date(),
     updatedAt: new Date()
@@ -85,41 +95,51 @@ if (existingEmployee) {
 } else {
   print('👤 Creating sample employee...');
   
-  // Create sample employee
+  // Create sample employee - EXACTLY matching Employee.js schema
   const sampleEmployee = {
     name: 'Venkatesh',
     email: 'venkatesh@gmail.com',
     password: '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj4J/8QqHqOe', // venkatesh
     role: 'employee',
+    department: 'Engineering', // Must match enum: ['Engineering', 'Marketing', 'Sales', 'HR', 'Finance']
     position: 'Software Developer',
-    department: 'Engineering',
-    employeeId: 'EMP001',
+    status: 'Active', // Must match enum: ['Active', 'Inactive', 'On Leave']
     phone: '+91-9876543212',
+    employeeId: 'EMP001',
+    domain: 'techcorp.com',
     address: '456 Employee Street, Tech City',
-    joinDate: new Date(),
-    status: 'Active',
+    joinDate: '01/01/2024',
+    salary: 'Competitive',
+    manager: 'Admin User',
     emergencyContact: {
       name: 'Emergency Contact',
       relationship: 'Spouse',
       phone: '+91-9876543213',
-      email: 'emergency2@example.com'
+      address: '456 Employee Street, Tech City'
+    },
+    generalSettings: {
+      companyName: 'TechCorp Solutions',
+      workingHoursStart: '09:00 AM',
+      workingHoursEnd: '05:00 PM'
     },
     attendance: {
       today: {
         checkIn: null,
         checkOut: null,
         status: 'Absent',
-        isLate: false
+        isLate: false,
+        hours: 0,
+        date: null,
+        timestamp: null
       },
-      history: []
+      records: [],
+      weeklySummaries: [],
+      monthlySummaries: []
     },
     leaveBalance: {
-      casual: 12,
-      sick: 12,
-      earned: 15,
-      maternity: 180,
-      paternity: 15,
-      unpaid: 30
+      annual: { total: 20, used: 0, remaining: 20 },
+      sick: { total: 10, used: 0, remaining: 10 },
+      personal: { total: 5, used: 0, remaining: 5 }
     },
     createdAt: new Date(),
     updatedAt: new Date()
@@ -139,6 +159,9 @@ if (existingEmployee) {
 // Create indexes for better performance
 db.employees.createIndex({ email: 1 }, { unique: true });
 db.employees.createIndex({ employeeId: 1 }, { unique: true });
+db.employees.createIndex({ department: 1 });
+db.employees.createIndex({ status: 1 });
+db.employees.createIndex({ 'attendance.records.date': 1 });
 db.leaveRequests.createIndex({ employeeId: 1 });
 db.leaveRequests.createIndex({ status: 1 });
 
