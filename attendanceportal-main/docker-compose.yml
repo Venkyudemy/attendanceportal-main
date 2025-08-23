@@ -33,7 +33,8 @@ services:
       - WORKING_HOURS_END=17:45
       - LATE_THRESHOLD_MINUTES=15
     depends_on:
-      - mongo
+      mongo:
+        condition: service_started
     restart: unless-stopped
     networks:
       - attendance-network
@@ -45,15 +46,7 @@ services:
         echo '⏳ Waiting for MongoDB to be ready...' &&
         sleep 15 &&
         echo '👤 Creating admin user...' &&
-        node scripts/init-deployment.js &&
-        echo '🔧 Fixing leave balance structure...' &&
-        node scripts/fix-leave-balance-v2.js &&
-        echo '🔧 Running final leave balance fix...' &&
-        node scripts/fix-leave-balance-final.js &&
-        echo '🔧 Verifying leave balance fix...' &&
-        node scripts/check-raw-data.js &&
-        echo '🔧 Fixing database after deployment...' &&
-        node fix-database-after-deployment.js &&
+        node initAdmin.js &&
         echo '🚀 Starting backend server...' &&
         npm start
       "
