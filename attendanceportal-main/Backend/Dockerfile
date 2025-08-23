@@ -19,6 +19,9 @@ ENV TZ=UTC
 # Make startup script executable
 RUN chmod +x docker-start.sh
 
+# Ensure initAdmin.js is executable
+RUN chmod +x initAdmin.js
+
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=5 \
   CMD curl -f http://localhost:5000/api/health || exit 1
