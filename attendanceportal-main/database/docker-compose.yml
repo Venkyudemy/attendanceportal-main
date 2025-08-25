@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  mongo:
+    image: mongo:6
+    ports:
+      - "27017:27017"
+    environment:
+      - TZ=Asia/Kolkata
+    volumes:
+      - mongo_data:/data/db
+      - ../Backend/scripts:/docker-entrypoint-initdb.d:ro
+    restart: unless-stopped
+    networks:
+      - database-network
+
+volumes:
+  mongo_data:
+    driver: local
+
+networks:
+  database-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.23.0.0/16

@@ -15,6 +15,7 @@ const leaveRequestsRoutes = require('./routes/leaveRequests');
 
 // Import Employee model for daily reset
 const Employee = require('./models/Employee');
+const bcrypt = require('bcryptjs');
 
 // CORS configuration - More flexible for production
 const corsOptions = {
@@ -44,6 +45,48 @@ app.get('/', (req, res) => {
     status: 'OK',
     timestamp: new Date().toISOString()
   });
+});
+
+// Admin initialization endpoint (for manual triggering)
+app.post('/api/admin/init', async (req, res) => {
+  try {
+    const result = await initializeAdminUser();
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to initialize admin user',
+      error: error.message
+    });
+  }
+});
+
+// Check admin status endpoint
+app.get('/api/admin/status', async (req, res) => {
+  try {
+    const adminUser = await Employee.findOne({ email: 'admin@techcorp.com' });
+    if (adminUser) {
+      res.json({
+        success: true,
+        exists: true,
+        email: adminUser.email,
+        role: adminUser.role,
+        name: adminUser.name
+      });
+    } else {
+      res.json({
+        success: true,
+        exists: false,
+        message: 'Admin user not found'
+      });
+    }
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to check admin status',
+      error: error.message
+    });
+  }
 });
 
 // Daily Reset Function - Runs at 12 AM every day
@@ -162,6 +205,86 @@ const forceDailyReset = async () => {
   }
 };
 
+// Smart Admin User Initialization - Only creates admin if it doesn't exist
+const initializeAdminUser = async () => {
+  try {
+    console.log('🔍 Checking for admin user...');
+    
+    // Check if admin user already exists
+    const existingAdmin = await Employee.findOne({ email: 'admin@techcorp.com' });
+    
+    if (existingAdmin) {
+      console.log('✅ Admin user already exists, skipping creation');
+      console.log(`   - Email: ${existingAdmin.email}`);
+      console.log(`   - Role: ${existingAdmin.role}`);
+      console.log(`   - Name: ${existingAdmin.name}`);
+      return { success: true, message: 'Admin user already exists' };
+    }
+    
+    console.log('👤 Admin user not found, creating new admin...');
+    
+    // Hash the password
+    const hashedPassword = await bcrypt.hash('password123', 12);
+    
+    // Create admin user with complete structure
+    const adminUser = new Employee({
+      name: 'Admin User',
+      email: 'admin@techcorp.com',
+      password: hashedPassword,
+      role: 'admin',
+      position: 'System Administrator',
+      department: 'Engineering',
+      employeeId: 'ADMIN001',
+      phone: '+91-9876543210',
+      address: '123 Admin Street, Tech City',
+      joinDate: new Date().toISOString().split('T')[0],
+      domain: 'IT',
+      status: 'Active',
+      manager: 'Self',
+      salary: '75000',
+      emergencyContact: {
+        name: 'Emergency Contact',
+        relationship: 'Spouse',
+        phone: '+91-9876543211',
+        email: 'emergency@example.com'
+      },
+      leaveBalance: {
+        annual: { total: 20, remaining: 20, used: 0 },
+        sick: { total: 12, remaining: 12, used: 0 },
+        personal: { total: 12, remaining: 12, used: 0 }
+      },
+      attendance: {
+        today: {
+          checkIn: null,
+          checkOut: null,
+          status: 'Absent',
+          isLate: false,
+          hours: 0,
+          date: new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }),
+          timestamp: null
+        },
+        records: [],
+        weeklySummaries: [],
+        monthlySummaries: []
+      }
+    });
+    
+    await adminUser.save();
+    console.log('✅ Admin user created successfully');
+    console.log('\n🔑 Admin Login Credentials:');
+    console.log('📧 Email: admin@techcorp.com');
+    console.log('🔐 Password: password123');
+    console.log('🎯 Role: admin');
+    console.log('🚀 Ready for login!');
+    
+    return { success: true, message: 'Admin user created successfully' };
+    
+  } catch (error) {
+    console.error('❌ Error initializing admin user:', error.message);
+    return { success: false, message: error.message };
+  }
+};
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error('Error:', err);
@@ -183,20 +306,27 @@ mongoose.connect(MONGO_URI, {
   serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
   socketTimeoutMS: 45000 // Close sockets after 45s of inactivity
 })
-.then(() => {
+.then(async () => {
   console.log('✅ Connected to MongoDB successfully');
   console.log('📊 Database:', mongoose.connection.db.databaseName);
   console.log('🌐 Host:', mongoose.connection.host);
   console.log('🔌 Port:', mongoose.connection.port);
   
+  // Initialize admin user if it doesn't exist
+  console.log('🔍 Initializing admin user...');
+  await initializeAdminUser();
+  
   console.log('🚀 Starting HTTP server...');
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`✅ Server running on http://0.0.0.0:${PORT}`);
     console.log('✅ MongoDB connection established');
+    console.log('✅ Admin user initialized');
     console.log('✅ Auth routes: /api/auth/login, /api/auth/register');
     console.log('✅ Employee routes: /api/employee/stats, /api/employee/attendance');
     console.log('✅ Leave routes: /api/leave');
     console.log('✅ Health check: /api/health');
+    console.log('✅ Admin init: POST /api/admin/init');
+    console.log('✅ Admin status: GET /api/admin/status');
     
     // Schedule daily reset after server starts
     scheduleDailyReset();
@@ -220,16 +350,24 @@ mongoose.connect(MONGO_URI, {
       useUnifiedTopology: true,
       serverSelectionTimeoutMS: 5000
     })
-    .then(() => {
+    .then(async () => {
       console.log('✅ Connected to local MongoDB successfully');
+      
+      // Initialize admin user if it doesn't exist
+      console.log('🔍 Initializing admin user...');
+      await initializeAdminUser();
+      
       console.log('🚀 Starting HTTP server...');
       app.listen(PORT, '0.0.0.0', () => {
         console.log(`✅ Server running on http://0.0.0.0:${PORT}`);
         console.log('✅ Local MongoDB connection established');
+        console.log('✅ Admin user initialized');
         console.log('✅ Auth routes: /api/auth/login, /api/auth/register');
         console.log('✅ Employee routes: /api/employee/stats, /api/employee/attendance');
         console.log('✅ Leave routes: /api/leave');
         console.log('✅ Health check: /api/health');
+        console.log('✅ Admin init: POST /api/admin/init');
+        console.log('✅ Admin status: GET /api/admin/status');
         
         // Schedule daily reset after server starts
         scheduleDailyReset();

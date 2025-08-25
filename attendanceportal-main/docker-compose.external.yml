@@ -42,13 +42,29 @@ services:
       - ./Backend/scripts:/app/scripts:ro
     command: >
       sh -c "
-        echo 'Waiting for MongoDB to be ready...' &&
-        sleep 10 &&
-        echo 'Creating admin user...' &&
-        node scripts/createAdmin.js &&
-        echo 'Creating employee user...' &&
-        node scripts/addEmployee.js &&
-        echo 'Starting backend server...' &&
+        echo '🚀 Starting deployment initialization...' &&
+        echo '⏳ Waiting for MongoDB to be ready...' &&
+        sleep 15 &&
+        echo '🔍 Checking if admin user exists...' &&
+        node -e \"
+          const mongoose = require('mongoose');
+          const User = require('./models/User');
+          mongoose.connect(process.env.MONGODB_URI || 'mongodb://mongo:27017/attendanceportal')
+            .then(async () => {
+              const adminExists = await User.findOne({ role: 'admin' });
+              if (!adminExists) {
+                console.log('👤 Admin user not found, creating...');
+                require('./scripts/createAdmin.js');
+                require('./scripts/addEmployee.js');
+              } else {
+                console.log('✅ Admin user already exists, skipping initialization');
+              }
+            })
+            .catch(err => {
+              console.log('❌ Error checking admin user:', err.message);
+            });
+        \" &&
+        echo '🚀 Starting backend server...' &&
         npm start
       "
 
@@ -64,6 +80,7 @@ services:
     restart: unless-stopped
     networks:
       - attendance-network
+    command: mongod --bind_ip_all
 
 volumes:
   mongo_data:

@@ -1,24 +1,9 @@
 version: '3.8'
 
 services:
-  frontend:
-    build:
-      context: ./Frontend
-      dockerfile: Dockerfile
-    ports:
-      - "3000:80"
-    depends_on:
-      - backend
-    environment:
-      - REACT_APP_API_URL=/api
-      - TZ=Asia/Kolkata
-    restart: unless-stopped
-    networks:
-      - attendance-network
-
   backend:
     build:
-      context: ./Backend
+      context: .
       dockerfile: Dockerfile
     ports:
       - "5000:5000"
@@ -36,9 +21,9 @@ services:
       - mongo
     restart: unless-stopped
     networks:
-      - attendance-network
+      - backend-network
     volumes:
-      - ./Backend/scripts:/app/scripts:ro
+      - ./scripts:/app/scripts:ro
     command: npm start
 
   mongo:
@@ -49,19 +34,18 @@ services:
       - TZ=Asia/Kolkata
     volumes:
       - mongo_data:/data/db
-      - ./Backend/scripts:/docker-entrypoint-initdb.d:ro
+      - ./scripts:/docker-entrypoint-initdb.d:ro
     restart: unless-stopped
     networks:
-      - attendance-network
-    command: mongod --bind_ip_all
+      - backend-network
 
 volumes:
   mongo_data:
     driver: local
 
 networks:
-  attendance-network:
+  backend-network:
     driver: bridge
     ipam:
       config:
-        - subnet: 172.20.0.0/16
+        - subnet: 172.22.0.0/16
