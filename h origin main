@@ -1,5 +1,0 @@
-[33m308bd4a[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m Update Docker configuration: Enhanced Dockerfile with better dependencies, improved docker-compose.yml with admin user creation, optimized startup scripts, and comprehensive Docker setup guide
-[33m0d0a831[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Add QUICK_LOGIN_FIX.bat and DIAGNOSE_LOGIN_ISSUE.bat - super simple scripts to fix login issues step by step
-[33m895d117[m Add deployed application login fix: FIX_DEPLOYED_LOGIN.bat script and comprehensive DEPLOYMENT_LOGIN_FIX_GUIDE.md
-[33maefa358[m Add SUPER_SIMPLE_FIX.bat - guaranteed login fix script and test-login-now.bat for verification
-[33maf00005[m Add local setup solutions without Docker: MongoDB Atlas guide, local MongoDB installation, and setup scripts for running attendance portal locally
