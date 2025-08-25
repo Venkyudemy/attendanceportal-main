@@ -142,7 +142,7 @@ hostname -I
 
 ### Step 3: Deploy Frontend Server
 
-#### 3.1. On Frontend Server Instance
+#### 3.1. On Frontend Server Instance (Method 1: Manual)
 ```bash
 # Clone the repository
 git clone https://github.com/Venkyudemy/attendanceportal-main.git
@@ -160,6 +160,29 @@ docker-compose up -d
 # Verify frontend is running
 docker-compose ps
 docker logs frontend
+```
+
+#### 3.2. On Frontend Server Instance (Method 2: Automated Script)
+```bash
+# Clone the repository
+git clone https://github.com/Venkyudemy/attendanceportal-main.git
+cd attendanceportal-main/Frontend
+
+# Make the deployment script executable
+chmod +x deploy-frontend.sh
+
+# Deploy frontend with backend IP
+./deploy-frontend.sh 10.0.1.20
+```
+
+#### 3.3. On Frontend Server Instance (Method 3: Windows)
+```cmd
+# Clone the repository
+git clone https://github.com/Venkyudemy/attendanceportal-main.git
+cd attendanceportal-main\Frontend
+
+# Deploy frontend with backend IP
+deploy-frontend.bat 10.0.1.20
 ```
 
 ## Configuration Examples
