@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: ./Frontend
+      dockerfile: Dockerfile
+    container_name: frontend
+    ports:
+      - "3000:80"
+    environment:
+      - REACT_APP_API_URL=http://<BACKEND_PRIVATE_IP>:5000/api
+      - TZ=Asia/Kolkata
+    restart: unless-stopped
