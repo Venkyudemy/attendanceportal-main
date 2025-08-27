@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: frontend
+    ports:
+      - "3000:80"
+    environment:
+      # Set this to your backend's private IP address
+      - BACKEND_PRIVATE_IP=192.168.1.100
+      - REACT_APP_API_URL=/api
+      - TZ=Asia/Kolkata
+    restart: unless-stopped
+
+  # Example backend service (if running locally)
+  # backend:
+  #   image: your-backend-image
+  #   container_name: backend
+  #   ports:
+  #     - "5000:5000"
+  #   environment:
+  #     - TZ=Asia/Kolkata
+  #   restart: unless-stopped
