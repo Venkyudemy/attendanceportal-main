@@ -745,22 +745,26 @@ router.post('/', async (req, res) => {
 // GET /api/employee/:id - Get specific employee details
 router.get('/:id', async (req, res) => {
   try {
-    const employee = await Employee.findById(req.params.id).select('-password');
-    
-    if (!employee) {
-      return res.status(404).json({ 
-        error: 'Not found',
-        message: 'Employee not found' 
-      });
+    const { id } = req.params;
+
+    // If valid ObjectId → fetch employee
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      const employee = await Employee.findById(id).select('-password');
+      if (!employee) return res.status(404).json({ message: "Employee not found" });
+      return res.json(employee);
     }
 
-    res.status(200).json(employee);
-  } catch (error) {
-    console.error('Error fetching employee:', error);
-    res.status(500).json({ 
-      error: 'Internal server error',
-      message: 'Failed to fetch employee data' 
-    });
+    // Otherwise → handle holiday lookup
+    if (id === "today-holiday") {
+      const Holiday = require('../models/Holiday');
+      const holiday = await Holiday.findOne({ date: new Date().toISOString().split("T")[0] });
+      return res.json(holiday || { message: "No holiday today" });
+    }
+
+    res.status(400).json({ message: "Invalid request" });
+  } catch (err) {
+    console.error("Error fetching calendar:", err);
+    res.status(500).json({ error: "Server error" });
   }
 });
 
@@ -2562,8 +2566,9 @@ router.get('/:id/attendance-details', async (req, res) => {
       const settings = await Settings.findOne();
       if (settings && settings.companyHolidays) {
         monthHolidays = settings.companyHolidays.filter(holiday => {
-          const holidayDate = new Date(holiday.date);
-          return holidayDate.getMonth() === targetMonth && holidayDate.getFullYear() === targetYear;
+          // Parse the holiday date string (YYYY-MM-DD format)
+          const [holidayYear, holidayMonth] = holiday.date.split('-').map(Number);
+          return holidayMonth - 1 === targetMonth && holidayYear === targetYear; // Month is 0-indexed in Date constructor
         });
       }
     } catch (holidayError) {
@@ -2669,10 +2674,11 @@ router.get('/:id/attendance-details', async (req, res) => {
       
       // Check if this day is a holiday
       const holiday = monthHolidays.find(h => {
-        const holidayDate = new Date(h.date);
-        return holidayDate.getDate() === day && 
-               holidayDate.getMonth() === targetMonth && 
-               holidayDate.getFullYear() === targetYear;
+        // Parse the holiday date string (YYYY-MM-DD format)
+        const [holidayYear, holidayMonth, holidayDay] = h.date.split('-').map(Number);
+        return holidayDay === day && 
+               holidayMonth - 1 === targetMonth && // Month is 0-indexed in Date constructor
+               holidayYear === targetYear;
       });
       
       // Find attendance record for this date
@@ -2697,7 +2703,6 @@ router.get('/:id/attendance-details', async (req, res) => {
         hours = 0;
         isLeave = false;
         leaveType = null;
-        console.log(`📅 Day ${day}: Holiday - ${holiday.name}`);
       } else if (isWeekend) {
         status = 'Weekend';
         checkIn = null;
